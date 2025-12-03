@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+
+}
+
+:root {
+  --primary-color: #2563eb; 
+  --primary-text-color: #1f2937;
+  --secondary-text-color: #4b5563;
+  --border-color: #1f2937;
+  --bg-color: #ffffff;
+}
+
+html {
+  font-family: 'Arial', sans-serif;
+}
+
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined", sans-serif;
+  font-weight: 100;
+  font-size: 1rem;
+  display: inline-block;
+  text-align: center;
+  justify-content: center;
+  color: var(--secondary-color);
+  cursor: pointer;
+}
