@@ -50,11 +50,15 @@ const generatePDF = async (): Promise<void> => {
 </script>
 
 <template>
-  <div class="p-6 max-w-xl mx-auto">
-    <h1 class="text-3xl font-bold mb-4">Generate PDF</h1>
-    <p class="mb-4">Click the button below to download a PDF generated from this content:</p>
-    <button @click="generatePDF" class="bg-blue-500 text-white px-4 py-2 rounded">
-      Download PDF
+  <div class="p-2 max-w-xl mx-auto flex justify-center">
+    <!-- Generate PDF Button -->
+    <button
+      @click="generatePDF"
+      class="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 hover:text-white 
+             border-2 border-blue-500 transition-colors duration-200 shadow-md"
+    >
+      Generate PDF
     </button>
   </div>
 </template>
+
