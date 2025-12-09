@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, reactive, watch } from 'vue'
+import { computed, ref, reactive, watch } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuItemComponent from './MenuItem.vue'
 
@@ -10,6 +10,7 @@ const props = defineProps<{
   fontFamily?: string
   bgColor?: string
   textColor?: string
+  readonly?: boolean
 }>()
 
 const styleObject = computed(() => ({
@@ -53,7 +54,7 @@ function splitItemsByPage(items: MenuItem[], maxItemsPerPage = 8): MenuItem[][] 
           {{ category }}
         </h2>
         <div class="space-y-3">
-          <MenuItemComponent v-for="item in items" :key="item.No" :item="item" />
+          <MenuItemComponent v-for="item in items" :key="item.No" :item="item" :readonly="readonly" @update:item="updated => Object.assign(item, updated)"/>
         </div>
       </div>
     </div>

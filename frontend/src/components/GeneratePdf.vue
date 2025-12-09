@@ -1,11 +1,14 @@
 <script lang="ts" setup>
 import { defineProps } from 'vue'
+import { nextTick, ref } from 'vue'
 
 interface Props {
   contentRef?: HTMLElement | null
+  
 }
 
 const props = defineProps<Props>()
+const pdfReadonly = ref(false)
 
 const generatePDF = async (): Promise<void> => {
   const element = props.contentRef
@@ -13,7 +16,10 @@ const generatePDF = async (): Promise<void> => {
     alert('No content to export')
     return
   }
-
+  
+  pdfReadonly.value = true
+  await nextTick()
+  
   // only html content without <haed>
   const htmlContent = `
         ${element.innerHTML}
@@ -45,6 +51,8 @@ const generatePDF = async (): Promise<void> => {
   } catch (err) {
     console.error("Error generating PDF:", err);
     alert("An error occurred while generating PDF");
+  } finally {
+    pdfReadonly.value = false 
   }
 };
 </script>

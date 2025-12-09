@@ -2,9 +2,13 @@
 import { ref, defineEmits } from 'vue'
 import Papa from 'papaparse'
 import type { MenuItem, MenuOption } from '@/types/types'
+import { useMenuStore } from '@/stores/menu'
+
 
 const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
+
+const props = defineProps<{ items: MenuItem[] }>()
 
 const emit = defineEmits<{
   (e: 'csvLoaded', items: MenuItem[]): void
@@ -67,6 +71,7 @@ function parseCsvFile(file: File) {
       })
 
       emit('csvLoaded', processed) // send data to parent
+      menuStore.items = processed
     },
   })
 }
@@ -75,6 +80,42 @@ function handleFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (file) parseCsvFile(file)
 }
+
+
+const menuStore = useMenuStore()
+
+function escapeCSVField(value: string) {
+  // wrap in quotes if it contains a comma or quote
+  if (value.includes(',') || value.includes('"')) {
+    return `"${value.replace(/"/g, '""')}"`
+  }
+  return value
+}
+
+function downloadCSV() {
+  if (!props.items?.length) return alert('No data to export')
+
+  const csv = props.items.map(item => [
+    escapeCSVField(item.No ?? '-'),
+    escapeCSVField(item.Name ?? ''),
+    escapeCSVField(item.ChineseName ?? ''),
+    escapeCSVField(item.Description ?? ''),
+    escapeCSVField(item.Price ?? ''),
+    escapeCSVField(item.Options?.join('|') ?? ''),
+    escapeCSVField(item.Category ?? '')
+  ].join(','))
+
+  const header = 'No,Name,ChineseName,Description,Price,Options,Category'
+  const blob = new Blob([header + '\n' + csv.join('\n')], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'menu-output.csv'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+
 </script>
 
 <template>
@@ -109,6 +150,11 @@ function handleFileChange(e: Event) {
       class="hidden"
       @change="handleFileChange"
     />
+  </div>
+
+  <!-- Export CVS-->
+  <div class="p-2">
+    <button @click="downloadCSV" class="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md">Export CSV</button>
   </div>
 </template>
 

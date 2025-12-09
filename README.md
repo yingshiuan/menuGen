@@ -21,19 +21,20 @@ It supports:
 - [x] Tailwind-based Live Preview  
 - [x] Image + SVG auto compression on backend  
 - [x] Pixel-perfect Puppeteer PDF generator  
-- [ ] Inline editing UI (name, price, description, flags)  
+- [x] Inline editing UI (name, price, description, flags)  
 - [ ] Section grouping + manual ordering  
 - [ ] Multi-page layout rules (page breaks)  
 - [ ] Drag-and-drop image/icon replacement  
 
 ### UI Improvements
 - [ ] Dark/Light theme toggle  
-- [ ] Custom font selection  
+- [x] Custom font selection  
 - [ ] Auto-fit long descriptions  
 - [ ] Category templates (e.g., Drinks, Starters, Specials)
 
 ### Export / Import
-- [ ] Export menu as JSON  or cvs
+- [x] Export menu as cvs
+- [ ] Export menu as JSON
 - [ ] Import JSON back into editor  
 - [ ] Export as high-res PNG images (front/back)
 

@@ -47,26 +47,47 @@ app.post('/generate-pdf', async (req, res) => {
     if (!html) {
       return res.status(400).send('HTML content is required');
     }
-
-    // Parse HTML
     const dom = new JSDOM(html);
     const document = dom.window.document;
-    const images = Array.from(document.querySelectorAll('img'));
 
+   document.querySelectorAll('input, textarea, select').forEach(el => {
+      const span = document.createElement('span');
+      span.textContent = el.value || '';
+      el.replaceWith(span);
+    });
+
+    // ======= REMOVE UNSELECTED ICONS HERE =======
+    document.querySelectorAll('img[data-selected]').forEach(img => {
+      if (img.getAttribute('data-selected') !== 'true') {
+        img.remove();
+      } else {
+        // remove the attribute so it won't appear in PDF
+        img.removeAttribute('data-selected');
+      }
+    });
+
+    // Parse HTML
+    const images = Array.from(document.querySelectorAll('img'));
     for (const img of images) {
       const src = img.getAttribute('src');
       if (!src) continue;
 
-      let filePath;
+      // Remove query string (?v=1)
+      const cleanSrc = src.split('?')[0];
 
-      if (src.startsWith('/src/')) {
-        filePath = path.resolve('../frontend', src.substring(1));   // <-- FIXED
+      let filePath;
+      if (cleanSrc.startsWith('/picture/')) {
+        filePath = path.resolve('../frontend/public', cleanSrc.replace(/^\/+/, ''));
       } else {
-        filePath = path.resolve('../frontend/public', src.replace(/^\/+/, ''));
+        filePath = path.resolve('../frontend/public', cleanSrc.replace(/^\/+/, ''));
+      }
+
+      if (!fs.existsSync(filePath)) {
+        img.setAttribute('data-missing', 'true');
+        continue;
       }
 
       let base64 = null;
-
       if (filePath.endsWith('.svg')) {
         base64 = await compressSvg(filePath, 96, 96);
       } else {
@@ -75,6 +96,14 @@ app.post('/generate-pdf', async (req, res) => {
 
       if (base64) img.setAttribute('src', base64);
     }
+
+    // Remove circles with empty <img> after conversion
+    document.querySelectorAll('span').forEach(span => {
+      if (span.textContent?.trim() === 'Upload') {
+        span.remove();
+      }
+    });
+
 
     const optimizedHtml = `
       <html>

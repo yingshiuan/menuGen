@@ -13,6 +13,8 @@ const menuCsv = ref<MenuItem[]>([]);
 
 const menuPreviewRef = ref<HTMLElement | null>(null)
 
+const pdfReadonly = ref(false)
+
 const selectedFont = ref('sans-serif')
 const bgColor = ref('#ffffff')
 const textColor = ref('#000000')
@@ -31,7 +33,7 @@ function handleCsvLoaded(items: MenuItem[]) {
       <div class="flex-1 space-y-4">
       <!-- Drag & Drop CSV and Generate PDF side by side -->
       <div class="flex">
-        <CsvUpload @csvLoaded="handleCsvLoaded" class="flex-3" />
+        <CsvUpload @csvLoaded="handleCsvLoaded" :items="menuCsv" class="flex-3" />
         <GeneratePdf :contentRef="menuPreviewRef" class="flex-1" />
       </div>
 
@@ -49,6 +51,7 @@ function handleCsvLoaded(items: MenuItem[]) {
             :fontFamily="selectedFont"  
             :bgColor="bgColor"
             :textColor="textColor"
+            :readonly="pdfReadonly"
           />
         </div>
         <div v-else class="a4-preview">
