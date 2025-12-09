@@ -225,7 +225,7 @@ watch(local, () => emit('update:item', local), { deep: true })
         v-if="pictureSrc && pictureVisible"
         :src="pictureSrc"
         alt="Item Picture"
-        class="w-full h-full object-cover"
+        class="w-full h-auto object-cover rounded-full transform scale-110 overflow-hidden"
         @error="onImageError"
       />
 

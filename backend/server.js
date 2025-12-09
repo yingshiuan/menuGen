@@ -68,18 +68,21 @@ app.post('/generate-pdf', async (req, res) => {
 
     // Parse HTML
     const images = Array.from(document.querySelectorAll('img'));
+
     for (const img of images) {
       const src = img.getAttribute('src');
       if (!src) continue;
 
-      // Remove query string (?v=1)
-      const cleanSrc = src.split('?')[0];
+      const cleanSrc = src.split('?')[0]; // remove query string
 
       let filePath;
+
       if (cleanSrc.startsWith('/picture/')) {
-        filePath = path.resolve('../frontend/public', cleanSrc.replace(/^\/+/, ''));
+        filePath = path.resolve('../frontend/public', cleanSrc.substring(1));
+      } else if (cleanSrc.startsWith('/src/asset/svg/')) {
+        filePath = path.resolve('../frontend', cleanSrc.substring(1));
       } else {
-        filePath = path.resolve('../frontend/public', cleanSrc.replace(/^\/+/, ''));
+        continue; // unknown path
       }
 
       if (!fs.existsSync(filePath)) {
@@ -104,7 +107,7 @@ app.post('/generate-pdf', async (req, res) => {
       }
     });
 
-
+    // add custom styles for images
     const optimizedHtml = `
       <html>
         <head>

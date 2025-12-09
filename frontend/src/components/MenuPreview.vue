@@ -50,7 +50,7 @@ function splitItemsByPage(items: MenuItem[], maxItemsPerPage = 8): MenuItem[][] 
       :style="styleObject"
     >
       <div v-for="(items, category) in grouped" :key="category" class="mb-8">
-        <h2 class="text-xl font-bold pb-1 mb-4 border-b">
+        <h2 class="text-xl font-bold pb-1 mb-4 border-b-1">
           {{ category }}
         </h2>
         <div class="space-y-3">
