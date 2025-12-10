@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuPreview from '@/components/MenuPreview.vue'
 import GeneratePdf from '@/components/GeneratePdf.vue'
@@ -7,20 +7,31 @@ import CsvUpload from '@/components/CsvUpload.vue'
 import FontSelector from '@/components/FontSelector.vue'
 import ColorPicker from '@/components/ColorPicker.vue'
 
+type FontValue = 'sans-serif' | 'serif' | 'monospace' | "'Courier New', monospace" | "'Arial', sans-serif" | "'Times New Roman', serif"
+
 // const csvData = ref<MenuItem[]>([])
 
-const menuCsv = ref<MenuItem[]>([]);
+interface MenuState {
+  menuCsv: MenuItem[]
+  pdfReadonly: boolean
+  selectedFont: FontValue
+  bgColor: string
+  textColor: string
+}
+
+// Create reactive state
+const state = reactive<MenuState>({
+  menuCsv: [],
+  pdfReadonly: false,
+  selectedFont: 'sans-serif',
+  bgColor: '#ffffff',
+  textColor: '#000000',
+})
 
 const menuPreviewRef = ref<HTMLElement | null>(null)
 
-const pdfReadonly = ref(false)
-
-const selectedFont = ref('sans-serif')
-const bgColor = ref('#ffffff')
-const textColor = ref('#000000')
-
 function handleCsvLoaded(items: MenuItem[]) {
-  menuCsv.value = items
+  state.menuCsv = items
 }
 
 </script>
@@ -31,27 +42,27 @@ function handleCsvLoaded(items: MenuItem[]) {
     <div class="flex flex-col md:flex-row gap-2">
       <!-- Left side: controls -->
       <div class="flex-1 space-y-4">
-      <!-- Drag & Drop CSV and Generate PDF side by side -->
-      <div class="flex">
-        <CsvUpload @csvLoaded="handleCsvLoaded" :items="menuCsv" class="flex-3" />
-        <GeneratePdf :contentRef="menuPreviewRef" class="flex-1" />
-      </div>
+        <!-- Drag & Drop CSV and Generate PDF side by side -->
+        <div class="flex gap-2">
+          <CsvUpload @csvLoaded="handleCsvLoaded" :items="state.menuCsv" class="flex-3" />
+          <GeneratePdf :contentRef="menuPreviewRef" class="flex-1" />
+        </div>
 
-      <!-- Font selector and color pickers stacked below -->
-      <FontSelector v-model:font="selectedFont" />
-      <ColorPicker type="bg" v-model:color="bgColor" />
-      <ColorPicker type="text" v-model:color="textColor" />
-    </div>
+        <!-- Font selector and color pickers stacked below -->
+        <FontSelector v-model:font="state.selectedFont" />
+        <ColorPicker type="bg" v-model:color="state.bgColor" />
+        <ColorPicker type="text" v-model:color="state.textColor" />
+      </div>
 
       <!-- Right side: preview -->
       <div class="flex-1">
-        <div class="menu-preview-wrapper" ref="menuPreviewRef" v-if="menuCsv.length">
-          <MenuPreview 
-            :items="menuCsv" 
-            :fontFamily="selectedFont"  
-            :bgColor="bgColor"
-            :textColor="textColor"
-            :readonly="pdfReadonly"
+        <div class="menu-preview-wrapper" ref="menuPreviewRef" v-if="state.menuCsv.length">
+          <MenuPreview
+            :items="state.menuCsv"
+            :fontFamily="state.selectedFont"
+            :bgColor="state.bgColor"
+            :textColor="state.textColor"
+            :readonly="state.pdfReadonly"
           />
         </div>
         <div v-else class="a4-preview">
@@ -60,20 +71,18 @@ function handleCsvLoaded(items: MenuItem[]) {
           </p>
         </div>
       </div>
-      
     </div>
   </div>
 </template>
 
 <style>
-
 .a4-preview {
-  width: 210mm;           /* A4 width */
-  height: 297mm;          /* A4 height */
+  width: 210mm; /* A4 width */
+  height: 297mm; /* A4 height */
   border: 1px solid #ccc;
   padding: 2rem;
   box-sizing: border-box;
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 @media screen {
@@ -82,7 +91,4 @@ function handleCsvLoaded(items: MenuItem[]) {
     transform-origin: top center;
   }
 }
-
-
 </style>
-

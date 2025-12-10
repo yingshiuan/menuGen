@@ -24,6 +24,7 @@ It supports:
 - [x] Inline editing UI (name, price, description, flags)  
 - [ ] Section grouping + manual ordering  
 - [ ] Multi-page layout rules (page breaks)  
+- [x] Upload image   
 - [ ] Drag-and-drop image/icon replacement  
 
 ### UI Improvements
@@ -33,7 +34,7 @@ It supports:
 - [ ] Category templates (e.g., Drinks, Starters, Specials)
 
 ### Export / Import
-- [x] Export menu as cvs
+- [x] Export menu as csv
 - [ ] Export menu as JSON
 - [ ] Import JSON back into editor  
 - [ ] Export as high-res PNG images (front/back)

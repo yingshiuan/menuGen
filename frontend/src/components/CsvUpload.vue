@@ -4,7 +4,6 @@ import Papa from 'papaparse'
 import type { MenuItem, MenuOption } from '@/types/types'
 import { useMenuStore } from '@/stores/menu'
 
-
 const isDragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -35,7 +34,6 @@ function handleDrop(e: DragEvent) {
   if (!file) return
   parseCsvFile(file)
 }
-
 
 function handleDragOver(e: DragEvent) {
   e.preventDefault()
@@ -81,7 +79,6 @@ function handleFileChange(e: Event) {
   if (file) parseCsvFile(file)
 }
 
-
 const menuStore = useMenuStore()
 
 function escapeCSVField(value: string) {
@@ -95,15 +92,17 @@ function escapeCSVField(value: string) {
 function downloadCSV() {
   if (!props.items?.length) return alert('No data to export')
 
-  const csv = props.items.map(item => [
-    escapeCSVField(item.No ?? '-'),
-    escapeCSVField(item.Name ?? ''),
-    escapeCSVField(item.ChineseName ?? ''),
-    escapeCSVField(item.Description ?? ''),
-    escapeCSVField(item.Price ?? ''),
-    escapeCSVField(item.Options?.join('|') ?? ''),
-    escapeCSVField(item.Category ?? '')
-  ].join(','))
+  const csv = props.items.map((item) =>
+    [
+      escapeCSVField(item.No ?? '-'),
+      escapeCSVField(item.Name ?? ''),
+      escapeCSVField(item.ChineseName ?? ''),
+      escapeCSVField(item.Description ?? ''),
+      escapeCSVField(item.Price ?? ''),
+      escapeCSVField(item.Options?.join('|') ?? ''),
+      escapeCSVField(item.Category ?? ''),
+    ].join(','),
+  )
 
   const header = 'No,Name,ChineseName,Description,Price,Options,Category'
   const blob = new Blob([header + '\n' + csv.join('\n')], { type: 'text/csv' })
@@ -114,48 +113,51 @@ function downloadCSV() {
   a.click()
   URL.revokeObjectURL(url)
 }
-
-
 </script>
 
 <template>
-  <div
-    class="border-2 border-dashed rounded-lg p-1 cursor-pointer flex flex-col items-center justify-center gap-4 
-           hover:bg-blue-500 transition-colors group"
-    :class="isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
-    @dragover.prevent="handleDragOver"
-    @dragleave="handleDragLeave"
-    @drop.prevent="handleDrop"
-    @click="fileInput?.click()" 
-  >
-    <!-- Text -->
-    <p class="text-gray-600 text-center group-hover:text-white transition-colors">
-      Drag & drop your CSV here, or click to browse
-    </p>
+  <div class="flex gap-2">
+    <div
+      class="border-2 border-dashed rounded-lg p-1 cursor-pointer flex flex-col items-center justify-center gap-4 hover:bg-blue-500 transition-colors group"
+      :class="isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
+      @dragover.prevent="handleDragOver"
+      @dragleave="handleDragLeave"
+      @drop.prevent="handleDrop"
+      @click="fileInput?.click()"
+    >
+      <!-- Text -->
+      <div class="text-container">
+        <p class="text-gray-600 text-center group-hover:text-white transition-colors">
+          Drag & drop your CSV here, or click to browse
+        </p>
 
-    <!-- Browse Button (optional, still clickable) -->
-    <!-- <button
+        <!-- Browse Button (optional, still clickable) -->
+        <!-- <button
       type="button"
       class="p-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition-colors"
       @click.stop="fileInput?.click()"
-    >
-      Browse CSV
-    </button> -->
+      >
+        Browse CSV
+      </button> -->
 
-    <!-- Hidden File Input -->
-    <input
-      type="file"
-      accept=".csv"
-      ref="fileInput"
-      class="hidden"
-      @change="handleFileChange"
-    />
-  </div>
-
-  <!-- Export CVS-->
-  <div class="p-2">
-    <button @click="downloadCSV" class="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md">Export CSV</button>
+        <!-- Hidden File Input -->
+        <input
+          type="file"
+          accept=".csv"
+          ref="fileInput"
+          class="hidden"
+          @change="handleFileChange"
+        />
+      </div>
+    </div>
+    <!-- Export CVS-->
+    <div class="max-w-xl mx-auto flex justify-center">
+      <button
+        @click="downloadCSV"
+        class="bg-blue-500 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
+      >
+        Export CSV
+      </button>
+    </div>
   </div>
 </template>
-
-

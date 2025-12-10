@@ -18,7 +18,8 @@ const emit = defineEmits(['update:item'])
 // Local reactive copy to avoid mutating props
 const local = reactive({
   ...props.item,
-  Options: props.item.Options ? [...props.item.Options] : []
+  Options: props.item.Options ? [...props.item.Options] : [],
+  pictureBase64: ''
 })
 
 // Refs
@@ -27,14 +28,24 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const imageVersion = ref(0)
 
 // Picture source computed
-const pictureSrc = computed(() => {
-  if (!local.No || !local.Name) return null
-  const noPadded = local.No.toString().padStart(2, '0')
-  return `/picture/${noPadded}_${local.Name}.png?v=${imageVersion.value}`
-})
+// const pictureSrc = computed(() => {
+//   if (!local.No || !local.Name) return null
+//   const noPadded = local.No.toString().padStart(2, '0')
+//   return `/picture/${noPadded}_${local.Name}.png?v=${imageVersion.value}`
+// })
+
+
+const displayedPicture = computed(() => {
+  if (local.pictureBase64) return local.pictureBase64;
+  if (local.No && local.Name) {
+    const noPadded = local.No.toString().padStart(2, '0');
+    return `/picture/${noPadded}_${local.Name}.png?v=${imageVersion.value}`;
+  }
+  return null;
+});
 
 // Watch pictureSrc to reset visibility
-watch(pictureSrc, () => {
+watch(displayedPicture, () => {
   pictureVisible.value = true
 })
 
@@ -89,13 +100,72 @@ const displayedRecommend = computed(() => !props.readonly || local.Options.inclu
 const displayedOtherOptions = computed(() => otherOptions.value.filter(opt => !props.readonly || local.Options.includes(opt)))
 
 // Image upload
-const triggerUpload = () => fileInputRef.value?.click()
+const triggerUpload = () => {
+  fileInputRef.value?.click();
+};
 const onImageError = () => pictureVisible.value = false
-const uploadPicture = (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  // handle upload via API here
-  imageVersion.value += 1
+
+// async function uploadPicture(event: Event){
+//   const file = (event.target as HTMLInputElement).files?.[0]
+//   if (!file) return
+
+//    const itemNo = local.No;
+//   if (!itemNo) {
+//     alert('Please enter a No before uploading an image.');
+//     return;
+//   }
+
+//   if (!file.type.startsWith('image/')) {
+//     alert('Please upload a valid image file (PNG, JPG, JPEG, GIF, etc.).');
+//     return;
+//   }
+
+//   const formData = new FormData();
+//   formData.append('image', file);
+//   formData.append('No', itemNo.toString());
+
+  
+//   try {
+//     uploading.value = true;
+//     const response = await fetch('http://localhost:3000/api/upload', {
+//       method: 'POST',
+//       body: formData,
+//     });
+
+//     if (!response.ok) {
+//       throw new Error('Failed to upload image');
+//     }
+
+//     const data = await response.json();
+//     const uploadedFileName = data.fileUrl; // Assuming the backend sends the image URL
+    
+//     local.No = uploadedFileName.split('.')[0]; // Update the URL or the field in your local state
+//     imageVersion.value += 1; // Trigger re-rendering of the image
+    
+//   } catch (error) {
+//     console.error('Error uploading image:', error);
+//     pictureVisible.value = false;  // Hide image on error
+//   } finally {
+//     uploading.value = false; 
+//   }
+// };
+
+async function uploadPicture(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    alert('Please upload a valid image file (PNG, JPG, JPEG, GIF, etc.)');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    // Store Base64 image directly in your local state
+    local.pictureBase64 = reader.result as string;
+    imageVersion.value += 1; // trigger re-render
+  };
+  reader.readAsDataURL(file);
 }
 
 // Emit changes to parent
@@ -126,7 +196,7 @@ watch(local, () => emit('update:item', local), { deep: true })
 
     <!-- No -->
     <div class="flex-shrink-0 w-8 text-right">
-      <span v-if="!editingField.No" @click="startEditing('No')">{{ local.No }}</span>
+      <span v-if="!editingField.No" @click="startEditing('No')">{{ local.No || "-" }}</span>
       <input
         v-else
         id="No"
@@ -201,7 +271,7 @@ watch(local, () => emit('update:item', local), { deep: true })
 
     <!-- Price -->
     <div class="w-12 text-right">
-      <span v-if="!editingField.Price" @click="startEditing('Price')">{{ local.Price }}</span>
+      <span v-if="!editingField.Price" @click="startEditing('Price')">{{ local.Price}}</span>
       <input
         v-else
         id="Price"
@@ -215,22 +285,22 @@ watch(local, () => emit('update:item', local), { deep: true })
 
     <!-- Picture -->
     <div 
-      v-if="pictureSrc || !props.readonly" 
+      v-if=" displayedPicture || !props.readonly"
       class="flex-shrink-0 w-24 h-24 flex justify-center items-center relative rounded-full overflow-hidden cursor-pointer"
-      :class="pictureSrc ? '' : 'border border-gray-300'"
-      @click="!props.readonly ? triggerUpload : null"
+      :class="displayedPicture && pictureVisible? 'border border-gray-300' : ''"
+      @click="triggerUpload"
     >
       <!-- Image exists and loaded -->
       <img
-        v-if="pictureSrc && pictureVisible"
-        :src="pictureSrc"
+        v-if="displayedPicture && pictureVisible"
+        :src="displayedPicture"
         alt="Item Picture"
         class="w-full h-auto object-cover rounded-full transform scale-110 overflow-hidden"
         @error="onImageError"
       />
 
-      <div v-else class="w-full h-full flex justify-center items-center bg-gray-100"
-        :class="!props.readonly ? '' : 'bg-transparent'"
+      <div v-else class="w-full h-full flex justify-center items-center hover:bg-gray-100"
+        :class="!displayedPicture && props.readonly ? '' : 'bg-transparent'"
       >
         <span v-if="!props.readonly" class="text-sm">Upload</span>
       </div>
