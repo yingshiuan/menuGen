@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuPreview from '@/components/MenuPreview.vue'
 import GeneratePdf from '@/components/GeneratePdf.vue'
 import CsvUpload from '@/components/CsvUpload.vue'
 import FontSelector from '@/components/FontSelector.vue'
 import ColorPicker from '@/components/ColorPicker.vue'
+import MenuPage from '@/components/MenuPage.vue'
 
 type FontValue = 'sans-serif' | 'serif' | 'monospace' | "'Courier New', monospace" | "'Arial', sans-serif" | "'Times New Roman', serif"
 
@@ -19,6 +20,16 @@ interface MenuState {
   textColor: string
 }
 
+interface MeunPage {
+  currentPage: number
+  itemsPerPage: number
+}
+
+const menuPage = reactive<MeunPage>({
+  currentPage: 0,
+  itemsPerPage: 9,
+})
+
 // Create reactive state
 const state = reactive<MenuState>({
   menuCsv: [],
@@ -30,22 +41,35 @@ const state = reactive<MenuState>({
 
 const menuPreviewRef = ref<HTMLElement | null>(null)
 
+const totalPages = computed(() => Math.ceil(state.menuCsv.length / menuPage.itemsPerPage))
+
 function handleCsvLoaded(items: MenuItem[]) {
   state.menuCsv = items
+  menuPage.currentPage = 0
 }
 
 </script>
 
 <template>
   <div class="p-4">
-    <h1 class="text-2xl font-bold mb-2">Menu Builder (CSV to PDF)</h1>
-    <div class="flex flex-col md:flex-row gap-2">
+    <div class="flex mb-2">
+      <h1 class="w-1/2 text-2xl font-bold">Menu Builder (CSV to PDF)</h1>
+      <div class="w-1/2">
+        <MenuPage
+          v-if="state.menuCsv.length"
+          :current-page="menuPage.currentPage"
+          :total-pages="totalPages"
+          @update:page="menuPage.currentPage = $event"
+        />
+      </div>
+    </div>
+    <div class="flex gap-2">
       <!-- Left side: controls -->
-      <div class="flex-1 space-y-4">
+      <div class="w-1/2 space-y-4">
         <!-- Drag & Drop CSV and Generate PDF side by side -->
         <div class="flex gap-2">
-          <CsvUpload @csvLoaded="handleCsvLoaded" :items="state.menuCsv" class="flex-3" />
-          <GeneratePdf :contentRef="menuPreviewRef" class="flex-1" />
+          <CsvUpload @csvLoaded="handleCsvLoaded" :items="state.menuCsv" class="basis-3/4" />
+          <GeneratePdf :contentRef="menuPreviewRef" class="basis-1/4" />
         </div>
 
         <!-- Font selector and color pickers stacked below -->
@@ -55,7 +79,7 @@ function handleCsvLoaded(items: MenuItem[]) {
       </div>
 
       <!-- Right side: preview -->
-      <div class="flex-1">
+      <div class="w-1/2 flex justify-center items-center ">
         <div class="menu-preview-wrapper" ref="menuPreviewRef" v-if="state.menuCsv.length">
           <MenuPreview
             :items="state.menuCsv"
@@ -63,6 +87,8 @@ function handleCsvLoaded(items: MenuItem[]) {
             :bgColor="state.bgColor"
             :textColor="state.textColor"
             :readonly="state.pdfReadonly"
+            :current-page="menuPage.currentPage"
+            :items-per-page="menuPage.itemsPerPage"
           />
         </div>
         <div v-else class="a4-preview">

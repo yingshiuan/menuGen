@@ -267,7 +267,7 @@ watch(local, () => emit('update:item', local), { deep: true })
     </div>
 
     <!-- Other Options -->
-    <div class="flex-shrink-0 flex gap-1 flex-wrap items-center">
+    <div class="flex-shrink-0 flex gap-1 justify-start items-center">
       <img
         v-for="opt in displayedOtherOptions"
         :key="opt"

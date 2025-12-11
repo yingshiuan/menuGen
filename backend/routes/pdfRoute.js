@@ -107,7 +107,12 @@ router.post('/generate-pdf', async (req, res) => {
     const optimizedHtml = `
       <html>
         <head>
-          <style>${tailwindCSS}</style>
+          <style>${tailwindCSS}
+          .a4-preview {
+            width: 210mm;
+            height: 297mm;
+            }
+          </style>
         </head>
         <body>${document.body.innerHTML}</body>
       </html>

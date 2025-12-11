@@ -23,7 +23,8 @@ It supports:
 - [x] Pixel-perfect Puppeteer PDF generator  
 - [x] Inline editing UI (name, price, description, flags)  
 - [ ] Section grouping + manual ordering  
-- [ ] Multi-page layout rules (page breaks)  
+- [x] Multi-page layout rules (page breaks), Section grouping by 9 items
+- [ ] Multi-page layout rules and dynamic layout
 - [x] Upload image   
 - [ ] Drag-and-drop image/icon replacement  
 
