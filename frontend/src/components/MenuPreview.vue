@@ -1,10 +1,8 @@
 <script lang="ts" setup>
-import { computed, ref, reactive, watch } from 'vue'
+import { computed } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuItemComponent from './MenuItem.vue'
 
-
-// Props: receive already-parsed CSV data
 const props = defineProps<{
   items: MenuItem[]
   fontFamily?: string
@@ -14,9 +12,9 @@ const props = defineProps<{
 }>()
 
 const styleObject = computed(() => ({
-  fontFamily: props.fontFamily || 'sans-serif',
-  backgroundColor: props.bgColor || '#ffffff',
-  color: props.textColor || '#000000'
+  fontFamily: props.fontFamily ?? 'sans-serif',
+  backgroundColor: props.bgColor ?? '#ffffff',
+  color: props.textColor ?? '#000000'
 }))
 
 // Group items by category for both preview and PDF
@@ -31,13 +29,13 @@ const grouped = computed(() => {
 })
 
 // --- Add the split function here ---
-function splitItemsByPage(items: MenuItem[], maxItemsPerPage = 8): MenuItem[][] {
-  const pages: MenuItem[][] = []
-  for (let i = 0; i < items.length; i += maxItemsPerPage) {
-    pages.push(items.slice(i, i + maxItemsPerPage))
-  }
-  return pages
-}
+// function splitItemsByPage(items: MenuItem[], maxItemsPerPage = 8): MenuItem[][] {
+//   const pages: MenuItem[][] = []
+//   for (let i = 0; i < items.length; i += maxItemsPerPage) {
+//     pages.push(items.slice(i, i + maxItemsPerPage))
+//   }
+//   return pages
+// }
 
 
 </script> 

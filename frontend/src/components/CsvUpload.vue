@@ -1,17 +1,27 @@
 <script lang="ts" setup>
-import { ref, defineEmits } from 'vue'
+import { ref, reactive, defineEmits } from 'vue'
 import Papa from 'papaparse'
 import type { MenuItem, MenuOption } from '@/types/types'
 import { useMenuStore } from '@/stores/menu'
 
-const isDragging = ref(false)
-const fileInput = ref<HTMLInputElement | null>(null)
 
-const props = defineProps<{ items: MenuItem[] }>()
+const props = defineProps<{ 
+  items: MenuItem[]
+}>()
 
 const emit = defineEmits<{
   (e: 'csvLoaded', items: MenuItem[]): void
 }>()
+
+interface CsvState {
+  isDragging: boolean
+}
+
+const csvState = reactive<CsvState>({
+  isDragging: false,
+})
+
+const fileInput = ref<HTMLInputElement | null>(null) // DOM uses ref
 
 function getOptionsFromRow(row: Record<string, string>): MenuOption[] {
   const map: Record<string, MenuOption> = {
@@ -29,7 +39,7 @@ function getOptionsFromRow(row: Record<string, string>): MenuOption[] {
 
 function handleDrop(e: DragEvent) {
   e.preventDefault()
-  isDragging.value = false
+  csvState.isDragging = false
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
   parseCsvFile(file)
@@ -37,11 +47,11 @@ function handleDrop(e: DragEvent) {
 
 function handleDragOver(e: DragEvent) {
   e.preventDefault()
-  isDragging.value = true
+  csvState.isDragging = true
 }
 
 function handleDragLeave() {
-  isDragging.value = false
+  csvState.isDragging= false
 }
 
 function parseCsvFile(file: File) {
@@ -119,7 +129,7 @@ function downloadCSV() {
   <div class="flex gap-2">
     <div
       class="border-2 border-dashed rounded-lg p-1 cursor-pointer flex flex-col items-center justify-center gap-4 hover:bg-blue-500 transition-colors group"
-      :class="isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
+      :class="csvState.isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
       @dragover.prevent="handleDragOver"
       @dragleave="handleDragLeave"
       @drop.prevent="handleDrop"

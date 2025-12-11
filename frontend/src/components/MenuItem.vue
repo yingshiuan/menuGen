@@ -13,41 +13,27 @@ const props = defineProps<{
   readonly?: boolean // PDF/export mode
 }>()
 
-const emit = defineEmits(['update:item'])
+const emit = defineEmits<{
+  (e: 'update:item', item: MenuItem): void
+}>()
 
-// Local reactive copy to avoid mutating props
 const local = reactive({
   ...props.item,
   Options: props.item.Options ? [...props.item.Options] : [],
   pictureBase64: ''
 })
 
-// Refs
-const pictureVisible = ref(true)
-const fileInputRef = ref<HTMLInputElement | null>(null)
-const imageVersion = ref(0)
+interface PictureState{
+  visible: boolean
+  version: number
+}
 
-// Picture source computed
-// const pictureSrc = computed(() => {
-//   if (!local.No || !local.Name) return null
-//   const noPadded = local.No.toString().padStart(2, '0')
-//   return `/picture/${noPadded}_${local.Name}.png?v=${imageVersion.value}`
-// })
-
-
-const displayedPicture = computed(() => {
-  if (local.pictureBase64) return local.pictureBase64;
-  if (local.No && local.Name) {
-    const noPadded = local.No.toString().padStart(2, '0');
-    return `/picture/${noPadded}_${local.Name}.png?v=${imageVersion.value}`;
-  }
-  return null;
-});
-
-// Watch pictureSrc to reset visibility
-watch(displayedPicture, () => {
-  pictureVisible.value = true
+const pictureState = reactive<PictureState>({
+  visible: true,
+  version: 0,
 })
+
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 // Icon mapping
 const iconMap: Record<MenuOption, string> = {
@@ -58,52 +44,83 @@ const iconMap: Record<MenuOption, string> = {
   GlutenFree: GlutenFreeIcon
 }
 
+const allOptions = Object.keys(iconMap) as MenuOption[]
+const otherOptions = allOptions.filter(o => o !== 'Recommend')
+
+type Field = 'No' | 'Name' | 'ChineseName' | 'Description' | 'Price'
+
 // Editing state
-const editingField = reactive<{ [key: string]: boolean }>({
+const editingState = reactive<Record<Field, boolean>>({
   No: false,
   Name: false,
   ChineseName: false,
   Description: false,
-  Price: false
+  Price: false,
 })
 
 // Start/stop editing
-const startEditing = (field: string) => {
+function startEditing(field: Field) {
   if (props.readonly) return
-  editingField[field] = true
+  editingState[field] = true
+
   nextTick(() => {
-    const input = document.getElementById(field) as HTMLInputElement | null
-    input?.focus()
+    document.getElementById(field)?.focus()
   })
 }
-const stopEditing = (field: string) => {
-  editingField[field] = false
+
+function stopEditing(field: Field) {
+  editingState[field] = false
 }
+
 
 // Toggle Options
-const toggleRecommend = () => {
+function toggleOption(option: MenuOption) {
   if (props.readonly) return
-  if (local.Options.includes('Recommend')) local.Options = local.Options.filter(o => o !== 'Recommend')
-  else local.Options.push('Recommend')
+
+  const list = local.Options
+  const i = list.indexOf(option)
+
+  i >= 0 ? list.splice(i, 1) : list.push(option)
 }
 
-const otherOptions = computed(() => Object.keys(iconMap).filter(o => o !== 'Recommend') as MenuOption[])
-const toggleOption = (opt: MenuOption) => {
-  if (props.readonly) return
-  const index = local.Options.indexOf(opt)
-  if (index >= 0) local.Options.splice(index, 1)
-  else local.Options.push(opt)
+function toggleRecommend() {
+  toggleOption('Recommend')
 }
 
 // Display logic
-const displayedRecommend = computed(() => !props.readonly || local.Options.includes('Recommend'))
-const displayedOtherOptions = computed(() => otherOptions.value.filter(opt => !props.readonly || local.Options.includes(opt)))
+const displayedRecommend = computed(() =>
+  !props.readonly || local.Options.includes('Recommend')
+)
+
+const displayedOtherOptions = computed(() =>
+  otherOptions.filter(opt => !props.readonly || local.Options.includes(opt))
+)
+
+
+const displayedPicture = computed(() => {
+  if (local.pictureBase64) return local.pictureBase64;
+  if (local.No && local.Name) {
+    const noPadded = local.No.toString().padStart(2, '0');
+    return `/picture/${noPadded}_${local.Name}.png?v=${pictureState.version}`;
+  }
+  return null;
+});
+
+watch(displayedPicture, () => {
+  pictureState.visible = true
+})
+
 
 // Image upload
-const triggerUpload = () => {
-  fileInputRef.value?.click();
-};
-const onImageError = () => pictureVisible.value = false
+function triggerUpload() {
+  if (props.readonly) return
+  fileInputRef.value?.click()
+}
+
+function onImageError() {
+  pictureState.visible = false
+}
+
 
 // async function uploadPicture(event: Event){
 //   const file = (event.target as HTMLInputElement).files?.[0]
@@ -161,9 +178,8 @@ async function uploadPicture(event: Event) {
 
   const reader = new FileReader();
   reader.onload = () => {
-    // Store Base64 image directly in your local state
     local.pictureBase64 = reader.result as string;
-    imageVersion.value += 1; // trigger re-render
+    pictureState.version += 1;
   };
   reader.readAsDataURL(file);
 }
@@ -176,7 +192,6 @@ watch(local, () => emit('update:item', local), { deep: true })
 <template>
 <div class="my-3">
   <div class="flex items-start gap-2 font-bold text-sm">
-
     <!-- Recommend Icon -->
     <div class="flex-shrink-0 w-4 flex justify-center items-center">
       <img
@@ -196,7 +211,7 @@ watch(local, () => emit('update:item', local), { deep: true })
 
     <!-- No -->
     <div class="flex-shrink-0 w-8 text-right">
-      <span v-if="!editingField.No" @click="startEditing('No')">{{ local.No || "-" }}</span>
+      <span v-if="!editingState.No" @click="startEditing('No')">{{ local.No || "-" }}</span>
       <input
         v-else
         id="No"
@@ -212,7 +227,7 @@ watch(local, () => emit('update:item', local), { deep: true })
     <!-- Name & Chinese Name -->
     <div class="flex-grow flex flex-col">
       <div>
-        <span v-if="!editingField.Name" @click="startEditing('Name')">{{ local.Name }}</span>
+        <span v-if="!editingState.Name" @click="startEditing('Name')">{{ local.Name }}</span>
         <input
           v-else
           id="Name"
@@ -224,7 +239,7 @@ watch(local, () => emit('update:item', local), { deep: true })
         />
         <span v-if="local.ChineseName" class="font-light">
           / 
-          <span v-if="!editingField.ChineseName" @click="startEditing('ChineseName')">{{ local.ChineseName }}</span>
+          <span v-if="!editingState.ChineseName" @click="startEditing('ChineseName')">{{ local.ChineseName }}</span>
           <input
             v-else
             id="ChineseName"
@@ -239,7 +254,7 @@ watch(local, () => emit('update:item', local), { deep: true })
 
       <!-- Description -->
       <div class="font-extralight text-gray-700 mt-1">
-        <span v-if="!editingField.Description" @click="startEditing('Description')">{{ local.Description }}</span>
+        <span v-if="!editingState.Description" @click="startEditing('Description')">{{ local.Description }}</span>
         <textarea
           v-else
           id="Description"
@@ -271,7 +286,7 @@ watch(local, () => emit('update:item', local), { deep: true })
 
     <!-- Price -->
     <div class="w-12 text-right">
-      <span v-if="!editingField.Price" @click="startEditing('Price')">{{ local.Price}}</span>
+      <span v-if="!editingState.Price" @click="startEditing('Price')">{{ local.Price}}</span>
       <input
         v-else
         id="Price"
@@ -287,12 +302,12 @@ watch(local, () => emit('update:item', local), { deep: true })
     <div 
       v-if=" displayedPicture || !props.readonly"
       class="flex-shrink-0 w-24 h-24 flex justify-center items-center relative rounded-full overflow-hidden cursor-pointer"
-      :class="displayedPicture && pictureVisible? 'border border-gray-300' : ''"
+      :class="displayedPicture && pictureState.visible? 'border border-gray-300' : ''"
       @click="triggerUpload"
     >
       <!-- Image exists and loaded -->
       <img
-        v-if="displayedPicture && pictureVisible"
+        v-if="displayedPicture && pictureState.visible"
         :src="displayedPicture"
         alt="Item Picture"
         class="w-full h-auto object-cover rounded-full transform scale-110 overflow-hidden"

@@ -1,28 +1,32 @@
 <script lang="ts" setup>
-import { defineProps } from 'vue'
-import { nextTick, ref } from 'vue'
+import { defineProps, reactive, nextTick } from 'vue'
 
-interface Props {
+const props = defineProps<{
   contentRef: HTMLElement | null
-}
+}>();
 
-const uploading = ref(false);
+interface PdfState {
+  uploading: boolean
+  readonly: boolean
+} 
 
-const props = defineProps<Props>()
-const pdfReadonly = ref(false)
+const pdfState = reactive<PdfState>({
+  uploading: false,
+  readonly: false
+})
 
-const generatePDF = async (): Promise<void> => {
+async function generatePDF(): Promise<void> {
   const element = props.contentRef
   if (!element) {
     alert('No content to export')
     return
   }
   
-  pdfReadonly.value = true
-  uploading.value = true;
+  pdfState.readonly = true
+  pdfState.uploading = true;
   await nextTick()
   
-  // only html content without <haed>
+  // only html content without <head>
   const htmlContent = `
         ${element.innerHTML}
   `;
@@ -54,8 +58,8 @@ const generatePDF = async (): Promise<void> => {
     console.error("Error generating PDF:", err);
     alert("An error occurred while generating PDF");
   } finally {
-    pdfReadonly.value = false
-    uploading.value = false
+    pdfState.readonly = false
+    pdfState.uploading = false
   }
 };
 </script>
@@ -67,12 +71,12 @@ const generatePDF = async (): Promise<void> => {
     <!-- Generate PDF Button -->
     <button
       @click="generatePDF"
-      :disabled="uploading"
+      :disabled="pdfState.uploading"
       class="relative flex items-center gap-2 p-2 bg-blue-500 text-white rounded-lg 
             hover:bg-blue-700 border-2 border-blue-500 transition-colors duration-200 
             shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
     >
-      <span v-if="!uploading">Generate PDF</span>
+      <span v-if="!pdfState.uploading">Generate PDF</span>
 
       <span v-else class="flex items-center gap-2">
          Exporting...<span class="loader"></span>

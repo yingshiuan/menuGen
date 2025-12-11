@@ -1,20 +1,16 @@
 <script lang="ts" setup>
-import { ref, defineEmits } from 'vue'
+import { ref, defineEmits, watch } from 'vue'
 
-// Emit selected font to parent
 const emit = defineEmits<{
   (e: 'update:font', font: string): void
 }>()
 
-const selectedFont = ref('sans-serif')
-
-// Emit whenever the font changes
-function handleChange() {
-  emit('update:font', selectedFont.value)
+interface FontOption {
+  label: string
+  value: string
 }
 
-// List of fonts with label and value
-const fonts = [
+const fonts: FontOption[] = [
   { label: 'Sans Serif', value: 'sans-serif' },
   { label: 'Serif', value: 'serif' },
   { label: 'Monospace', value: 'monospace' },
@@ -22,6 +18,11 @@ const fonts = [
   { label: 'Arial', value: "'Arial', sans-serif" },
   { label: 'Times New Roman', value: "'Times New Roman', serif" },
 ]
+
+const selectedFont = ref<string>(fonts[0]?.value || 'sans-serif')
+
+watch(selectedFont, (newFont) => emit('update:font', newFont))
+
 </script>
 
 <template>
@@ -30,7 +31,6 @@ const fonts = [
     <select
       id="fontSelect"
       v-model="selectedFont"
-      @change="handleChange"
       class="border px-2 py-1 rounded"
       :style="{ fontFamily: selectedFont }"
     >
