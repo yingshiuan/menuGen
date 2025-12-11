@@ -102,20 +102,50 @@ function escapeCSVField(value: string) {
 function downloadCSV() {
   if (!props.items?.length) return alert('No data to export')
 
-  const csv = props.items.map((item) =>
-    [
-      escapeCSVField(item.No ?? '-'),
+  const header = [
+    'No.',
+    'Price',
+    'Name',
+    'Chinese Name',
+    'Description',
+    'Recommend',
+    'Spicy',
+    'Vegan',
+    'Vegetarian',
+    'GlutenFree'
+  ].join('\t') // tab-separated
+
+  const lines: string[] = []
+  let currentCategory = ''
+
+  props.items.forEach(item => {
+    // Insert category row if it's new
+    if (item.Category && item.Category !== currentCategory) {
+      currentCategory = item.Category
+      lines.push([
+        '', '', currentCategory, '', '', '', '', '', '', ''
+      ].join('\t'))
+    }
+
+    const optionCols = [
+      item.Options!.includes('Recommend') ? 'X' : '',
+      item.Options!.includes('Spicy') ? 'X' : '',
+      item.Options!.includes('Vegan') ? 'X' : '',
+      item.Options!.includes('Vegetarian') ? 'X' : '',
+      item.Options!.includes('GlutenFree') ? 'X' : ''
+    ]
+
+    lines.push([
+      escapeCSVField(item.No ?? ''),
+      escapeCSVField(item.Price ?? ''),
       escapeCSVField(item.Name ?? ''),
       escapeCSVField(item.ChineseName ?? ''),
       escapeCSVField(item.Description ?? ''),
-      escapeCSVField(item.Price ?? ''),
-      escapeCSVField(item.Options?.join('|') ?? ''),
-      escapeCSVField(item.Category ?? ''),
-    ].join(','),
-  )
+      ...optionCols
+    ].join('\t'))
+  })
 
-  const header = 'No,Name,ChineseName,Description,Price,Options,Category'
-  const blob = new Blob([header + '\n' + csv.join('\n')], { type: 'text/csv' })
+  const blob = new Blob([header + '\n' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url

@@ -197,7 +197,7 @@ watch(local, () => emit('update:item', local), { deep: true })
       <img
         v-if="displayedRecommend"
         :src="iconMap['Recommend']"
-        class="w-4 h-4 cursor-pointer"
+        class="w-4 h-4 cursor-pointer hover:opacity-100"
         :class="{
           'opacity-100': local.Options.includes('Recommend'),
           'opacity-30': !local.Options.includes('Recommend'),
@@ -211,7 +211,7 @@ watch(local, () => emit('update:item', local), { deep: true })
 
     <!-- No -->
     <div class="flex-shrink-0 w-8 text-right">
-      <span v-if="!editingState.No" @click="startEditing('No')">{{ local.No || "-" }}</span>
+      <span v-if="!editingState.No" @click="startEditing('No')" :title="`Click to edit the Number...`">{{ local.No || "-" }}</span>
       <input
         v-else
         id="No"
@@ -227,7 +227,7 @@ watch(local, () => emit('update:item', local), { deep: true })
     <!-- Name & Chinese Name -->
     <div class="flex-grow flex flex-col">
       <div>
-        <span v-if="!editingState.Name" @click="startEditing('Name')">{{ local.Name }}</span>
+        <span v-if="!editingState.Name" @click="startEditing('Name')" :title="`Click to edit the Name...`">{{ local.Name }}</span>
         <input
           v-else
           id="Name"
@@ -239,7 +239,7 @@ watch(local, () => emit('update:item', local), { deep: true })
         />
         <span v-if="local.ChineseName" class="font-light">
           / 
-          <span v-if="!editingState.ChineseName" @click="startEditing('ChineseName')">{{ local.ChineseName }}</span>
+          <span v-if="!editingState.ChineseName" @click="startEditing('ChineseName')" :title="`Click to edit the ChineseName...`">{{ local.ChineseName }}</span>
           <input
             v-else
             id="ChineseName"
@@ -254,7 +254,7 @@ watch(local, () => emit('update:item', local), { deep: true })
 
       <!-- Description -->
       <div class="font-extralight text-gray-700 mt-1">
-        <span v-if="!editingState.Description" @click="startEditing('Description')">{{ local.Description }}</span>
+        <span v-if="!editingState.Description" @click="startEditing('Description')" :title="`Click to edit the Description...`">{{ local.Description }}</span>
         <textarea
           v-else
           id="Description"
@@ -272,7 +272,7 @@ watch(local, () => emit('update:item', local), { deep: true })
         v-for="opt in displayedOtherOptions"
         :key="opt"
         :src="iconMap[opt]"
-        class="w-4 h-4 cursor-pointer"
+        class="w-4 h-4 cursor-pointer hover:opacity-100"
         :class="{
           'opacity-100': local.Options.includes(opt as MenuOption),
           'opacity-30': !local.Options.includes(opt as MenuOption),
@@ -286,7 +286,7 @@ watch(local, () => emit('update:item', local), { deep: true })
 
     <!-- Price -->
     <div class="w-12 text-right">
-      <span v-if="!editingState.Price" @click="startEditing('Price')">{{ local.Price}}</span>
+      <span v-if="!editingState.Price" @click="startEditing('Price')" :title="`Click to edit the Price...`">{{ local.Price}}</span>
       <input
         v-else
         id="Price"
@@ -314,10 +314,10 @@ watch(local, () => emit('update:item', local), { deep: true })
         @error="onImageError"
       />
 
-      <div v-else class="w-full h-full flex justify-center items-center hover:bg-gray-100"
+      <div v-else class="w-full h-full flex justify-center items-center opacity-30 hover:bg-gray-100 hover:text-gray-600 hover:opacity-100"
         :class="!displayedPicture && props.readonly ? '' : 'bg-transparent'"
       >
-        <span v-if="!props.readonly" class="text-sm">Upload</span>
+        <span v-if="!props.readonly" class="text-sm" :title="`Click to upload the Picture...`">Upload</span>
       </div>
 
       <input

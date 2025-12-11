@@ -11,7 +11,8 @@ export const useMenuStore = defineStore('menu', {
       const rows = text.split('\n').map(r => r.trim()).filter(r => r.length > 0)
       if (!rows.length) return
 
-      const header = rows[0].split(',') 
+      const [header, ...dataRows] = rows
+      if (!header) return
 
       this.items = rows.slice(1).map(row => {
         const columns = row.split(',')
@@ -29,21 +30,56 @@ export const useMenuStore = defineStore('menu', {
     },
 
     exportToCSV() {
-      const header = 'No,Name,ChineseName,Description,Price,Options,Category'
+  const header = [
+    'No.',
+    'Price',
+    'Name',
+    'Chinese Name',
+    'Description',
+    'Recommend',
+    'Spicy',
+    'Vegan',
+    'Vegetarian',
+    'GlutenFree'
+  ].join('\t')
 
-      const lines = this.items.map(item =>
-        [
-          item.No,
-          item.Name,
-          item.ChineseName,
-          item.Description ?? '',
-          item.Price,
-          item.Options?.join('|') ?? '',
-          item.Category
-        ].join(',')
-      )
+  const lines: string[] = []
+  let currentCategory = ''
 
-      return [header, ...lines].join('\n')
+  this.items.forEach(item => {
+    // Insert category row if it's new
+    if (item.Category && item.Category !== currentCategory) {
+      currentCategory = item.Category
+      lines.push([
+        '', // No.
+        '', // Price
+        currentCategory, // Name = category
+        '', // Chinese Name
+        '', // Description
+        '', '', '', '', '' // Options columns
+      ].join('\t'))
     }
+
+    const optionCols = [
+      item.Options!.includes('Recommend') ? 'X' : '',
+      item.Options!.includes('Spicy') ? 'X' : '',
+      item.Options!.includes('Vegan') ? 'X' : '',
+      item.Options!.includes('Vegetarian') ? 'X' : '',
+      item.Options!.includes('GlutenFree') ? 'X' : ''
+    ]
+
+    lines.push([
+      item.No,
+      item.Price,
+      item.Name,
+      item.ChineseName,
+      item.Description ?? '',
+      ...optionCols
+    ].join('\t'))
+  })
+
+  return [header, ...lines].join('\n')
+}
+
   }
 })
