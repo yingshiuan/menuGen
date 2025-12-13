@@ -27,6 +27,7 @@ It supports:
 - [ ] Multi-page layout rules and dynamic layout
 - [x] Upload image   
 - [ ] Drag-and-drop image/icon replacement  
+- [x] Export Multi-page pdf  
 
 ### UI Improvements
 - [ ] Dark/Light theme toggle  
