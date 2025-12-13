@@ -81,6 +81,7 @@ const generatePDF = async (): Promise<void> => {
 * The PDF backend expects **raw HTML strings**, not Vue component objects.
 * Tailwind CSS classes in the HTML must exist in your compiled `tailwind.css`; otherwise, the PDF will render unstyled.
 * You can **edit `htmlContent` dynamically** to generate PDFs with different content.
+* Use **inline styles** to control the PDF dimensions, as Tailwind CSS size classes are not applied during PDF generation.
 
 ---
 
