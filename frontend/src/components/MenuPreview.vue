@@ -1,7 +1,9 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuItemComponent from './MenuItem.vue'
+import LogoUpload from '@/components/uploadLogo.vue'
+import Info from '@/components/MeunInfo.vue'
 
 const props = defineProps<{
   items: MenuItem[]
@@ -11,12 +13,15 @@ const props = defineProps<{
   readonly?: boolean
   currentPage: number
   itemsPerPage: number
+  defaultSrc?: string
 }>()
+
+const logoBase64 = ref<string | null>(null)
 
 const styleObject = computed(() => ({
   fontFamily: props.fontFamily ?? 'sans-serif',
   backgroundColor: props.bgColor ?? '#ffffff',
-  color: props.textColor ?? '#000000'
+  color: props.textColor ?? '#000000',
 }))
 
 interface PageEntry {
@@ -26,7 +31,7 @@ interface PageEntry {
 
 const pages = computed<PageEntry[][]>(() => {
   const grouped: Record<string, MenuItem[]> = {}
-  props.items.forEach(item => {
+  props.items.forEach((item) => {
     const cat = item.Category || 'Uncategorized'
     if (!grouped[cat]) grouped[cat] = []
     grouped[cat].push(item)
@@ -36,7 +41,7 @@ const pages = computed<PageEntry[][]>(() => {
   let currentPage: PageEntry[] = []
 
   for (const [category, items] of Object.entries(grouped)) {
-    items.forEach(item => {
+    items.forEach((item) => {
       // Start a new page if current is full
       if (currentPage.length >= props.itemsPerPage) {
         result.push(currentPage)
@@ -50,11 +55,10 @@ const pages = computed<PageEntry[][]>(() => {
   return result
 })
 
-
 const totalPages = computed(() => pages.value.length)
 
 const clampedPage = computed(() =>
-  Math.min(Math.max(props.currentPage, 0), Math.max(totalPages.value - 1, 0))
+  Math.min(Math.max(props.currentPage, 0), Math.max(totalPages.value - 1, 0)),
 )
 
 const pageItems = computed(() => pages.value[clampedPage.value] ?? [])
@@ -68,26 +72,53 @@ function shouldShowCategoryHeader(index: number) {
 </script>
 
 <template>
-  <div class="a4-preview mx-auto border shadow-lg p-6" :style="styleObject">
-    <div v-for="(entry, index) in pageItems" :key="`${clampedPage}-${entry.category}-${entry.item.No}`">
-      <h2 v-if="shouldShowCategoryHeader(index)" class="text-xl font-bold pb-1 mb-2 border-b-1">
-        {{ entry.category }}
-      </h2>
-      <MenuItemComponent 
-        :item="entry.item" 
-        :readonly="readonly" 
-        @update:item="updated => Object.assign(entry.item, updated)"
+  <div class="a4-preview p-6 flex flex-col relative" :style="styleObject" style="width:210mm; height:297mm;">
+    <!-- Flex Container for Vertical Layout -->
+    <!-- <div class="flex flex-col justify-between h-full"> -->
+
+    <!-- Logo Section -->
+    <div class="flex items-start justify-end">
+      <LogoUpload
+        :default-src="logoBase64 || undefined"
+        :readonly="readonly"
+        @update:logo="(base64: string) => (logoBase64 = base64)"
       />
     </div>
+
+    <!-- Menu Items Section -->
+    <div
+      v-for="(entry, index) in pageItems"
+      :key="`${clampedPage}-${entry.category}-${entry.item.No}`"
+      class="flex-1"
+    >
+      <h2 v-if="shouldShowCategoryHeader(index)" class="text-xl font-bold mb-2 border-b-1">
+        {{ entry.category }}
+      </h2>
+      <MenuItemComponent
+        :item="entry.item"
+        :readonly="readonly"
+        @update:item="(updated) => Object.assign(entry.item, updated)"
+      />
+    </div>
+    <!-- absolute didn't work-->
+    <!-- <div class="mt-auto">
+      <Info :readonly="readonly" show-all />
+    </div> -->
+
+    <!-- Footer Section (Info Component) -->
+    <div class="absolute bottom-0 left-0 w-full p-6">
+        <Info :readonly="readonly" show-all />
+      </div>
   </div>
+  <!-- </div> -->
 </template>
 
-<style scoped>
+<style>
 .a4-preview {
   width: 210mm;
-  height: 297mm;
+  min-height: 297mm;
   /* border: 1px solid #ccc; */
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  /* box-shadow: 0 0 10px rgba(0,0,0,0.2); */
 }
 
 @media screen {
@@ -99,6 +130,8 @@ function shouldShowCategoryHeader(index: number) {
 
 @media print {
   .a4-preview {
+    width: 210mm;
+    min-height: 297mm;
     transform: none !important;
   }
 }

@@ -267,7 +267,7 @@ watch(local, () => emit('update:item', local), { deep: true })
     </div>
 
     <!-- Other Options -->
-    <div class="flex-shrink-0 flex gap-1 justify-start items-center">
+    <div class="shrink-0 flex gap-1 justify-start items-center">
       <img
         v-for="opt in displayedOtherOptions"
         :key="opt"
@@ -299,22 +299,24 @@ watch(local, () => emit('update:item', local), { deep: true })
     </div>
 
     <!-- Picture -->
+    <!-- min-w and min-h need to change by the w-20 and h-20-->
     <div 
       v-if=" displayedPicture || !props.readonly"
-      class="flex-shrink-0 w-24 h-24 flex justify-center items-center relative rounded-full overflow-hidden cursor-pointer"
+      class="shrink-0 w-20 h-20 flex justify-center items-center relative rounded-full overflow-hidden cursor-pointer"
       :class="displayedPicture && pictureState.visible? 'border border-gray-300' : ''"
       @click="triggerUpload"
+      style="min-width: 5rem; min-height: 5rem;"
     >
       <!-- Image exists and loaded -->
       <img
         v-if="displayedPicture && pictureState.visible"
         :src="displayedPicture"
         alt="Item Picture"
-        class="w-full h-auto object-cover rounded-full transform scale-110 overflow-hidden"
+        class="w-full h-full object-cover rounded-full transform scale-110 overflow-hidden"
         @error="onImageError"
       />
 
-      <div v-else class="w-full h-full flex justify-center items-center opacity-30 hover:bg-gray-100 hover:text-gray-600 hover:opacity-100"
+      <div v-else class="w-full h-full flex justify-center items-center opacity-30 hover:bg-gray-100 hover:text-gray-600 hover:opacity-100 rounded-full"
         :class="!displayedPicture && props.readonly ? '' : 'bg-transparent'"
       >
         <span v-if="!props.readonly" class="text-sm" :title="`Click to upload the Picture...`">Upload</span>

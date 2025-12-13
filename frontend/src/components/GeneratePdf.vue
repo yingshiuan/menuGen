@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { defineProps, reactive, nextTick } from 'vue'
+import { defineProps, reactive, nextTick, ref } from 'vue'
 
 const props = defineProps<{
   contentRef: HTMLElement | null
@@ -15,6 +15,8 @@ const pdfState = reactive<PdfState>({
   readonly: false
 })
 
+// const htmlPreview = ref<string>("");
+
 async function generatePDF(): Promise<void> {
   const element = props.contentRef
   if (!element) {
@@ -26,11 +28,15 @@ async function generatePDF(): Promise<void> {
   pdfState.uploading = true;
   await nextTick()
   
+  await new Promise(resolve => setTimeout(resolve, 50));
+
   // only html content without <head>
   const htmlContent = `
         ${element.innerHTML}
   `;
 
+  //  htmlPreview.value = htmlContent;
+   
   try {
     const response: Response = await fetch("http://localhost:3000/generate-pdf", {
       method: "POST",
@@ -82,9 +88,13 @@ async function generatePDF(): Promise<void> {
          Exporting...<span class="loader"></span>
       </span>
     </button>
-
-    
   </div>
+
+  <!-- Preview of the generated HTML content -->
+  <!-- <div v-if="htmlPreview" class="mt-4 p-4 border rounded-md shadow-md">
+    <h3 class="text-lg font-bold mb-2">HTML Content Preview:</h3>
+    <div v-html="htmlPreview" class="preview-container" />
+  </div> -->
 </template>
 
 <style>

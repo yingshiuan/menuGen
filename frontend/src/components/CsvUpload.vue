@@ -22,6 +22,7 @@ const csvState = reactive<CsvState>({
 })
 
 const fileInput = ref<HTMLInputElement | null>(null) // DOM uses ref
+const menuStore = useMenuStore()
 
 function getOptionsFromRow(row: Record<string, string>): MenuOption[] {
   const map: Record<string, MenuOption> = {
@@ -88,8 +89,6 @@ function handleFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (file) parseCsvFile(file)
 }
-
-const menuStore = useMenuStore()
 
 function escapeCSVField(value: string) {
   // wrap in quotes if it contains a comma or quote

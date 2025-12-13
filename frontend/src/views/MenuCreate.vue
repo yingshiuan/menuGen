@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, watch } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuPreview from '@/components/MenuPreview.vue'
 import GeneratePdf from '@/components/GeneratePdf.vue'
@@ -40,6 +40,9 @@ const state = reactive<MenuState>({
 })
 
 const menuPreviewRef = ref<HTMLElement | null>(null)
+const pdfRenderRef = ref<HTMLElement | null>(null)
+
+const pdfRenderKey = ref(0);
 
 const totalPages = computed(() => Math.ceil(state.menuCsv.length / menuPage.itemsPerPage))
 
@@ -47,6 +50,26 @@ function handleCsvLoaded(items: MenuItem[]) {
   state.menuCsv = items
   menuPage.currentPage = 0
 }
+
+// function refreshPdfContent() {
+//   if (!menuPreviewRef.value || !pdfRenderRef.value) return;
+
+//   pdfRenderRef.value.innerHTML = '';
+
+//   const clone = menuPreviewRef.value.cloneNode(true) as HTMLElement;
+
+//   pdfRenderRef.value.appendChild(clone);
+// }
+
+
+// watch(
+//   state.menuCsv,
+//   () => {
+//     pdfRenderKey.value++; // trigger PDF ref re-render
+//   },
+//   { deep: true }
+// );
+
 
 </script>
 
@@ -69,7 +92,7 @@ function handleCsvLoaded(items: MenuItem[]) {
         <!-- Drag & Drop CSV and Generate PDF side by side -->
         <div class="flex gap-2">
           <CsvUpload @csvLoaded="handleCsvLoaded" :items="state.menuCsv" class="basis-3/4" />
-          <GeneratePdf :contentRef="menuPreviewRef" class="basis-1/4" />
+          <GeneratePdf :contentRef="pdfRenderRef" class="basis-1/4" />
         </div>
 
         <!-- Font selector and color pickers stacked below -->
@@ -80,7 +103,7 @@ function handleCsvLoaded(items: MenuItem[]) {
 
       <!-- Right side: preview -->
       <div class="w-1/2 flex justify-center items-center ">
-        <div class="menu-preview-wrapper" ref="menuPreviewRef" v-if="state.menuCsv.length">
+        <div class="menu-preview-wrapper" ref="menuPreviewRef" v-if="state.menuCsv.length" >
           <MenuPreview
             :items="state.menuCsv"
             :fontFamily="state.selectedFont"
@@ -89,12 +112,32 @@ function handleCsvLoaded(items: MenuItem[]) {
             :readonly="state.pdfReadonly"
             :current-page="menuPage.currentPage"
             :items-per-page="menuPage.itemsPerPage"
-          />
+          class="relative flex-1"
+           />
         </div>
-        <div v-else class="a4-preview">
+        <div v-else class="a4-preview ">
           <p class="text-gray-400 text-center text-2xl">
             No menu data loaded. Please upload a CSV file.
           </p>
+        </div>
+      </div>
+      <div style="display:none">
+        <div ref="pdfRenderRef" :key="pdfRenderKey">
+          <div
+            v-for="page in totalPages"
+            :key="page"
+            class="pdf-page"
+          >
+            <MenuPreview
+              :items="state.menuCsv"
+              :fontFamily="state.selectedFont"
+              :bgColor="state.bgColor"
+              :textColor="state.textColor"
+              :readonly="state.pdfReadonly"
+              :current-page="page - 1"
+              :items-per-page="menuPage.itemsPerPage"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -104,9 +147,9 @@ function handleCsvLoaded(items: MenuItem[]) {
 <style>
 .a4-preview {
   width: 210mm; /* A4 width */
-  height: 297mm; /* A4 height */
+  min-height: 297mm; /* A4 height */
   border: 1px solid #ccc;
-  padding: 2rem;
+  /* padding: 2rem; */
   box-sizing: border-box;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
