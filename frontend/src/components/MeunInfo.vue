@@ -45,7 +45,7 @@ function toggle(option: MenuOption) {
 }
 
 // Editable info text
-const infoText = ref('Alle Preise sind in CHF, inkl. MWST')
+const infoText = ref('All prices are in CHF, including VAT')
 watch(infoText, (val) => emit('update:text', val))
 
 // Editing state for infoText
@@ -66,7 +66,7 @@ function stopEditingInfo() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 w-full">
+  <div class="flex flex-col w-full text-xs">
     <!-- ICON + INFO ROW -->
     <div class="flex justify-between items-center w-full">
       <!-- ICONS -->
@@ -83,12 +83,12 @@ function stopEditingInfo() {
             @click="toggle(opt)"
             :title="opt"
           />
-          <span class="text-sm">{{ opt }}</span>
+          <span>{{ opt }}</span>
         </div>
       </div>
 
       <!-- INFO TEXT -->
-      <div class="text-sm flex justify-end flex-grow">
+      <div class="flex justify-end flex-grow">
         <!-- readonly or not editing -->
         <span
           v-if="props.readonly || !editingInfo"
@@ -104,7 +104,7 @@ function stopEditingInfo() {
           id="infoText"
           v-model="infoText"
           rows="1"
-          class="text-sm border w-full max-w-xs whitespace-nowrap"
+          class="text-xs border w-full max-w-xs whitespace-nowrap"
           @blur="stopEditingInfo"
           @keyup.enter="stopEditingInfo"
         ></textarea>

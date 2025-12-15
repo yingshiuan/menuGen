@@ -97,6 +97,7 @@ function shouldShowCategoryHeader(index: number) {
       <MenuItemComponent
         :item="entry.item"
         :readonly="readonly"
+        :text-color="props.textColor"
         @update:item="(updated) => Object.assign(entry.item, updated)"
       />
     </div>

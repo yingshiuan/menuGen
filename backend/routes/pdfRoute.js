@@ -99,10 +99,11 @@ router.post('/generate-pdf', async (req, res) => {
 
     // Remove circles with empty <img> after conversion
     document.querySelectorAll('span').forEach((span) => {
-      if (span.textContent?.trim() === 'Upload') {
-        span.remove()
+      const text = span.textContent?.trim();
+      if (text === 'Click to add description' || text === 'Upload') {
+        span.remove();
       }
-    })
+    });
 
     const optimizedHtml = `
       <html>

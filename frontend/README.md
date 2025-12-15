@@ -71,6 +71,8 @@ npm install
 
 The backend loads **your compiled Tailwind from `public/css/tailwind.css`**.
 
+**Whenever new TailwindCSS classes are added to the layout, you need to rebuild the CSS.**
+
 Build it with:
 
 ```bash

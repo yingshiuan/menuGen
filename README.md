@@ -21,7 +21,7 @@ It supports:
 - [x] Tailwind-based Live Preview  
 - [x] Image + SVG auto compression on backend  
 - [x] Pixel-perfect Puppeteer PDF generator  
-- [x] Inline editing UI (name, price, description, flags)  
+- [x] Inline editing UI (name, price, description, options, picture)  
 - [ ] Section grouping + manual ordering  
 - [x] Multi-page layout rules (page breaks), Section grouping by 9 items
 - [ ] Multi-page layout rules and dynamic layout
@@ -31,7 +31,8 @@ It supports:
 
 ### UI Improvements
 - [ ] Dark/Light theme toggle  
-- [x] Custom font selection  
+- [x] 6 fonts selection  
+- [ ] Custom font selection  
 - [ ] Auto-fit long descriptions  
 - [ ] Category templates (e.g., Drinks, Starters, Specials)
 
@@ -134,6 +135,8 @@ npm install
 ```
 
 ### Build Tailwind CSS v4:
+
+**Whenever new TailwindCSS classes are added to the layout, you need to rebuild the CSS.**
 
 ```bash
 npx @tailwindcss/cli \

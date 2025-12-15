@@ -6,6 +6,7 @@ export interface MenuItem {
   Name: string;
   ChineseName: string;
   Description?: string;
-  Options?: MenuOption[]; 
+  Options: MenuOption[]; 
   Category: string;
+  pictureBase64?: string | null
 }

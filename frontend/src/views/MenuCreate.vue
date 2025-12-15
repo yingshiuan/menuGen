@@ -51,16 +51,6 @@ function handleCsvLoaded(items: MenuItem[]) {
   menuPage.currentPage = 0
 }
 
-// function refreshPdfContent() {
-//   if (!menuPreviewRef.value || !pdfRenderRef.value) return;
-
-//   pdfRenderRef.value.innerHTML = '';
-
-//   const clone = menuPreviewRef.value.cloneNode(true) as HTMLElement;
-
-//   pdfRenderRef.value.appendChild(clone);
-// }
-
 
 // watch(
 //   state.menuCsv,
@@ -70,6 +60,23 @@ function handleCsvLoaded(items: MenuItem[]) {
 //   { deep: true }
 // );
 
+// watch each items deeply
+watch(
+  () =>
+    state.menuCsv.map(item => ({
+      No: item.No,
+      Name: item.Name,
+      ChineseName: item.ChineseName,
+      Description: item.Description,
+      Price: item.Price,
+      Options: [...item.Options],
+      pictureBase64: item.pictureBase64
+    })),
+  () => {
+    pdfRenderKey.value++
+  },
+  { deep: true }
+)
 
 </script>
 
