@@ -42,7 +42,7 @@ const iconMap: Record<MenuOption, string> = {
   Spicy: SpicyIcon,
   Vegan: VeganIcon,
   Vegetarian: VegetarianIcon,
-  GlutenFree: GlutenFreeIcon,
+  'Gluten Free': GlutenFreeIcon,
 }
 
 const allOptions = Object.keys(iconMap) as MenuOption[]
@@ -292,7 +292,7 @@ watch(local, () => emit('update:item', local), { deep: true })
             v-else-if="!props.readonly && !local.Description && !editingState.Description"
             @click="startEditing('Description')"
             title="Click to add description..."
-            style="opacity: 0.3; cursor: pointer"
+            class="opacity-30 cursor-pointer"
           >
             Click to add description
           </span>

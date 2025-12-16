@@ -4,8 +4,7 @@ import Papa from 'papaparse'
 import type { MenuItem, MenuOption } from '@/types/types'
 import { useMenuStore } from '@/stores/menu'
 
-
-const props = defineProps<{ 
+const props = defineProps<{
   items: MenuItem[]
 }>()
 
@@ -22,6 +21,7 @@ const csvState = reactive<CsvState>({
 })
 
 const fileInput = ref<HTMLInputElement | null>(null) // DOM uses ref
+const fileName = ref<string | null>(null)
 const menuStore = useMenuStore()
 
 function getOptionsFromRow(row: Record<string, string>): MenuOption[] {
@@ -30,7 +30,7 @@ function getOptionsFromRow(row: Record<string, string>): MenuOption[] {
     Spicy: 'Spicy',
     Vegan: 'Vegan',
     Vegetarian: 'Vegetarian',
-    GlutenFree: 'GlutenFree',
+    'Gluten Free': 'Gluten Free',
   }
 
   return Object.entries(map)
@@ -43,6 +43,7 @@ function handleDrop(e: DragEvent) {
   csvState.isDragging = false
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
+  fileName.value = file.name
   parseCsvFile(file)
 }
 
@@ -52,7 +53,7 @@ function handleDragOver(e: DragEvent) {
 }
 
 function handleDragLeave() {
-  csvState.isDragging= false
+  csvState.isDragging = false
 }
 
 function parseCsvFile(file: File) {
@@ -87,7 +88,9 @@ function parseCsvFile(file: File) {
 
 function handleFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
-  if (file) parseCsvFile(file)
+  if (!file) return
+  fileName.value = file.name
+  parseCsvFile(file)
 }
 
 function escapeCSVField(value: string) {
@@ -111,19 +114,17 @@ function downloadCSV() {
     'Spicy',
     'Vegan',
     'Vegetarian',
-    'GlutenFree'
+    'Gluten Free',
   ].join('\t') // tab-separated
 
   const lines: string[] = []
   let currentCategory = ''
 
-  props.items.forEach(item => {
+  props.items.forEach((item) => {
     // Insert category row if it's new
     if (item.Category && item.Category !== currentCategory) {
       currentCategory = item.Category
-      lines.push([
-        '', '', currentCategory, '', '', '', '', '', '', ''
-      ].join('\t'))
+      lines.push(['', '', currentCategory, '', '', '', '', '', '', ''].join('\t'))
     }
 
     const optionCols = [
@@ -131,17 +132,19 @@ function downloadCSV() {
       item.Options!.includes('Spicy') ? 'X' : '',
       item.Options!.includes('Vegan') ? 'X' : '',
       item.Options!.includes('Vegetarian') ? 'X' : '',
-      item.Options!.includes('GlutenFree') ? 'X' : ''
+      item.Options!.includes('Gluten Free') ? 'X' : '',
     ]
 
-    lines.push([
-      escapeCSVField(item.No ?? ''),
-      escapeCSVField(item.Price ?? ''),
-      escapeCSVField(item.Name ?? ''),
-      escapeCSVField(item.ChineseName ?? ''),
-      escapeCSVField(item.Description ?? ''),
-      ...optionCols
-    ].join('\t'))
+    lines.push(
+      [
+        escapeCSVField(item.No ?? ''),
+        escapeCSVField(item.Price ?? ''),
+        escapeCSVField(item.Name ?? ''),
+        escapeCSVField(item.ChineseName ?? ''),
+        escapeCSVField(item.Description ?? ''),
+        ...optionCols,
+      ].join('\t'),
+    )
   })
 
   const blob = new Blob([header + '\n' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
@@ -166,18 +169,23 @@ function downloadCSV() {
     >
       <!-- Text -->
       <div class="text-container">
-        <p class="text-gray-600 text-center group-hover:text-white transition-colors">
-          Drag & drop your CSV here, or click to browse
-        </p>
-
+        <div class="text-gray-600 text-center group-hover:text-white transition-colors">
+          <p>
+            {{ fileName ? fileName :'Please upload a CSV file.'}}
+          </p>
+          <p>
+            {{ 'Drag & drop your CSV here, or click to browse' }}
+          </p>
+        </div>
+        
         <!-- Browse Button (optional, still clickable) -->
         <!-- <button
-      type="button"
-      class="p-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition-colors"
-      @click.stop="fileInput?.click()"
-      >
-        Browse CSV
-      </button> -->
+        type="button"
+        class="p-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition-colors"
+        @click.stop="fileInput?.click()"
+        >
+          Browse CSV
+        </button> -->
 
         <!-- Hidden File Input -->
         <input
@@ -193,7 +201,7 @@ function downloadCSV() {
     <div class="max-w-xl mx-auto flex justify-center">
       <button
         @click="downloadCSV"
-        class="bg-blue-500 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
+        class="bg-blue-500 p-2 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
       >
         Export CSV
       </button>

@@ -40,7 +40,7 @@ export const useMenuStore = defineStore('menu', {
     'Spicy',
     'Vegan',
     'Vegetarian',
-    'GlutenFree'
+    'Gluten Free'
   ].join('\t')
 
   const lines: string[] = []
@@ -65,7 +65,7 @@ export const useMenuStore = defineStore('menu', {
       item.Options!.includes('Spicy') ? 'X' : '',
       item.Options!.includes('Vegan') ? 'X' : '',
       item.Options!.includes('Vegetarian') ? 'X' : '',
-      item.Options!.includes('GlutenFree') ? 'X' : ''
+      item.Options!.includes('Gluten Free') ? 'X' : ''
     ]
 
     lines.push([

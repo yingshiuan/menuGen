@@ -28,6 +28,7 @@ It supports:
 - [x] Upload image   
 - [ ] Drag-and-drop image/icon replacement  
 - [x] Export Multi-page pdf  
+- [ ] Preview two pages 
 
 ### UI Improvements
 - [ ] Dark/Light theme toggle  
@@ -195,7 +196,7 @@ Default:
 User uploads a CSV file like:
 
 ```
-No,Price,Name,ChineseName,Description,Recommend,Spicy,Vegan,Vegetarian,GlutenFree
+No,Price,Name,ChineseName,Description,Recommend,Spicy,Vegan,Vegetarian,Gluten Free
 1,12.99,Pizza,披萨,Cheese and tomato sauce,true,false,false,false,true
 ```
 

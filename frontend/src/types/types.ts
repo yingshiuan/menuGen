@@ -1,4 +1,4 @@
-export type MenuOption = 'Recommend' | 'Spicy' | 'Vegan' | 'Vegetarian' | 'GlutenFree';
+export type MenuOption = 'Recommend' | 'Spicy' | 'Vegan' | 'Vegetarian' | 'Gluten Free';
 
 export interface MenuItem {
   No: string;

@@ -103,8 +103,8 @@ async function generatePDF(): Promise<void> {
   border: 0.25rem solid var(--primary-color);
   border-top: 0.25rem solid white;
   border-radius: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 1rem;
+  height: 1rem;
   animation: spin 2s linear infinite;
 }
 

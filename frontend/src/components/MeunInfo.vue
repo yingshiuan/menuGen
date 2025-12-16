@@ -24,7 +24,7 @@ const iconMap: Record<MenuOption, string> = {
   Spicy: SpicyIcon,
   Vegan: VeganIcon,
   Vegetarian: VegetarianIcon,
-  GlutenFree: GlutenFreeIcon,
+  'Gluten Free': GlutenFreeIcon,
 }
 
 const allOptions = Object.keys(iconMap) as MenuOption[]

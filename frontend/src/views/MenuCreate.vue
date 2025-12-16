@@ -83,7 +83,7 @@ watch(
 <template>
   <div class="p-4">
     <div class="flex mb-2">
-      <h1 class="w-1/2 text-2xl font-bold">Menu Builder (CSV to PDF)</h1>
+      <h1 class="w-1/2 text-2xl font-bold p-2">Menu Gen (CSV to PDF)</h1>
       <div class="w-1/2">
         <MenuPage
           v-if="state.menuCsv.length"
@@ -128,6 +128,7 @@ watch(
           </p>
         </div>
       </div>
+      <!-- PDF DOM-->
       <div style="display:none">
         <div ref="pdfRenderRef" :key="pdfRenderKey">
           <div
@@ -156,14 +157,13 @@ watch(
   width: 210mm; /* A4 width */
   min-height: 297mm; /* A4 height */
   border: 1px solid #ccc;
-  /* padding: 2rem; */
   box-sizing: border-box;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 @media screen {
   .a4-preview {
-    transform: scale(0.75);
+    transform: scale(0.8);
     transform-origin: top center;
   }
 }

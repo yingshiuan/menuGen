@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import type { MenuItem } from '@/types/types'
-import MenuItemComponent from './MenuItem.vue'
-import LogoUpload from '@/components/uploadLogo.vue'
+import MenuItemComponent from '@/components/MenuItem.vue'
+import LogoUpload from '@/components/AddLogo.vue'
 import Info from '@/components/MeunInfo.vue'
 
 const props = defineProps<{
@@ -72,10 +72,11 @@ function shouldShowCategoryHeader(index: number) {
 </script>
 
 <template>
-  <div class="a4-preview p-6 flex flex-col relative" :style="styleObject" style="width:210mm; height:297mm;">
-    <!-- Flex Container for Vertical Layout -->
-    <!-- <div class="flex flex-col justify-between h-full"> -->
-
+  <div
+    class="a4-preview p-6 flex flex-col relative"
+    :style="styleObject"
+    style="width: 210mm; height: 297mm"
+  >
     <!-- Logo Section -->
     <div class="flex items-start justify-end">
       <LogoUpload
@@ -101,17 +102,11 @@ function shouldShowCategoryHeader(index: number) {
         @update:item="(updated) => Object.assign(entry.item, updated)"
       />
     </div>
-    <!-- absolute didn't work-->
-    <!-- <div class="mt-auto">
-      <Info :readonly="readonly" show-all />
-    </div> -->
-
     <!-- Footer Section (Info Component) -->
     <div class="absolute bottom-0 left-0 w-full p-6">
-        <Info :readonly="readonly" show-all />
-      </div>
+      <Info :readonly="readonly" show-all />
+    </div>
   </div>
-  <!-- </div> -->
 </template>
 
 <style>
