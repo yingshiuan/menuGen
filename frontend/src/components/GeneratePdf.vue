@@ -3,6 +3,8 @@ import { defineProps, reactive, nextTick, ref } from 'vue'
 
 const props = defineProps<{
   contentRef: HTMLElement | null
+  pageWidth: string
+  pageHeight: string
 }>();
 
 interface PdfState {
@@ -41,7 +43,11 @@ async function generatePDF(): Promise<void> {
     const response: Response = await fetch("http://localhost:3000/generate-pdf", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ html: htmlContent }),
+      body: JSON.stringify({ 
+        html: htmlContent,
+        width: props.pageWidth,
+        height: props.pageHeight,
+      }),
     });
 
     if (!response.ok) {

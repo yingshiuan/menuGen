@@ -3,10 +3,11 @@ import { computed, ref } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuItemComponent from '@/components/MenuItem.vue'
 import LogoUpload from '@/components/AddLogo.vue'
-import Info from '@/components/MeunInfo.vue'
+import MeunInfo from '@/components/MeunInfo.vue'
 
 const props = defineProps<{
   items: MenuItem[]
+  footerText: string
   fontFamily?: string
   bgColor?: string
   textColor?: string
@@ -14,6 +15,12 @@ const props = defineProps<{
   currentPage: number
   itemsPerPage: number
   defaultSrc?: string
+  pageWidth: string
+  pageHeight: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:footerText', value: string): void
 }>()
 
 const logoBase64 = ref<string | null>(null)
@@ -74,8 +81,11 @@ function shouldShowCategoryHeader(index: number) {
 <template>
   <div
     class="a4-preview p-6 flex flex-col relative"
-    :style="styleObject"
-    style="width: 210mm; height: 297mm"
+    :style="{
+      ...styleObject,
+      width: props.pageWidth ?? '210mm',
+      height: props.pageHeight ?? '297mm',
+    }"
   >
     <!-- Logo Section -->
     <div class="flex items-start justify-end">
@@ -104,31 +114,36 @@ function shouldShowCategoryHeader(index: number) {
     </div>
     <!-- Footer Section (Info Component) -->
     <div class="absolute bottom-0 left-0 w-full p-6">
-      <Info :readonly="readonly" show-all />
+      <MeunInfo
+        :footer-text="props.footerText"
+        :readonly="readonly"
+        show-all
+        @update:footerText="(text) => emit('update:footerText', text)"
+      />
     </div>
   </div>
 </template>
 
 <style>
 .a4-preview {
-  width: 210mm;
-  min-height: 297mm;
+  /* width: 210mm;
+  min-height: 297mm; */
   /* border: 1px solid #ccc; */
   /* box-shadow: 0 0 10px rgba(0,0,0,0.2); */
 }
 
 @media screen {
   .a4-preview {
-    /* transform: scale(0.8); */
+    transform: scale(0.8);
     transform-origin: top center;
   }
 }
 
 @media print {
   .a4-preview {
-    width: 210mm;
+    /* width: 210mm;
     min-height: 297mm;
-    transform: none !important;
+    transform: none !important; */
   }
 }
 </style>

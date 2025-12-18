@@ -221,7 +221,7 @@ watch(local, () => emit('update:item', local), { deep: true })
       </div>
 
       <!-- No -->
-      <div class="flex-shrink-0 w-8 text-right">
+      <div class="flex-shrink-0 w-6 text-right">
         <span
           v-if="!editingState.No"
           @click="startEditing('No')"
@@ -256,14 +256,16 @@ watch(local, () => emit('update:item', local), { deep: true })
             @blur="stopEditing('Name')"
             @keyup.enter="stopEditing('Name')"
             :readonly="props.readonly"
-            class="border p-1 flex-1"
+            class="p-1 flex-1"
           />
+           <!-- Chinese Name -->
           <span v-if="local.ChineseName" class="font-light">
-            /
+            <span class="inline"> / </span>
             <span
               v-if="!editingState.ChineseName"
               @click="startEditing('ChineseName')"
               :title="`Click to edit the ChineseName...`"
+              class="menu-item whitespace-normal break-keep"
               >{{ local.ChineseName }}</span
             >
             <input
@@ -273,7 +275,7 @@ watch(local, () => emit('update:item', local), { deep: true })
               @blur="stopEditing('ChineseName')"
               @keyup.enter="stopEditing('ChineseName')"
               :readonly="props.readonly"
-              class="border p-1 flex-1"
+              class="p-1 whitespace-normal break-keep"
             />
           </span>
         </div>
@@ -305,7 +307,7 @@ watch(local, () => emit('update:item', local), { deep: true })
             @blur="stopEditing('Description')"
             @keyup.enter="stopEditing('Description')"
             :readonly="props.readonly"
-            class="border p-1 w-full"
+            class="p-1 w-full"
             placeholder="Click to add description"
           />
         </div>
@@ -330,7 +332,7 @@ watch(local, () => emit('update:item', local), { deep: true })
       </div>
 
       <!-- Price -->
-      <div class="w-12 text-right">
+      <div class="w-8 text-right">
         <span
           v-if="!editingState.Price"
           @click="startEditing('Price')"
@@ -371,7 +373,7 @@ watch(local, () => emit('update:item', local), { deep: true })
           class="w-full h-full flex justify-center items-center opacity-30 hover:bg-gray-100 hover:text-gray-600 hover:opacity-100 rounded-full"
           :class="!displayedPicture && props.readonly ? '' : 'bg-transparent'"
         >
-          <span v-if="!props.readonly" class="text-sm" :title="`Click to upload the Picture...`"
+          <span v-if="!props.readonly" :title="`Click to upload the Picture...`"
             >Upload</span
           >
         </div>

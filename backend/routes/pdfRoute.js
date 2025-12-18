@@ -38,7 +38,7 @@ async function compressSvg(filePath, width = 96, height = 96) {
 // POST /generate-pdf
 router.post('/generate-pdf', async (req, res) => {
   try {
-    const { html } = req.body
+    const { html, width = '210mm', height = '297mm' } = req.body
 
     if (!html) {
       return res.status(400).send('HTML content is required')
@@ -99,11 +99,11 @@ router.post('/generate-pdf', async (req, res) => {
 
     // Remove circles with empty <img> after conversion
     document.querySelectorAll('span').forEach((span) => {
-      const text = span.textContent?.trim();
+      const text = span.textContent?.trim()
       if (text === 'Click to add description' || text === 'Upload') {
-        span.remove();
+        span.remove()
       }
-    });
+    })
 
     const optimizedHtml = `
       <html>
@@ -139,7 +139,9 @@ router.post('/generate-pdf', async (req, res) => {
 
     // Generate PDF
     const pdfBuffer = await page.pdf({
-      format: 'A4',
+      width,
+      height,
+      // format: 'A4',
       printBackground: true,
       scale: 1,
       // margin: { top: '20mm', bottom: '20mm', left: '15mm', right: '15mm' },

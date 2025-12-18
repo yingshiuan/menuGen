@@ -10,13 +10,14 @@ import GlutenFreeIcon from '@/asset/svg/glutenfree.svg'
 
 const props = defineProps<{
   modelValue?: MenuOption[]
+  footerText: string
   readonly?: boolean
   showAll: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: MenuOption[]): void
-  (e: 'update:text', value: string): void
+  (e: 'update:footerText', value: string): void
 }>()
 
 const iconMap: Record<MenuOption, string> = {
@@ -29,6 +30,8 @@ const iconMap: Record<MenuOption, string> = {
 
 const allOptions = Object.keys(iconMap) as MenuOption[]
 const selected = ref<MenuOption[]>(props.modelValue?.length ? props.modelValue : [...allOptions])
+const infoText = ref(props.footerText)
+const editingInfo = ref(false)
 
 watch(
   selected,
@@ -44,12 +47,19 @@ function toggle(option: MenuOption) {
   idx >= 0 ? selected.value.splice(idx, 1) : selected.value.push(option)
 }
 
-// Editable info text
-const infoText = ref('All prices are in CHF, including VAT')
-watch(infoText, (val) => emit('update:text', val))
 
-// Editing state for infoText
-const editingInfo = ref(false)
+watch(
+  () => props.footerText,
+  (val) => {
+    infoText.value = val 
+  },
+  { immediate: true },
+)
+
+
+watch(infoText, (newText) => {
+  emit('update:footerText', newText)
+})
 
 function startEditingInfo() {
   if (props.readonly) return
@@ -68,9 +78,9 @@ function stopEditingInfo() {
 <template>
   <div class="flex flex-col w-full text-xs">
     <!-- ICON + INFO ROW -->
-    <div class="flex justify-between items-center w-full">
+    <div class="flex flex-wrap justify-between items-center w-full gap-2">
       <!-- ICONS -->
-      <div class="flex gap-4 items-center">
+      <div class="flex gap-4 items-center flex-wrap">
         <div v-for="opt in allOptions" :key="opt" class="flex items-center gap-1">
           <img
             :src="iconMap[opt]"
@@ -88,7 +98,7 @@ function stopEditingInfo() {
       </div>
 
       <!-- INFO TEXT -->
-      <div class="flex justify-end flex-grow">
+      <div class="flex flex-grow justify-end">
         <!-- readonly or not editing -->
         <span
           v-if="props.readonly || !editingInfo"
@@ -109,8 +119,6 @@ function stopEditingInfo() {
           @keyup.enter="stopEditingInfo"
         ></textarea>
       </div>
-
     </div>
   </div>
 </template>
-

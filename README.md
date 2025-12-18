@@ -29,6 +29,8 @@ It supports:
 - [ ] Drag-and-drop image/icon replacement  
 - [x] Export Multi-page pdf  
 - [ ] Preview two pages 
+- [x] Allow users to set custom width and height for the menu PDF
+- [ ] Add common size for users to select
 
 ### UI Improvements
 - [ ] Dark/Light theme toggle  
