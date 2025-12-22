@@ -127,7 +127,7 @@ function shouldShowCategoryHeader(index: number) {
     <div
       v-for="(entry, index) in pageItems"
       :key="`${clampedPage}-${entry.category}-${entry.item.No || 'item'}-${index}`"
-      class=""
+      class="flex-1"
     >
       <h2 v-if="shouldShowCategoryHeader(index)" class="text-xl font-bold mb-1 border-b-1">
         {{ entry.category }}
@@ -140,7 +140,7 @@ function shouldShowCategoryHeader(index: number) {
       />
     </div>
     <!-- Footer Section (Info Component) -->
-    <div class="absolute bottom-0 left-0 w-full p-6">
+    <div class="mt-auto bottom-0 left-0 w-full">
       <MeunInfo
         :footer-text="props.footerText"
         :readonly="readonly"

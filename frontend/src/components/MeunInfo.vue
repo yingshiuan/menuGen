@@ -50,7 +50,7 @@ function toggle(option: MenuOption) {
 watch(
   () => props.footerText,
   (val) => {
-    infoText.value = val 
+    infoText.value = val
   },
   { immediate: true },
 )
@@ -74,9 +74,9 @@ function stopEditingInfo() {
 </script>
 
 <template>
-  <div class="flex flex-col w-full text-xs font-extralight">
+  <div class="flex flex-col flex-wrap w-full text-xs font-extralight">
     <!-- ICON + INFO ROW -->
-    <div class="flex flex-wrap justify-between items-center w-full gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-1">
       <!-- ICONS -->
       <div class="flex gap-4 items-center flex-wrap">
         <div v-for="opt in allOptions" :key="opt" class="flex items-center gap-1">
@@ -96,7 +96,7 @@ function stopEditingInfo() {
       </div>
 
       <!-- INFO TEXT -->
-      <div class="flex flex-grow justify-end">
+      <div class="flex">
         <!-- readonly or not editing -->
         <span
           v-if="props.readonly || !editingInfo"
