@@ -17,6 +17,7 @@ const props = defineProps<{
   defaultSrc?: string
   pageWidth: string
   pageHeight: string
+  keepCategoryTogether?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -47,15 +48,40 @@ const pages = computed<PageEntry[][]>(() => {
   const result: PageEntry[][] = []
   let currentPage: PageEntry[] = []
 
-  for (const [category, items] of Object.entries(grouped)) {
-    items.forEach((item) => {
-      // Start a new page if current is full
+  if (props.keepCategoryTogether) {
+    // Keep entire category on the same page
+    for (const [category, items] of Object.entries(grouped)) {
+      const categoryEntries = items.map((item) => ({ category, item }))
+
+      // If category doesn't fit on current page, start new page
+      if (
+        currentPage.length > 0 &&
+        currentPage.length + categoryEntries.length > props.itemsPerPage
+      ) {
+        result.push(currentPage)
+        currentPage = []
+      }
+
+      currentPage.push(...categoryEntries)
+
+      // Start new page if current page is full
       if (currentPage.length >= props.itemsPerPage) {
         result.push(currentPage)
         currentPage = []
       }
-      currentPage.push({ category, item })
-    })
+    }
+  } else {
+    // Original behavior: break categories across pages
+    for (const [category, items] of Object.entries(grouped)) {
+      items.forEach((item) => {
+        // Start a new page if current is full
+        if (currentPage.length >= props.itemsPerPage) {
+          result.push(currentPage)
+          currentPage = []
+        }
+        currentPage.push({ category, item })
+      })
+    }
   }
 
   if (currentPage.length > 0) result.push(currentPage)
@@ -97,12 +123,13 @@ function shouldShowCategoryHeader(index: number) {
     </div>
 
     <!-- Menu Items Section -->
+    <!-- flex-1 to auto item-->
     <div
       v-for="(entry, index) in pageItems"
-      :key="`${clampedPage}-${entry.category}-${entry.item.No}`"
-      class="flex-1"
+      :key="`${clampedPage}-${entry.category}-${entry.item.No || 'item'}-${index}`"
+      class=""
     >
-      <h2 v-if="shouldShowCategoryHeader(index)" class="text-xl font-bold mb-2 border-b-1">
+      <h2 v-if="shouldShowCategoryHeader(index)" class="text-xl font-bold mb-1 border-b-1">
         {{ entry.category }}
       </h2>
       <MenuItemComponent

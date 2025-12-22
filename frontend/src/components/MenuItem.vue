@@ -21,7 +21,6 @@ const emit = defineEmits<{
 const local = reactive({
   ...props.item,
   Options: props.item.Options ? [...props.item.Options] : [],
-  // pictureBase64: ''
 })
 
 interface PictureState {
@@ -94,18 +93,61 @@ const displayedOtherOptions = computed(() =>
   otherOptions.filter((opt) => !props.readonly || local.Options.includes(opt)),
 )
 
-const displayedPicture = computed(() => {
-  if (local.pictureBase64) return local.pictureBase64
+// Determine which picture URL actually exists. Some files in `/public/picture` are
+// prefixed with a number like `01_Name.png`, others are plain `Name.png`.
+// We probe candidate URLs and pick the first that loads successfully.
+const displayedPicture = ref<string | null>(null)
+
+function checkImage(url: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve(true)
+    img.onerror = () => resolve(false)
+    img.src = url
+  })
+}
+
+async function updateDisplayedPicture() {
+  // If user uploaded/selected a base64 image, use it immediately
+  if (local.pictureBase64) {
+    displayedPicture.value = local.pictureBase64
+    pictureState.visible = true
+    return
+  }
+
+  // Prepare candidate paths (try name-only first, then numbered prefixed)
+  const candidates: string[] = []
+  if (local.Name) {
+    candidates.push(`/picture/${local.Name}.png?v=${pictureState.version}`)
+  }
   if (local.No && local.Name) {
     const noPadded = local.No.toString().padStart(2, '0')
-    return `/picture/${noPadded}_${local.Name}.png?v=${pictureState.version}`
+    candidates.push(`/picture/${noPadded}_${local.Name}.png?v=${pictureState.version}`)
   }
-  return null
-})
 
-watch(displayedPicture, () => {
-  pictureState.visible = true
-})
+  // Try each candidate and pick the first that exists
+  for (const url of candidates) {
+    const ok = await checkImage(url)
+    if (ok) {
+      displayedPicture.value = url
+      pictureState.visible = true
+      return
+    }
+  }
+
+  // Nothing found
+  displayedPicture.value = null
+  pictureState.visible = false
+}
+
+// Run initially and whenever name/no/base64/version change
+watch(
+  () => [local.pictureBase64, local.Name, local.No, pictureState.version],
+  () => {
+    updateDisplayedPicture()
+  },
+  { immediate: true },
+)
 
 const lighterTextColor = computed(() => {
   const hex = props.textColor ?? '#000000'
@@ -201,10 +243,10 @@ watch(local, () => emit('update:item', local), { deep: true })
 </script>
 
 <template>
-  <div class="my-3">
+  <div class="my-1">
     <div class="flex items-start gap-2 font-bold text-sm">
       <!-- Recommend Icon -->
-      <div class="flex-shrink-0 w-4 flex justify-center items-center">
+      <div class="shrink-0 w-4 flex justify-center items-center">
         <img
           v-if="displayedRecommend"
           :src="iconMap['Recommend']"
@@ -221,7 +263,7 @@ watch(local, () => emit('update:item', local), { deep: true })
       </div>
 
       <!-- No -->
-      <div class="flex-shrink-0 w-6 text-right">
+      <div class="shrink-0 w-6 text-right">
         <span
           v-if="!editingState.No"
           @click="startEditing('No')"
@@ -241,14 +283,16 @@ watch(local, () => emit('update:item', local), { deep: true })
       </div>
 
       <!-- Name & Chinese Name -->
-      <div class="flex-grow flex flex-col">
+      <div class="grow flex flex-col">
         <div>
           <span
             v-if="!editingState.Name"
             @click="startEditing('Name')"
             :title="`Click to edit the Name...`"
-            >{{ local.Name }}</span
-          >
+            >{{ local.Name }}
+            <span v-if="local.Measure" class=""> ({{ local.Measure }} pcs)</span>
+          </span>
+
           <input
             v-else
             id="Name"
@@ -258,7 +302,7 @@ watch(local, () => emit('update:item', local), { deep: true })
             :readonly="props.readonly"
             class="p-1 flex-1"
           />
-           <!-- Chinese Name -->
+          <!-- Chinese Name -->
           <span v-if="local.ChineseName" class="font-light">
             <span class="inline"> / </span>
             <span
@@ -373,9 +417,7 @@ watch(local, () => emit('update:item', local), { deep: true })
           class="w-full h-full flex justify-center items-center opacity-30 hover:bg-gray-100 hover:text-gray-600 hover:opacity-100 rounded-full"
           :class="!displayedPicture && props.readonly ? '' : 'bg-transparent'"
         >
-          <span v-if="!props.readonly" :title="`Click to upload the Picture...`"
-            >Upload</span
-          >
+          <span v-if="!props.readonly" :title="`Click to upload the Picture...`">Upload</span>
         </div>
 
         <input

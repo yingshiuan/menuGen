@@ -8,6 +8,7 @@ import FontSelector from '@/components/FontSelector.vue'
 import ColorPicker from '@/components/ColorPicker.vue'
 import PageSizeSelector from '@/components/PageSizeSelector.vue'
 import MenuPage from '@/components/MenuPage.vue'
+import ItemsPerCategorySelector from '@/components/ItemsPerCategorySelector.vue'
 
 type FontValue =
   | 'sans-serif'
@@ -33,6 +34,7 @@ interface MeunPage {
   itemsPerPage: number
   width: string
   height: string
+  keepCategoryTogether: boolean
 }
 
 const menuPage = reactive<MeunPage>({
@@ -40,6 +42,7 @@ const menuPage = reactive<MeunPage>({
   itemsPerPage: 9,
   width: '210mm',
   height: '297mm',
+  keepCategoryTogether: true,
 })
 
 // Create reactive state
@@ -123,6 +126,10 @@ watch(
         <ColorPicker type="bg" v-model:color="state.bgColor" />
         <ColorPicker type="text" v-model:color="state.textColor" />
         <PageSizeSelector v-model:width="menuPage.width" v-model:height="menuPage.height" />
+        <ItemsPerCategorySelector
+          v-model:itemsPerPage="menuPage.itemsPerPage"
+          v-model:keepCategoryTogether="menuPage.keepCategoryTogether"
+        />
       </div>
 
       <!-- Right side: preview -->
@@ -143,6 +150,7 @@ watch(
             :items-per-page="menuPage.itemsPerPage"
             :page-width="menuPage.width"
             :page-height="menuPage.height"
+            :keep-category-together="menuPage.keepCategoryTogether"
             class="relative flex-1"
           />
         </div>
@@ -153,7 +161,7 @@ watch(
         </div>
       </div>
       <!-- PDF DOM-->
-      <div style="display: none;">
+      <div style="display: none">
         <div ref="pdfRenderRef" :key="pdfRenderKey">
           <div v-for="page in totalPages" :key="page" class="pdf-page">
             <MenuPreview
@@ -167,6 +175,7 @@ watch(
               :items-per-page="menuPage.itemsPerPage"
               :page-width="menuPage.width"
               :page-height="menuPage.height"
+              :keep-category-together="menuPage.keepCategoryTogether"
             />
           </div>
         </div>

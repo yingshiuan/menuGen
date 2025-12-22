@@ -22,9 +22,10 @@ It supports:
 - [x] Image + SVG auto compression on backend  
 - [x] Pixel-perfect Puppeteer PDF generator  
 - [x] Inline editing UI (name, price, description, options, picture)  
-- [ ] Section grouping + manual ordering  
+- [X] Section grouping
+- [ ] Manual ordering 
 - [x] Multi-page layout rules (page breaks), Section grouping by 9 items
-- [ ] Multi-page layout rules and dynamic layout
+- [x] Multi-page layout rules and dynamic layout
 - [x] Upload image   
 - [ ] Drag-and-drop image/icon replacement  
 - [x] Export Multi-page pdf  

@@ -47,7 +47,6 @@ function toggle(option: MenuOption) {
   idx >= 0 ? selected.value.splice(idx, 1) : selected.value.push(option)
 }
 
-
 watch(
   () => props.footerText,
   (val) => {
@@ -55,7 +54,6 @@ watch(
   },
   { immediate: true },
 )
-
 
 watch(infoText, (newText) => {
   emit('update:footerText', newText)
@@ -76,7 +74,7 @@ function stopEditingInfo() {
 </script>
 
 <template>
-  <div class="flex flex-col w-full text-xs">
+  <div class="flex flex-col w-full text-xs font-extralight">
     <!-- ICON + INFO ROW -->
     <div class="flex flex-wrap justify-between items-center w-full gap-2">
       <!-- ICONS -->
