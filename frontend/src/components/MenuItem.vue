@@ -283,7 +283,7 @@ watch(local, () => emit('update:item', local), { deep: true })
       </div>
 
       <!-- Name & Chinese Name -->
-      <div class="grow flex flex-col">
+      <div class="flex-1 flex flex-col">
         <div>
           <span
             v-if="!editingState.Name"
@@ -300,7 +300,7 @@ watch(local, () => emit('update:item', local), { deep: true })
             @blur="stopEditing('Name')"
             @keyup.enter="stopEditing('Name')"
             :readonly="props.readonly"
-            class="p-1 flex-1"
+            class="p-1"
           />
           <!-- Chinese Name -->
           <span v-if="local.ChineseName" class="font-light">
