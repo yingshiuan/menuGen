@@ -37,7 +37,7 @@ function resetColor() {
 </script>
 
 <template>
-  <div class="flex items-center gap-2 mb-2">
+  <div class="flex items-center gap-2">
     <label>{{ props.type === 'bg' ? 'Background' : 'Text' }} Color:</label>
     
     <!-- Color wheel picker -->

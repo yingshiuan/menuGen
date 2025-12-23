@@ -154,7 +154,14 @@ watch(
             class="relative flex-1"
           />
         </div>
-        <div v-else class="a4-preview">
+        <div
+          v-else
+          class="a4-preview"
+          :style="{
+            width: menuPage.width,
+            height: menuPage.height,
+          }"
+        >
           <p class="text-gray-400 text-center text-2xl">
             No menu data loaded. Please upload a CSV file.
           </p>
@@ -186,8 +193,6 @@ watch(
 
 <style>
 .a4-preview {
-  width: 210mm; /* A4 width */
-  min-height: 297mm; /* A4 height */
   border: 1px solid #ccc;
   box-sizing: border-box;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);

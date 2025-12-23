@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { defineEmits } from 'vue'
+import { defineEmits, defineProps } from 'vue'
 
 const { width, height } = defineProps<{ width: string; height: string }>()
 
@@ -8,43 +8,77 @@ const emit = defineEmits<{
   (e: 'update:height', value: string): void
 }>()
 
+let startX = 0
+let startValue = 0
+let active: 'width' | 'height' | null = null
+
+function parseValue(val: string) {
+  return parseInt(val.replace('mm', '').trim()) || 0
+}
+
+function startDrag(e: PointerEvent, field: 'width' | 'height') {
+  active = field
+  startX = e.clientX
+  startValue = parseValue(field === 'width' ? width : height)
+
+  window.addEventListener('pointermove', onDrag)
+  window.addEventListener('pointerup', stopDrag)
+}
+
+function onDrag(e: PointerEvent) {
+  if (!active) return
+
+  const delta = e.clientX - startX
+  const next = Math.max(0, startValue + Math.round(delta / 5))
+
+  if (active === 'width') {
+    emit('update:width', next + 'mm')
+    emit('update:height', height)
+  } else {
+    emit('update:height', next + 'mm')
+    emit('update:width', width)
+  }
+}
+
+function stopDrag() {
+  active = null
+  window.removeEventListener('pointermove', onDrag)
+  window.removeEventListener('pointerup', stopDrag)
+}
+
 function onWidthInput(e: Event) {
-  const target = e.target as HTMLInputElement
-  emit('update:width', target.value)
+  let val = (e.target as HTMLInputElement).value
+  if (!val.includes('mm')) val += 'mm'
+  emit('update:width', val)
 }
 
 function onHeightInput(e: Event) {
-  const target = e.target as HTMLInputElement
-  emit('update:height', target.value)
+  let val = (e.target as HTMLInputElement).value
+  if (!val.includes('mm')) val += 'mm'
+  emit('update:height', val)
 }
 </script>
 
 <template>
-  <div class="flex gap-2 items-center mb-4">
-    <label class="flex items-center gap-1">
-      Width:
-      <input
-        type="text"
-        :value="width"
-        @input="onWidthInput"
-        class="border p-1 rounded"
-      />
+  <div class="flex gap-2 items-center">
+    <label class="flex items-center select-none">
+      <span class="cursor-ew-resize" @pointerdown.prevent="(e) => startDrag(e, 'width')">
+        Width:
+      </span>
+      <input type="text" :value="width" @input="onWidthInput" class="border p-1 rounded" />
     </label>
 
-    <label class="flex items-center gap-1">
-      Height:
-      <input
-        type="text"
-        :value="height"
-        @input="onHeightInput"
-        class="border p-1 rounded"
-      />
+    <label class="flex items-center select-none">
+      <span class="cursor-ew-resize" @pointerdown.prevent="(e) => startDrag(e, 'height')">
+        Height:
+      </span>
+      <input type="text" :value="height" @input="onHeightInput" class="border p-1 rounded" />
     </label>
   </div>
 </template>
 
 <style scoped>
 input {
-  width: 80px;
+  width: 5rem;
 }
 </style>

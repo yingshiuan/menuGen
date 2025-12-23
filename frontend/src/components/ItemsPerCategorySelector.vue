@@ -22,7 +22,7 @@ function handleCategoryToggle(value: boolean) {
 </script>
 
 <template>
-  <div class="flex flex-row gap-3">
+  <div class="flex flex-row gap-2">
     <div class="flex items-center">
       <label>Items Per Page:</label>
       <input
@@ -30,7 +30,7 @@ function handleCategoryToggle(value: boolean) {
         :value="props.itemsPerPage"
         min="1"
         max="20"
-        class="border rounded px-3 py-2"
+        class="border rounded p-1"
         @change="(e) => handleChange((e.target as HTMLInputElement).value)"
       />
       <!-- <p class="text-xs text-gray-500">Current: {{ props.itemsPerPage }} items per page</p> -->
@@ -44,7 +44,7 @@ function handleCategoryToggle(value: boolean) {
         class="w-4 h-4"
         @change="(e) => handleCategoryToggle((e.target as HTMLInputElement).checked)"
       />
-      <label for="keepCategoryTogether" class="text-sm">Keep category together on page</label>
+      <label for="keepCategoryTogether">Keep category together on page</label>
     </div>
   </div>
 </template>
