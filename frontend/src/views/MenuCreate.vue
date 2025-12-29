@@ -69,9 +69,15 @@ function handleCsvLoaded(items: MenuItem[]) {
 }
 
 function onItemUpdated(updated: MenuItem) {
-  const idx = state.menuCsv.findIndex((it) => it.No === updated.No || it.Name === updated.Name)
+  // First try to find by Name
+  let idx = state.menuCsv.findIndex((it) => it.Name === updated.Name)
+
+  // If not found by Name, fallback to match by No
+  if (idx === -1 && updated.No != null) {
+    idx = state.menuCsv.findIndex((it) => it.No === updated.No)
+  }
+
   if (idx >= 0) {
-    // Replace the whole object (ensures reactivity)
     state.menuCsv.splice(idx, 1, { ...updated })
   } else {
     state.menuCsv.push({ ...updated })
@@ -96,7 +102,7 @@ watch(
       Description: item.Description,
       Price: item.Price,
       Options: [...item.Options],
-      pictureBase64: item.pictureBase64,
+      mainImageBase64: item.mainImageBase64,
     })),
   () => {
     pdfRenderKey.value++

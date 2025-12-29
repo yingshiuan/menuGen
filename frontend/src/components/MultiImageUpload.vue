@@ -29,9 +29,9 @@ const uploadingFiles = ref<Set<string>>(new Set())
 
 const allPictures = computed(() =>
   props.menuItems.flatMap((item) =>
-    (item.pictures ?? []).map((pic) => ({
-      ...pic,
-      key: `${item.No ?? item.Name}-${pic.name}`,
+    (item.images ?? []).map((img) => ({
+      ...img,
+      key: `${item.No ?? item.Name}-${img.name}`,
     })),
   ),
 )
@@ -103,13 +103,13 @@ async function handleFiles(files: FileList | File[]) {
       )
       if (!matched) return
 
-      const pictures = matched.pictures ?? []
+      const pictures = matched.images ?? []
       const existing = pictures.find((p) => p.name === filename)
       if (existing) existing.base64 = base64
       else pictures.push({ name: filename, base64 })
-      matched.pictures = pictures
+      matched.images = pictures
 
-      matched.pictureBase64 = base64
+      matched.mainImageBase64 = base64
       matched.lastUpdated = Date.now()
       emit('update:item', matched)
       updatedItems.add(matched)

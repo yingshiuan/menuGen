@@ -21,7 +21,7 @@ const emit = defineEmits<{
 const local = reactive({
   ...props.item,
   Options: props.item.Options ? [...props.item.Options] : [],
-  pictureBase64: props.item.pictureBase64 || null,
+  mainImageBase64: props.item.mainImageBase64 || null,
   lastUpdated: props.item.lastUpdated ?? 0, 
 })
 
@@ -110,8 +110,8 @@ function checkImage(url: string): Promise<boolean> {
 }
 
 async function updateDisplayedPicture() {
-  if (local.pictureBase64) {
-    setDisplayedPicture(local.pictureBase64)
+  if (local.mainImageBase64) {
+    setDisplayedPicture(local.mainImageBase64)
     return
   }
 
@@ -138,7 +138,7 @@ async function updateDisplayedPicture() {
 
 // Run initially and whenever name/no/base64/version change
 watch(
-  () => [local.pictureBase64, local.Name, local.No, props.item.lastUpdated],
+  () => [local.mainImageBase64, local.Name, local.No, props.item.lastUpdated],
   () => {
     updateDisplayedPicture()
   },
@@ -242,7 +242,7 @@ function uploadPicture(event: Event) {
     const now = Date.now()
 
 
-    local.pictureBase64 = base64
+    local.mainImageBase64 = base64
     local.lastUpdated = now
 
     // Emit to parent
