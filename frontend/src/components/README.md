@@ -88,3 +88,44 @@ const generatePDF = async (): Promise<void> => {
 This setup allows you to **preview the PDF in-browser** without downloading it, while keeping Tailwind styles intact.
 
 ---
+
+
+# Vue Frontend: MultiImageUpload.vue
+User selects files in MultiImageUpload
+          │
+          ▼
+    Multiple FileReaders start
+   (asynchronous for each file)
+          │
+          ▼
+   Each FileReader finishes → resolves its Promise
+          │
+   ┌───────────────────────────────┐
+   │ Promise.all waits for ALL     │
+   │ FileReaders to finish         │
+   └───────────────────────────────┘
+          │
+          ▼
+  After all files are loaded:
+  - matched.pictureBase64 updated
+  - matched.lastUpdated = Date.now()
+          │
+          ▼
+   emit('update:item', matched) called
+          │
+          ▼
+  MenuItem.vue receives updated props
+          │
+  ┌───────────────────────────────────┐
+  │ Watcher on props.item.lastUpdated │
+  │ detects the change                │
+  └───────────────────────────────────┘
+          │
+          ▼
+  updateDisplayedPicture() called
+          │
+          ▼
+  displayedPicture.value updated → UI refreshes
+          │
+          ▼
+  New uploaded image is displayed

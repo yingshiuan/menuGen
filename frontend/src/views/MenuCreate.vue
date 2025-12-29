@@ -9,6 +9,7 @@ import ColorPicker from '@/components/ColorPicker.vue'
 import PageSizeSelector from '@/components/PageSizeSelector.vue'
 import MenuPage from '@/components/MenuPage.vue'
 import ItemsPerCategorySelector from '@/components/ItemsPerCategorySelector.vue'
+import MultiImageUpload from '@/components/MultiImageUpload.vue'
 
 type FontValue =
   | 'sans-serif'
@@ -67,6 +68,16 @@ function handleCsvLoaded(items: MenuItem[]) {
   menuPage.currentPage = 0
 }
 
+function onItemUpdated(updated: MenuItem) {
+  const idx = state.menuCsv.findIndex((it) => it.No === updated.No || it.Name === updated.Name)
+  if (idx >= 0) {
+    // Replace the whole object (ensures reactivity)
+    state.menuCsv.splice(idx, 1, { ...updated })
+  } else {
+    state.menuCsv.push({ ...updated })
+  }
+}
+
 // watch(
 //   state.menuCsv,
 //   () => {
@@ -120,7 +131,6 @@ watch(
             class="basis-1/4"
           />
         </div>
-
         <!-- Font selector and color pickers stacked below -->
         <FontSelector v-model:font="state.selectedFont" />
         <ColorPicker type="bg" v-model:color="state.bgColor" />
@@ -130,10 +140,11 @@ watch(
           v-model:itemsPerPage="menuPage.itemsPerPage"
           v-model:keepCategoryTogether="menuPage.keepCategoryTogether"
         />
+        <MultiImageUpload :menuItems="state.menuCsv" @update:item="onItemUpdated" />
       </div>
 
       <!-- Right side: preview -->
-      <div class="w-1/2 flex justify-center items-center">
+      <div class="w-1/2 flex justify-center">
         <div
           class="menu-preview-wrapper md:menu-md lg:menu-lg"
           ref="menuPreviewRef"
@@ -162,7 +173,7 @@ watch(
             height: menuPage.height,
           }"
         >
-          <p class="text-gray-400 text-center text-2xl">
+          <p class="text-gray-400 text-center text-2xl italic">
             No menu data loaded. Please upload a CSV file.
           </p>
         </div>

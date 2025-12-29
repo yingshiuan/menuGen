@@ -27,7 +27,8 @@ It supports:
 - [x] Multi-page layout rules (page breaks), Section grouping by 9 items
 - [x] Multi-page layout rules and dynamic layout
 - [x] Upload image   
-- [ ] Drag-and-drop image/icon replacement  
+- [X] Drag-and-drop image replacement  
+- [ ] Drag-and-drop icon replacement  
 - [x] Export Multi-page pdf  
 - [ ] Preview two pages 
 - [x] Allow users to set custom width and height for the menu PDF
@@ -50,6 +51,7 @@ It supports:
 - [x] Detect local images automatically  
 - [x] Compress + rasterize large SVGs  
 - [x] Built-in library of dietary icons (GF, Vegan, Spicy, etc.)  
+- [X] Allow uploading user’s own picture
 - [ ] Allow uploading user’s own icon pack  
 
 ### Backend Enhancements

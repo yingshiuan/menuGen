@@ -21,6 +21,8 @@ const emit = defineEmits<{
 const local = reactive({
   ...props.item,
   Options: props.item.Options ? [...props.item.Options] : [],
+  pictureBase64: props.item.pictureBase64 || null,
+  lastUpdated: props.item.lastUpdated ?? 0, 
 })
 
 interface PictureState {
@@ -108,46 +110,41 @@ function checkImage(url: string): Promise<boolean> {
 }
 
 async function updateDisplayedPicture() {
-  // If user uploaded/selected a base64 image, use it immediately
   if (local.pictureBase64) {
-    displayedPicture.value = local.pictureBase64
-    pictureState.visible = true
+    setDisplayedPicture(local.pictureBase64)
     return
   }
 
-  // Prepare candidate paths (try name-only first, then numbered prefixed)
   const candidates: string[] = []
   if (local.Name) {
-    candidates.push(`/picture/${local.Name}.png?v=${pictureState.version}`)
+    candidates.push(`/picture/${local.Name}.png?v=${Date.now()}`)
   }
   if (local.No && local.Name) {
     const noPadded = local.No.toString().padStart(2, '0')
-    candidates.push(`/picture/${noPadded}_${local.Name}.png?v=${pictureState.version}`)
+    candidates.push(`/picture/${noPadded}_${local.Name}.png?v=${Date.now()}`)
   }
 
-  // Try each candidate and pick the first that exists
   for (const url of candidates) {
     const ok = await checkImage(url)
     if (ok) {
-      displayedPicture.value = url
-      pictureState.visible = true
+      setDisplayedPicture(url)
       return
     }
   }
 
-  // Nothing found
-  displayedPicture.value = null
-  pictureState.visible = false
+  // No image found
+  setDisplayedPicture(null)
 }
 
 // Run initially and whenever name/no/base64/version change
 watch(
-  () => [local.pictureBase64, local.Name, local.No, pictureState.version],
+  () => [local.pictureBase64, local.Name, local.No, props.item.lastUpdated],
   () => {
     updateDisplayedPicture()
   },
   { immediate: true },
 )
+
 
 const lighterTextColor = computed(() => {
   const hex = props.textColor ?? '#000000'
@@ -221,24 +218,54 @@ function onImageError() {
 //   }
 // };
 
-async function uploadPicture(event: Event) {
+function setDisplayedPicture(src: string | null) {
+  // Clear first to force Vue to re-render
+  displayedPicture.value = null
+  nextTick(() => {
+    displayedPicture.value = src
+    pictureState.visible = !!src
+    pictureState.version++
+  })
+}
+
+function uploadPicture(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
-
   if (!file.type.startsWith('image/')) {
-    alert('Please upload a valid image file (PNG, JPG, JPEG, GIF, etc.)')
+    alert('Please upload a valid image file')
     return
   }
 
   const reader = new FileReader()
   reader.onload = () => {
-    local.pictureBase64 = reader.result as string
-    pictureState.version += 1
+    const base64 = reader.result as string
+    const now = Date.now()
+
+
+    local.pictureBase64 = base64
+    local.lastUpdated = now
+
+    // Emit to parent
+    emit('update:item', { ...local, lastUpdated: now })
+
+    // Force UI to update immediately
+    setDisplayedPicture(base64)
   }
   reader.readAsDataURL(file)
+
+  if (fileInputRef.value) fileInputRef.value.value = ''
 }
 
-// Emit changes to parent
+watch(
+  () => props.item,
+  (newItem) => {
+    Object.assign(local, newItem)
+    updateDisplayedPicture()
+  },
+  { deep: true, immediate: true }
+)
+
+// for update contain in the items
 watch(local, () => emit('update:item', local), { deep: true })
 </script>
 
@@ -406,6 +433,7 @@ watch(local, () => emit('update:item', local), { deep: true })
         <!-- Image exists and loaded -->
         <img
           v-if="displayedPicture && pictureState.visible"
+          :key="displayedPicture" 
           :src="displayedPicture"
           alt="Item Picture"
           class="w-full h-full object-cover rounded-full transform scale-110 overflow-hidden"

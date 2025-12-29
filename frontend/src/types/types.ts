@@ -9,5 +9,10 @@ export interface MenuItem {
   Description?: string;
   Options: MenuOption[]; 
   Category: string;
-  pictureBase64?: string | null
+  pictureBase64?: string | null;
+  pictures?: {      
+    name: string 
+    base64: string
+  }[];
+  lastUpdated?: number;
 }
