@@ -22,7 +22,7 @@ const local = reactive({
   ...props.item,
   Options: props.item.Options ? [...props.item.Options] : [],
   mainImageBase64: props.item.mainImageBase64 || null,
-  lastUpdated: props.item.lastUpdated ?? 0, 
+  lastUpdated: props.item.lastUpdated ?? 0,
 })
 
 interface PictureState {
@@ -145,7 +145,6 @@ watch(
   { immediate: true },
 )
 
-
 const lighterTextColor = computed(() => {
   const hex = props.textColor ?? '#000000'
   return lightenColor(hex, 40) // 40% lighter
@@ -241,7 +240,6 @@ function uploadPicture(event: Event) {
     const base64 = reader.result as string
     const now = Date.now()
 
-
     local.mainImageBase64 = base64
     local.lastUpdated = now
 
@@ -262,7 +260,7 @@ watch(
     Object.assign(local, newItem)
     updateDisplayedPicture()
   },
-  { deep: true, immediate: true }
+  { deep: true, immediate: true },
 )
 
 // for update contain in the items
@@ -292,11 +290,20 @@ watch(local, () => emit('update:item', local), { deep: true })
       <!-- No -->
       <div class="shrink-0 w-6 text-right">
         <span
-          v-if="!editingState.No"
+          v-if="local.No && !editingState.No"
           @click="startEditing('No')"
           :title="`Click to edit the Number...`"
           >{{ local.No || '-' }}</span
         >
+        <span
+          v-else-if="!local.No && !props.readonly && !editingState.No"
+          data-ui-only
+          @click="startEditing('No')"
+          title="Click to add No..."
+          class="opacity-30 cursor-pointer"
+        >
+          No.
+        </span>
         <input
           v-else
           id="No"
@@ -313,11 +320,20 @@ watch(local, () => emit('update:item', local), { deep: true })
       <div class="flex-1 flex flex-col">
         <div>
           <span
-            v-if="!editingState.Name"
+            v-if="local.Name && !editingState.Name"
             @click="startEditing('Name')"
             :title="`Click to edit the Name...`"
             >{{ local.Name }}
             <span v-if="local.Measure" class=""> ({{ local.Measure }} pcs)</span>
+          </span>
+          <span
+            v-else-if="!local.Name && !props.readonly && !editingState.Name"
+            data-ui-only
+            @click="startEditing('Name')"
+            title="Click to add Name..."
+            class="opacity-30 cursor-pointer"
+          >
+            Click to add Name
           </span>
 
           <input
@@ -330,25 +346,36 @@ watch(local, () => emit('update:item', local), { deep: true })
             class="p-1"
           />
           <!-- Chinese Name -->
-          <span v-if="local.ChineseName" class="font-light">
+          <span
+            v-if="local.ChineseName && !editingState.ChineseName"
+            class="font-light menu-item whitespace-normal break-keep"
+            @click="startEditing('ChineseName')"
+            title="Click to edit the Chinese Name..."
+          >
             <span class="inline"> / </span>
-            <span
-              v-if="!editingState.ChineseName"
-              @click="startEditing('ChineseName')"
-              :title="`Click to edit the ChineseName...`"
-              class="menu-item whitespace-normal break-keep"
-              >{{ local.ChineseName }}</span
-            >
-            <input
-              v-else
-              id="ChineseName"
-              v-model="local.ChineseName"
-              @blur="stopEditing('ChineseName')"
-              @keyup.enter="stopEditing('ChineseName')"
-              :readonly="props.readonly"
-              class="p-1 whitespace-normal break-keep"
-            />
+            {{ local.ChineseName }}
           </span>
+
+          <span
+            v-else-if="!local.ChineseName && !props.readonly && !editingState.ChineseName"
+            data-ui-only
+            @click="startEditing('ChineseName')"
+            title="Click to add Chinese Name..."
+            class="opacity-30 cursor-pointer"
+          >
+            <span class="inline"> / </span>
+            Click to add Chinese Name
+          </span>
+
+          <input
+            v-else
+            id="ChineseName"
+            v-model="local.ChineseName"
+            @blur="stopEditing('ChineseName')"
+            @keyup.enter="stopEditing('ChineseName')"
+            :readonly="props.readonly"
+            class="p-1 whitespace-normal break-keep"
+          />
         </div>
 
         <!-- Description -->
@@ -363,6 +390,7 @@ watch(local, () => emit('update:item', local), { deep: true })
 
           <span
             v-else-if="!props.readonly && !local.Description && !editingState.Description"
+            data-ui-only
             @click="startEditing('Description')"
             title="Click to add description..."
             class="opacity-30 cursor-pointer"
@@ -405,11 +433,20 @@ watch(local, () => emit('update:item', local), { deep: true })
       <!-- Price -->
       <div class="w-8 text-right">
         <span
-          v-if="!editingState.Price"
+          v-if="local.Price && !editingState.Price"
           @click="startEditing('Price')"
           :title="`Click to edit the Price...`"
           >{{ local.Price }}</span
         >
+        <span
+          v-else-if="!local.Price && !props.readonly && !editingState.Price"
+          data-ui-only
+          @click="startEditing('Price')"
+          title="Click to add Price..."
+          class="opacity-30 cursor-pointer"
+        >
+          $
+        </span>
         <input
           v-else
           id="Price"
@@ -433,7 +470,7 @@ watch(local, () => emit('update:item', local), { deep: true })
         <!-- Image exists and loaded -->
         <img
           v-if="displayedPicture && pictureState.visible"
-          :key="displayedPicture" 
+          :key="displayedPicture"
           :src="displayedPicture"
           alt="Item Picture"
           class="w-full h-full object-cover rounded-full transform scale-110 overflow-hidden"
@@ -445,7 +482,9 @@ watch(local, () => emit('update:item', local), { deep: true })
           class="w-full h-full flex justify-center items-center opacity-30 hover:bg-gray-100 hover:text-gray-600 hover:opacity-100 rounded-full"
           :class="!displayedPicture && props.readonly ? '' : 'bg-transparent'"
         >
-          <span v-if="!props.readonly" :title="`Click to upload the Picture...`">Upload</span>
+          <span v-if="!props.readonly" data-ui-only :title="`Click to upload the Picture...`"
+            >Upload</span
+          >
         </div>
 
         <input
