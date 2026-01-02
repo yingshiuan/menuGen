@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { defineProps, reactive, nextTick, ref } from 'vue'
+import { reactive, nextTick, ref } from 'vue'
 
 const props = defineProps<{
   contentRef: HTMLElement | null

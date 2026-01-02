@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive, defineEmits } from 'vue'
+import { ref, reactive } from 'vue'
 import Papa from 'papaparse'
 import type { MenuItem, MenuOption } from '@/types/types'
 import { useMenuStore } from '@/stores/menu'

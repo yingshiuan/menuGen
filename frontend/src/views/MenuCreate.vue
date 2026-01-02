@@ -84,6 +84,55 @@ function onItemUpdated(updated: MenuItem) {
   }
 }
 
+// Helpers for preview actions
+function createNewItem(defaultNo?: string, defaultCategory?: string) {
+  const no = defaultNo ?? (state.menuCsv.length + 1).toString()
+  return {
+    No: no,
+    Price: '',
+    Name: `New Item ${no}`,
+    Measure: '',
+    ChineseName: '',
+    Description: '',
+    Options: [],
+    Category: defaultCategory ?? 'Uncategorized',
+  } as MenuItem
+}
+
+function addItemBefore(No: string) {
+  const idx = state.menuCsv.findIndex((it) => it.No === No)
+  const category = state.menuCsv[idx]?.Category ?? 'Uncategorized'
+  const newItem = createNewItem(undefined, category)
+  if (idx === -1) state.menuCsv.push(newItem)
+  else state.menuCsv.splice(idx, 0, newItem)
+}
+
+function addItemAfter(No: string) {
+  const idx = state.menuCsv.findIndex((it) => it.No === No)
+  const category = state.menuCsv[idx]?.Category ?? 'Uncategorized'
+  const newItem = createNewItem(undefined, category)
+  if (idx === -1) state.menuCsv.push(newItem)
+  else state.menuCsv.splice(idx + 1, 0, newItem)
+}
+
+function deleteItemByNo(No: string) {
+  const idx = state.menuCsv.findIndex((it) => it.No === No)
+  if (idx >= 0) state.menuCsv.splice(idx, 1)
+}
+
+function reorderItems(fromNo: string, toNo: string) {
+  const from = state.menuCsv.findIndex((it) => it.No === fromNo)
+  const to = state.menuCsv.findIndex((it) => it.No === toNo)
+  if (from === -1 || to === -1 || from === to) return
+  const removed = state.menuCsv.splice(from, 1)
+  const item = removed[0]
+  if (!item) return
+  
+  const targetIndex = from < to ? to - 1 : to
+  const clamped = Math.max(0, Math.min(state.menuCsv.length, targetIndex))
+  state.menuCsv.splice(clamped, 0, item)
+}
+
 // watch(
 //   state.menuCsv,
 //   () => {
@@ -169,6 +218,10 @@ watch(
             :page-height="menuPage.height"
             :keep-category-together="menuPage.keepCategoryTogether"
             class="relative flex-1"
+            @add-before="(p) => addItemBefore(p.No)"
+            @add-after="(p) => addItemAfter(p.No)"
+            @delete-item="(p) => deleteItemByNo(p.No)"
+            @reorder="(p) => reorderItems(p.fromNo, p.toNo)"
           />
         </div>
         <div

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, ref, reactive } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuItemComponent from '@/components/MenuItem.vue'
 import LogoUpload from '@/components/AddLogo.vue'
@@ -22,7 +22,21 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:footerText', value: string): void
+  (e: 'add-before', payload: { No: string }): void
+  (e: 'add-after', payload: { No: string }): void
+  (e: 'delete-item', payload: { No: string }): void
+  (e: 'reorder', payload: { fromNo: string; toNo: string }): void
 }>()
+
+interface DragState {
+  dragOverIndex: number | null
+  draggingIndex: number | null
+}
+
+const dragState = reactive<DragState>({
+  dragOverIndex: null,
+  draggingIndex: null
+})
 
 const logoBase64 = ref<string | null>(null)
 
@@ -102,6 +116,60 @@ function shouldShowCategoryHeader(index: number) {
   if (!current) return false
   return index === 0 || current.category !== prev?.category
 }
+
+// Drag helpers
+function onDragStart(e: DragEvent, index: number) {
+  dragState.draggingIndex = index
+  if (!e.dataTransfer) return
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', String(index))
+
+  const ghost = document.createElement('div')
+  ghost.style.width = '8rem'
+  ghost.style.height = '4rem'
+  ghost.style.background = 'rgba(0,0,0,0.1)'
+  ghost.style.border = '0.1rem solid #aaa'
+  ghost.style.borderRadius = '0.2rem'
+  ghost.style.position = 'absolute'
+  ghost.style.top = '-9999px'
+  document.body.appendChild(ghost)
+
+  e.dataTransfer.setDragImage(ghost, 50, 20)
+  setTimeout(() => document.body.removeChild(ghost), 0)
+}
+
+function onDragOver(e: DragEvent, index: number) {
+  e.preventDefault()
+  const target = e.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  const midY = rect.top + rect.height / 2
+
+  // Insert above or below depending on cursor
+  if (e.clientY < midY) {
+    dragState.dragOverIndex = index
+  } else {
+    dragState.dragOverIndex = index + 1
+  }
+}
+
+function onDrop(e: DragEvent) {
+  e.preventDefault()
+  const from = dragState.draggingIndex
+  const to = dragState.dragOverIndex
+
+  dragState.draggingIndex = null
+  dragState.dragOverIndex = null
+
+  if (from === null || to === null || from === to) return
+
+  const fromItem = pageItems.value[from]?.item
+  const toIndex = to > pageItems.value.length - 1 ? pageItems.value.length - 1 : to
+  const toItem = pageItems.value[toIndex]?.item
+
+  if (!fromItem || !toItem) return
+
+  emit('reorder', { fromNo: fromItem.No, toNo: toItem.No })
+}
 </script>
 
 <template>
@@ -123,23 +191,86 @@ function shouldShowCategoryHeader(index: number) {
     </div>
 
     <!-- Menu Items Section -->
-    <!-- flex-1 to auto item-->
     <div
       v-for="(entry, index) in pageItems"
       :key="`${clampedPage}-${entry.category}-${entry.item.No || 'item'}-${index}`"
-      class="flex-1"
+      class="flex-1 group relative"
+      :draggable="!props.readonly"
+      @dragstart="(e) => onDragStart(e, index)"
+      @dragover="(e) => onDragOver(e, index)"
+      @drop="onDrop"
     >
       <h2 v-if="shouldShowCategoryHeader(index)" class="text-xl font-bold mb-1 border-b-1">
         {{ entry.category }}
       </h2>
-      <MenuItemComponent
-        :item="entry.item"
-        :readonly="readonly"
-        :text-color="props.textColor"
-        @update:item="(updated) => Object.assign(entry.item, updated)"
-      />
+
+      <!-- Placeholder line -->
+      <div
+        v-if="dragState.dragOverIndex === index"
+        data-ui-only
+        class="absolute top-0 left-0 w-full h-0.5 bg-blue-500 z-20"
+      ></div>
+
+      <div
+        class="relative transition-all duration-150 rounded-md group-hover:scale-102 group-hover:shadow-sm"
+        :class="[
+          'transition-all duration-200 ease-in-out',
+          dragState.draggingIndex === index ? 'scale-90 opacity-60 z-10' : '',
+        ]"
+      >
+        <MenuItemComponent
+          :item="entry.item"
+          :readonly="readonly"
+          :text-color="props.textColor"
+          @update:item="(updated) => Object.assign(entry.item, updated)"
+        />
+
+        <!-- overlay controls -->
+        <div
+          v-if="!props.readonly"
+          data-ui-only
+          class="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
+        >
+          <button
+            class="btn-sm rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1"
+            @click.stop.prevent="() => emit('add-before', { No: entry.item.No })"
+            title="Add item before"
+          >
+            ＋
+          </button>
+        </div>
+
+        <div
+          v-if="!props.readonly"
+          data-ui-only
+          class="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
+        >
+          <button
+            class="btn-sm rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1"
+            @click.stop.prevent="() => emit('add-after', { No: entry.item.No })"
+            title="Add item after"
+          >
+            ＋
+          </button>
+        </div>
+
+        <div
+          v-if="!props.readonly"
+          data-ui-only
+          class="absolute -top-3 -right-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
+        >
+          <button
+            class="btn-sm text-red-500  rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1"
+            @click.stop.prevent="() => emit('delete-item', { No: entry.item.No })"
+            title="Delete item"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
     </div>
-    <!-- Footer Section (Info Component) -->
+
+    <!-- Footer Section -->
     <div class="mt-auto bottom-0 left-0 w-full">
       <MeunInfo
         :footer-text="props.footerText"
