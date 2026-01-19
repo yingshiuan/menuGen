@@ -7,6 +7,7 @@ import CsvUpload from '@/components/CsvUpload.vue'
 import FontSelector from '@/components/FontSelector.vue'
 import ColorPicker from '@/components/ColorPicker.vue'
 import PageSizeSelector from '@/components/PageSizeSelector.vue'
+import ScaleControl from '@/components/ScaleControl.vue'
 import MenuPage from '@/components/MenuPage.vue'
 import ItemsPerCategorySelector from '@/components/ItemsPerCategorySelector.vue'
 import MultiImageUpload from '@/components/MultiImageUpload.vue'
@@ -56,6 +57,32 @@ const state = reactive<MenuState>({
   footerText: 'All prices are in CHF, including VAT',
 })
 
+const demoMenu: MenuItem[] = [
+  {
+    No: '1',
+    Price: '12.50',
+    Name: 'Sample 1',
+    Measure: 'pcs',
+    ChineseName: '範本一',
+    Description: 'Sample description 1',
+    Options: ['Recommend', 'Spicy'],
+    Category: 'Sample Category',
+  },
+  {
+    No: '2',
+    Price: '18.00',
+    Name: 'Sample 2',
+    Measure: 'pcs',
+    ChineseName: '',
+    Description: 'Sample description 2',
+    Options: ['Vegan', 'Gluten Free'],
+    Category: 'Sample Category',
+  },
+]
+
+const scale = ref(0.8)
+const csvKey = ref(0)
+
 const menuPreviewRef = ref<HTMLElement | null>(null)
 const pdfRenderRef = ref<HTMLElement | null>(null)
 
@@ -66,6 +93,12 @@ const totalPages = computed(() => Math.ceil(state.menuCsv.length / menuPage.item
 function handleCsvLoaded(items: MenuItem[]) {
   state.menuCsv = items
   menuPage.currentPage = 0
+}
+
+function loadSampleMenu() {
+  state.menuCsv = demoMenu.map((item) => ({ ...item }))
+  menuPage.currentPage = 0
+  csvKey.value++ 
 }
 
 function onItemUpdated(updated: MenuItem) {
@@ -127,7 +160,7 @@ function reorderItems(fromNo: string, toNo: string) {
   const removed = state.menuCsv.splice(from, 1)
   const item = removed[0]
   if (!item) return
-  
+
   const targetIndex = from < to ? to - 1 : to
   const clamped = Math.max(0, Math.min(state.menuCsv.length, targetIndex))
   state.menuCsv.splice(clamped, 0, item)
@@ -161,10 +194,10 @@ watch(
 </script>
 
 <template>
-  <div class="p-4">
-    <div class="flex mb-2">
-      <h1 class="w-1/2 text-2xl font-bold p-2">Menu Gen (CSV to PDF)</h1>
-      <div class="w-1/2">
+  <div class="">
+    <div class="flex gap-2 p-2 items-center">
+      <h1 class="w-1/4 text-xl font-bold p-1">Menu Gen (CSV to PDF)</h1>
+      <div class="w-2/4">
         <MenuPage
           v-if="state.menuCsv.length"
           :current-page="menuPage.currentPage"
@@ -173,37 +206,54 @@ watch(
         />
       </div>
     </div>
-    <div class="flex gap-2">
+    <div class="flex gap-2 divide-x divide-gray-300">
       <!-- Left side: controls -->
-      <div class="w-1/2 space-y-4">
+      <div class="w-1/4 divide-y divide-gray-300 px-2">
         <!-- Drag & Drop CSV and Generate PDF side by side -->
-        <div class="flex gap-2">
-          <CsvUpload @csvLoaded="handleCsvLoaded" :items="state.menuCsv" class="basis-3/4" />
+        <div class="flex gap-2 py-2">
+          <CsvUpload :key="csvKey" @csvLoaded="handleCsvLoaded" :items="state.menuCsv" class="" />
           <GeneratePdf
             :contentRef="pdfRenderRef"
             :page-width="menuPage.width"
             :page-height="menuPage.height"
-            class="basis-1/4"
+            class=""
           />
         </div>
+        <div class="py-2">
+          <button
+            @click="loadSampleMenu"
+            class="bg-blue-500 w-full p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
+          >
+            Load Sample Menu
+          </button>
+        </div>
         <!-- Font selector and color pickers stacked below -->
-        <FontSelector v-model:font="state.selectedFont" />
-        <ColorPicker type="bg" v-model:color="state.bgColor" />
-        <ColorPicker type="text" v-model:color="state.textColor" />
-        <PageSizeSelector v-model:width="menuPage.width" v-model:height="menuPage.height" />
-        <ItemsPerCategorySelector
-          v-model:itemsPerPage="menuPage.itemsPerPage"
-          v-model:keepCategoryTogether="menuPage.keepCategoryTogether"
-        />
-        <MultiImageUpload :menuItems="state.menuCsv" @update:item="onItemUpdated" />
+        <div class="py-2"><FontSelector v-model:font="state.selectedFont" /></div>
+        <div class="py-2"><ColorPicker type="bg" v-model:color="state.bgColor" /></div>
+        <div class="py-2"><ColorPicker type="text" v-model:color="state.textColor" /></div>
+        <div class="py-2">
+          <PageSizeSelector v-model:width="menuPage.width" v-model:height="menuPage.height" />
+        </div>
+        <div class="py-2"><ScaleControl v-model="scale" label="Scale" /></div>
+        <div class="py-2">
+          <ItemsPerCategorySelector
+            v-model:itemsPerPage="menuPage.itemsPerPage"
+            v-model:keepCategoryTogether="menuPage.keepCategoryTogether"
+          />
+        </div>
+
+        <div class="py-2">
+          <MultiImageUpload :menuItems="state.menuCsv" @update:item="onItemUpdated" />
+        </div>
       </div>
 
       <!-- Right side: preview -->
-      <div class="w-1/2 flex justify-center">
+      <div class="w-2/4 flex justify-center">
         <div
           class="menu-preview-wrapper md:menu-md lg:menu-lg"
           ref="menuPreviewRef"
           v-if="state.menuCsv.length"
+          :style="{ '--ui-scale': scale }"
         >
           <MenuPreview
             v-model:footerText="state.footerText"
@@ -266,6 +316,11 @@ watch(
   border: 1px solid #ccc;
   box-sizing: border-box;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.menu-preview-wrapper {
+  transform: scale(var(--ui-scale));
+  transform-origin: top center;
 }
 
 @media screen {

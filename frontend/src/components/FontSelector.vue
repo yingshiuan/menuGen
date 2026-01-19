@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, defineEmits, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 const emit = defineEmits<{
   (e: 'update:font', font: string): void
@@ -27,7 +27,7 @@ watch(selectedFont, (newFont) => emit('update:font', newFont))
 
 <template>
   <div class="flex items-center gap-2">
-    <label for="fontSelect" class="font-medium">Select font:</label>
+    <label for="fontSelect" class="font-medium">Select font</label>
     <select
       id="fontSelect"
       v-model="selectedFont"

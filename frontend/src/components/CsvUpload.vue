@@ -41,8 +41,10 @@ function getOptionsFromRow(row: Record<string, string>): MenuOption[] {
 function handleDrop(e: DragEvent) {
   e.preventDefault()
   csvState.isDragging = false
-  const file = (e.target as HTMLInputElement).files?.[0]
+
+  const file = e.dataTransfer?.files?.[0]
   if (!file) return
+
   fileName.value = file.name
   parseCsvFile(file)
 }
@@ -90,8 +92,10 @@ function parseCsvFile(file: File) {
 function handleFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
+  fileName.value = null  
   fileName.value = file.name
   parseCsvFile(file)
+  if (fileInput.value) fileInput.value.value = ''
 }
 
 function escapeCSVField(value: string) {
@@ -172,7 +176,7 @@ function downloadCSV() {
     >
       <!-- Text -->
       <div class="text-container">
-        <div class="text-gray-600 text-center group-hover:text-white transition-colors">
+        <div class="text-gray-600 text-center group-hover:text-white transition-colors text-sm">
           <p>
             {{ fileName ? fileName :'Please upload a CSV file.'}}
           </p>
@@ -204,7 +208,7 @@ function downloadCSV() {
     <div class="max-w-xl mx-auto flex justify-center">
       <button
         @click="downloadCSV"
-        class="bg-blue-500 p-2 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
+        class="bg-blue-500 p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
       >
         Export CSV
       </button>

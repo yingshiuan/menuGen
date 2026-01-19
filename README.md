@@ -21,7 +21,7 @@ It supports:
 - [x] Tailwind-based Live Preview  
 - [x] Image + SVG auto compression on backend  
 - [x] Pixel-perfect Puppeteer PDF generator  
-- [x] Inline editing UI (name, price, description, options, picture)  
+- [x] Inline editing UI (No, Name, ChineseName, Price, Description, options, picture, Category)  
 - [X] Section grouping
 - [X] Manual ordering, adding, deleting item.
 - [x] Multi-page layout rules (page breaks), Section grouping by 9 items

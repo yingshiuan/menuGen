@@ -292,7 +292,7 @@ function onDrop(e: DragEvent) {
 
 @media screen {
   .a4-preview {
-    transform: scale(0.8);
+    /* transform: scale(0.8); */
     transform-origin: top center;
   }
 }

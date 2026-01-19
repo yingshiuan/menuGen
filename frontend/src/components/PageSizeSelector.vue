@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { defineEmits, defineProps } from 'vue'
 
 const { width, height } = defineProps<{ width: string; height: string }>()
 
@@ -61,16 +60,16 @@ function onHeightInput(e: Event) {
 
 <template>
   <div class="flex gap-2 items-center">
-    <label class="flex items-center select-none">
+    <label class="flex items-center select-none gap-2">
       <span class="cursor-ew-resize" @pointerdown.prevent="(e) => startDrag(e, 'width')">
-        Width:
+        W
       </span>
       <input type="text" :value="width" @input="onWidthInput" class="border p-1 rounded" />
     </label>
 
-    <label class="flex items-center select-none">
+    <label class="flex items-center select-none gap-2">
       <span class="cursor-ew-resize" @pointerdown.prevent="(e) => startDrag(e, 'height')">
-        Height:
+        H
       </span>
       <input type="text" :value="height" @input="onHeightInput" class="border p-1 rounded" />
     </label>

@@ -22,9 +22,9 @@ function handleCategoryToggle(value: boolean) {
 </script>
 
 <template>
-  <div class="flex flex-row gap-2">
-    <div class="flex items-center">
-      <label>Items Per Page:</label>
+  <div class="flex flex-col gap-2">
+    <div class="flex items-center gap-2">
+      <label>Items Per Page</label>
       <input
         type="number"
         :value="props.itemsPerPage"

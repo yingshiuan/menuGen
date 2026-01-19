@@ -1,7 +1,5 @@
 <script lang="ts" setup>
 
-import { defineProps, defineEmits } from 'vue'
-
 const props = defineProps<{
   currentPage: number
   totalPages: number
@@ -25,14 +23,14 @@ function nextPage() {
   <div class="flex">
   <div class="max-w-xl mx-auto flex justify-center">
     <button @click="prevPage" :disabled="currentPage === 0"
-      class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md">
+      class="bg-blue-500 text-white p-1 rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md">
       ‹ Previous
     </button>
   </div>
     <span class="p-2">Page {{ currentPage + 1 }} / {{ totalPages }}</span>
     <div class="max-w-xl mx-auto flex justify-center">
       <button @click="nextPage" :disabled="currentPage === totalPages - 1"
-        class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md">
+        class="bg-blue-500 text-white p-1 rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md">
         Next ›
       </button>
     </div>

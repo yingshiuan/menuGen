@@ -49,7 +49,7 @@ const iconMap: Record<MenuOption, string> = {
 const allOptions = Object.keys(iconMap) as MenuOption[]
 const otherOptions = allOptions.filter((o) => o !== 'Recommend')
 
-type Field = 'No' | 'Name' | 'ChineseName' | 'Description' | 'Price'
+type Field = 'No' | 'Name' | 'ChineseName' | 'Description' | 'Price' | 'Category'
 
 // Editing state
 const editingState = reactive<Record<Field, boolean>>({
@@ -58,6 +58,7 @@ const editingState = reactive<Record<Field, boolean>>({
   ChineseName: false,
   Description: false,
   Price: false,
+  Category: false,
 })
 
 // Start/stop editing
@@ -72,6 +73,8 @@ function startEditing(field: Field) {
 
 function stopEditing(field: Field) {
   editingState[field] = false
+  // Emit update when stopping edit on any field
+  emit('update:item', { ...local })
 }
 
 // Toggle Options
@@ -264,7 +267,15 @@ watch(
 )
 
 // for update contain in the items
-watch(local, () => emit('update:item', local), { deep: true })
+watch(
+  local,
+  () => {
+    if (!Object.values(editingState).some((state) => state)) {
+      emit('update:item', local)
+    }
+  },
+  { deep: true },
+)
 </script>
 
 <template>
@@ -293,7 +304,7 @@ watch(local, () => emit('update:item', local), { deep: true })
           v-if="local.No && !editingState.No"
           @click="startEditing('No')"
           :title="`Click to edit the Number...`"
-          >{{ local.No || '-' }}</span
+          >{{ local.No }}</span
         >
         <span
           v-else-if="!local.No && !props.readonly && !editingState.No"
@@ -408,6 +419,39 @@ watch(local, () => emit('update:item', local), { deep: true })
             :readonly="props.readonly"
             class="p-1 w-full"
             placeholder="Click to add description"
+          />
+        </div>
+        
+        <!-- Category (UI only, hover reveal) -->
+        <div class="relative group text-xs font-extralight mt-1" data-ui-only>
+          <!-- Hover label -->
+          <div
+            v-if="!editingState.Category && local.Category"
+            class="absolute left-0 top-0 px-2 py-0.5 bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer whitespace-nowrap"
+            @click="startEditing('Category')"
+            title="Click to edit category"
+          >
+            {{ local.Category }}
+          </div>
+
+          <!-- Empty state -->
+          <div
+            v-else-if="!editingState.Category && !local.Category && !props.readonly"
+            class="absolute left-0 top-0 px-2 py-0.5 bg-gray-200 text-gray-600 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer whitespace-nowrap"
+            @click="startEditing('Category')"
+          >
+            + Category
+          </div>
+
+          <!-- Edit mode -->
+          <textarea
+            v-if="editingState.Category"
+            id="Category"
+            v-model="local.Category"
+            @blur="stopEditing('Category')"
+            @keyup.enter="stopEditing('Category')"
+            class="p-1 w-full border border-gray-300 rounded"
+            placeholder="Edit category"
           />
         </div>
       </div>

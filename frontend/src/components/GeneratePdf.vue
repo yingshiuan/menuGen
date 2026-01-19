@@ -84,7 +84,7 @@ async function generatePDF(): Promise<void> {
     <button
       @click="generatePDF"
       :disabled="pdfState.uploading"
-      class="relative flex items-center gap-2 p-2 bg-blue-500 text-white rounded-lg 
+      class="relative flex items-center gap-2 p-1 bg-blue-500 text-white rounded-lg 
             hover:bg-blue-700 border-2 border-blue-500 transition-colors duration-200 
             shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
     >
