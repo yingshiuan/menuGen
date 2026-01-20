@@ -204,7 +204,7 @@ watch(
 
 <template>
   <div class="">
-    <div class="flex gap-2 p-2 items-center">
+    <div class="flex gap-2 p-2 items-center border-b border-gray-300">
       <h1 class="w-1/4 text-xl font-bold p-1">Menu Gen (CSV to PDF)</h1>
       <div class="w-2/4">
         <MenuPage
@@ -257,7 +257,7 @@ watch(
       </div>
 
       <!-- Right side: preview -->
-      <div class="w-2/4 flex justify-center">
+      <div class="w-2/4 flex justify-center pt-2">
         <div
           class="menu-preview-wrapper md:menu-md lg:menu-lg"
           ref="menuPreviewRef"

@@ -29,7 +29,7 @@ function handleCategoryToggle(value: boolean) {
         type="number"
         :value="props.itemsPerPage"
         min="1"
-        max="20"
+        max="11"
         class="border rounded p-1"
         @change="(e) => handleChange((e.target as HTMLInputElement).value)"
       />

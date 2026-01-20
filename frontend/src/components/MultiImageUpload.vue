@@ -165,7 +165,7 @@ function toggleExpand() {
       @drop="onDrop"
     >
       <div class="text-gray-600 text-center group-hover:text-white transition-colors">
-        <p v-if="!imageState.isUploading">Click or drag Pictures here to upload</p>
+        <p v-if="!imageState.isUploading">Click or drag pictures here to upload</p>
         <div v-else class="loader w-6 h-6"></div>
       </div>
     </div>
