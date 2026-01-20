@@ -188,7 +188,7 @@ function toggleExpand() {
     <!-- Preview uploaded files -->
     <div
       v-show="imageState.isExpanded"
-      class="flex flex-wrap gap-2 mt-2 p-2 transition-all duration-200 border rounded bg-gray-50"
+      class="flex flex-wrap gap-2 mt-2 p-2 transition-all duration-200 border rounded bg-gray-50 h-60 overflow-y-scroll"
     >
       <div v-if="allPictures.length === 0">
         <p class="text-gray-400 italic m-auto">No file uploaded</p>

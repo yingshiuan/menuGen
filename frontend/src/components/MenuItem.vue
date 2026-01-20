@@ -49,13 +49,14 @@ const iconMap: Record<MenuOption, string> = {
 const allOptions = Object.keys(iconMap) as MenuOption[]
 const otherOptions = allOptions.filter((o) => o !== 'Recommend')
 
-type Field = 'No' | 'Name' | 'ChineseName' | 'Description' | 'Price' | 'Category'
+type Field = 'No' | 'Name' | 'ChineseName' | 'Measure' | 'Description' | 'Price' | 'Category'
 
 // Editing state
 const editingState = reactive<Record<Field, boolean>>({
   No: false,
   Name: false,
   ChineseName: false,
+  Measure: false,
   Description: false,
   Price: false,
   Category: false,
@@ -304,6 +305,7 @@ watch(
           v-if="local.No && !editingState.No"
           @click="startEditing('No')"
           :title="`Click to edit the Number...`"
+          class="cursor-pointer"
           >{{ local.No }}</span
         >
         <span
@@ -334,8 +336,25 @@ watch(
             v-if="local.Name && !editingState.Name"
             @click="startEditing('Name')"
             :title="`Click to edit the Name...`"
+            class="cursor-pointer"
             >{{ local.Name }}
-            <span v-if="local.Measure" class=""> ({{ local.Measure }} pcs)</span>
+            <span
+              v-if="local.Measure && !editingState.Measure"
+              class="cursor-pointer hover:bg-gray-300 rounded"
+              @click.stop="startEditing('Measure')"
+              :title="`Click to edit the Measure...`"
+            >
+              ({{ local.Measure }} pcs)</span
+            >
+            <span
+              v-else-if="!local.Measure && !props.readonly && !editingState.Measure"
+              data-ui-only
+              @click.stop="startEditing('Measure')"
+              title="Click to add Measure..."
+              class="opacity-30 cursor-pointer"
+            >
+              (pcs)
+            </span>
           </span>
           <span
             v-else-if="!local.Name && !props.readonly && !editingState.Name"
@@ -356,10 +375,24 @@ watch(
             :readonly="props.readonly"
             class="p-1"
           />
+          <!-- Measure editing (inline) -->
+          <span v-if="editingState.Measure" class="inline-flex items-center gap-1">
+            (
+            <input
+              id="Measure"
+              v-model="local.Measure"
+              @blur="stopEditing('Measure')"
+              @keyup.enter="stopEditing('Measure')"
+              :readonly="props.readonly"
+              class="p-1 w-12 border"
+              placeholder="qty"
+            />
+            pcs)
+          </span>
           <!-- Chinese Name -->
           <span
             v-if="local.ChineseName && !editingState.ChineseName"
-            class="font-light menu-item whitespace-normal break-keep"
+            class="font-light menu-item whitespace-normal break-keep cursor-pointer"
             @click="startEditing('ChineseName')"
             title="Click to edit the Chinese Name..."
           >
@@ -395,6 +428,7 @@ watch(
             v-if="!editingState.Description && local.Description"
             @click="startEditing('Description')"
             :title="'Click to edit the Description...'"
+            class="cursor-pointer"
           >
             {{ local.Description }}
           </span>
@@ -421,7 +455,7 @@ watch(
             placeholder="Click to add description"
           />
         </div>
-        
+
         <!-- Category (UI only, hover reveal) -->
         <div class="relative group text-xs font-extralight mt-1" data-ui-only>
           <!-- Hover label -->
@@ -480,6 +514,7 @@ watch(
           v-if="local.Price && !editingState.Price"
           @click="startEditing('Price')"
           :title="`Click to edit the Price...`"
+          class="cursor-pointer"
           >{{ local.Price }}</span
         >
         <span

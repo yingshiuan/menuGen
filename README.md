@@ -7,7 +7,7 @@ MenuGen is a smart menu-building tool that transforms a CSV file into an editabl
 It supports:
 
 ✔ CSV Parsing
-✔ Inline Editing
+✔ Inline Editing (No, Name, ChineseName, Price, Description, options, picture, Category) 
 ✔ Auto Layout (Tailwind CSS v4)
 ✔ Icon & Image Upload
 ✔ Automatic image/SVG compression
@@ -33,6 +33,7 @@ It supports:
 - [ ] Preview two pages 
 - [x] Allow users to set custom width and height for the menu PDF
 - [ ] Add common size for users to select
+- [ ] Set cover layout styles
 
 ### UI Improvements
 - [ ] Dark/Light theme toggle  

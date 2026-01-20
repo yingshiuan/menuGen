@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, reactive } from 'vue'
+import { computed, ref, reactive, watch } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuItemComponent from '@/components/MenuItem.vue'
 import LogoUpload from '@/components/AddLogo.vue'
@@ -22,6 +22,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:footerText', value: string): void
+  (e: 'update:logo', base64: string): void
   (e: 'add-before', payload: { No: string }): void
   (e: 'add-after', payload: { No: string }): void
   (e: 'delete-item', payload: { No: string }): void
@@ -35,10 +36,19 @@ interface DragState {
 
 const dragState = reactive<DragState>({
   dragOverIndex: null,
-  draggingIndex: null
+  draggingIndex: null,
 })
 
 const logoBase64 = ref<string | null>(null)
+
+// Sync parent's defaultSrc prop to local logoBase64
+watch(
+  () => props.defaultSrc,
+  (newVal) => {
+    logoBase64.value = newVal || null
+  },
+  { immediate: true },
+)
 
 const styleObject = computed(() => ({
   fontFamily: props.fontFamily ?? 'sans-serif',
@@ -170,6 +180,7 @@ function onDrop(e: DragEvent) {
 
   emit('reorder', { fromNo: fromItem.No, toNo: toItem.No })
 }
+
 </script>
 
 <template>
@@ -186,7 +197,14 @@ function onDrop(e: DragEvent) {
       <LogoUpload
         :default-src="logoBase64 || undefined"
         :readonly="readonly"
-        @update:logo="(base64: string) => (logoBase64 = base64)"
+        @update:logo="
+          (base64: string) => {
+            console.log('MenuPreview received logo upload, length:', base64.length)
+            logoBase64 = base64
+            emit('update:logo', base64)
+            console.log('MenuPreview emitted update:logo')
+          }
+        "
       />
     </div>
 
@@ -232,7 +250,7 @@ function onDrop(e: DragEvent) {
           class="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
         >
           <button
-            class="btn-sm rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1"
+            class="btn-sm rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
             @click.stop.prevent="() => emit('add-before', { No: entry.item.No })"
             title="Add item before"
           >
@@ -246,7 +264,7 @@ function onDrop(e: DragEvent) {
           class="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
         >
           <button
-            class="btn-sm rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1"
+            class="btn-sm rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
             @click.stop.prevent="() => emit('add-after', { No: entry.item.No })"
             title="Add item after"
           >
@@ -260,7 +278,7 @@ function onDrop(e: DragEvent) {
           class="absolute -top-3 -right-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
         >
           <button
-            class="btn-sm text-red-500  rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1"
+            class="btn-sm text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
             @click.stop.prevent="() => emit('delete-item', { No: entry.item.No })"
             title="Delete item"
           >

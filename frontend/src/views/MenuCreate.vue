@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuPreview from '@/components/MenuPreview.vue'
 import GeneratePdf from '@/components/GeneratePdf.vue'
@@ -29,6 +29,7 @@ interface MenuState {
   bgColor: string
   textColor: string
   footerText: string
+  logoBase64: string | null
 }
 
 interface MeunPage {
@@ -55,25 +56,26 @@ const state = reactive<MenuState>({
   bgColor: '#ffffff',
   textColor: '#000000',
   footerText: 'All prices are in CHF, including VAT',
+  logoBase64: null,
 })
 
 const demoMenu: MenuItem[] = [
   {
     No: '1',
-    Price: '12.50',
+    Price: '00.00',
     Name: 'Sample 1',
-    Measure: 'pcs',
-    ChineseName: '範本一',
+    Measure: '1',
+    ChineseName: '中文菜名 1',
     Description: 'Sample description 1',
-    Options: ['Recommend', 'Spicy'],
+    Options: ['Recommend', 'Spicy', 'Vegetarian'],
     Category: 'Sample Category',
   },
   {
     No: '2',
     Price: '18.00',
     Name: 'Sample 2',
-    Measure: 'pcs',
-    ChineseName: '',
+    Measure: '',
+    ChineseName: '中文菜名 2',
     Description: 'Sample description 2',
     Options: ['Vegan', 'Gluten Free'],
     Category: 'Sample Category',
@@ -90,6 +92,10 @@ const pdfRenderKey = ref(0)
 
 const totalPages = computed(() => Math.ceil(state.menuCsv.length / menuPage.itemsPerPage))
 
+onMounted(() => {
+  loadSampleMenu()
+})
+
 function handleCsvLoaded(items: MenuItem[]) {
   state.menuCsv = items
   menuPage.currentPage = 0
@@ -98,7 +104,7 @@ function handleCsvLoaded(items: MenuItem[]) {
 function loadSampleMenu() {
   state.menuCsv = demoMenu.map((item) => ({ ...item }))
   menuPage.currentPage = 0
-  csvKey.value++ 
+  csvKey.value++
 }
 
 function onItemUpdated(updated: MenuItem) {
@@ -176,8 +182,8 @@ function reorderItems(fromNo: string, toNo: string) {
 
 // watch each items deeply
 watch(
-  () =>
-    state.menuCsv.map((item) => ({
+  () => ({
+    items: state.menuCsv.map((item) => ({
       No: item.No,
       Name: item.Name,
       ChineseName: item.ChineseName,
@@ -186,7 +192,10 @@ watch(
       Options: [...item.Options],
       mainImageBase64: item.mainImageBase64,
     })),
-  () => {
+    logo: state.logoBase64,
+  }),
+  (newVal) => {
+    console.log('Watch triggered - logo:', newVal.logo ? 'present' : 'empty')
     pdfRenderKey.value++
   },
   { deep: true },
@@ -267,11 +276,13 @@ watch(
             :page-width="menuPage.width"
             :page-height="menuPage.height"
             :keep-category-together="menuPage.keepCategoryTogether"
+            :default-src="state.logoBase64 || undefined"
             class="relative flex-1"
             @add-before="(p) => addItemBefore(p.No)"
             @add-after="(p) => addItemAfter(p.No)"
             @delete-item="(p) => deleteItemByNo(p.No)"
             @reorder="(p) => reorderItems(p.fromNo, p.toNo)"
+            @update:logo="(base64: string) => (state.logoBase64 = base64)"
           />
         </div>
         <div
@@ -303,6 +314,8 @@ watch(
               :page-width="menuPage.width"
               :page-height="menuPage.height"
               :keep-category-together="menuPage.keepCategoryTogether"
+              :default-src="state.logoBase64 || undefined"
+              @update:logo="(base64: string) => (state.logoBase64 = base64)"
             />
           </div>
         </div>
