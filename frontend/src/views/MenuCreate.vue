@@ -12,13 +12,7 @@ import MenuPage from '@/components/MenuPage.vue'
 import ItemsPerCategorySelector from '@/components/ItemsPerCategorySelector.vue'
 import MultiImageUpload from '@/components/MultiImageUpload.vue'
 
-type FontValue =
-  | 'sans-serif'
-  | 'serif'
-  | 'monospace'
-  | "'Courier New', monospace"
-  | "'Arial', sans-serif"
-  | "'Times New Roman', serif"
+type FontValue = string;
 
 // const csvData = ref<MenuItem[]>([])
 
@@ -308,6 +302,7 @@ watch(
             :contentRef="pdfRenderRef"
             :page-width="menuPage.width"
             :page-height="menuPage.height"
+            :font-family="state.selectedFont"
             class=""
           />
         </div>
@@ -383,7 +378,7 @@ watch(
         </div>
       </div>
       <!-- PDF DOM-->
-      <div style="display: none">
+      <div style="display: none;">
         <div ref="pdfRenderRef" :key="pdfRenderKey">
           <div v-for="page in menuPage.totalPages" :key="page" class="pdf-page">
             <MenuPreview

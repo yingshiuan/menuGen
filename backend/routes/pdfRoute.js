@@ -38,7 +38,7 @@ async function compressSvg(filePath, width = 96, height = 96) {
 // POST /generate-pdf
 router.post('/generate-pdf', async (req, res) => {
   try {
-    const { html, width = '210mm', height = '297mm' } = req.body
+    const { html, width = '210mm', height = '297mm', font } = req.body
 
     if (!html) {
       return res.status(400).send('HTML content is required')
@@ -102,9 +102,14 @@ router.post('/generate-pdf', async (req, res) => {
       el.style.display = 'none'
     })
 
+    const fontLink = font
+      ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}&display=swap" rel="stylesheet" />`
+      : ''
+
     const optimizedHtml = `
       <html>
         <head>
+          ${fontLink}
           <style>${tailwindCSS}</style>
         </head>
         <body>${document.body.innerHTML}</body>
@@ -132,6 +137,10 @@ router.post('/generate-pdf', async (req, res) => {
           return new Promise((resolve) => (img.onload = img.onerror = resolve))
         }),
       )
+    })
+
+    await page.evaluate(async () => {
+      await document.fonts.ready
     })
 
     // Generate PDF

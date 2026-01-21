@@ -5,6 +5,7 @@ const props = defineProps<{
   contentRef: HTMLElement | null
   pageWidth: string
   pageHeight: string
+  fontFamily: string
 }>();
 
 interface PdfState {
@@ -47,6 +48,7 @@ async function generatePDF(): Promise<void> {
         html: htmlContent,
         width: props.pageWidth,
         height: props.pageHeight,
+        font: props.fontFamily,
       }),
     });
 

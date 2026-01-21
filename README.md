@@ -10,6 +10,7 @@ It supports:
 ✔ Inline Editing (No, Name, ChineseName, Price, Description, options, picture, Category) 
 ✔ Auto category-aware item numbering with intelligent gap reuse
 ✔ Auto Layout (Tailwind CSS v4)
+✔ Support Google Fonts (paste font name to load dynamically)
 ✔ Icon & Image Upload
 ✔ Automatic image/SVG compression
 ✔ Perfect PDF Export (exact same look as the on-screen preview)
@@ -39,7 +40,7 @@ It supports:
 ### UI Improvements
 - [ ] Dark/Light theme toggle  
 - [x] 6 fonts selection  
-- [ ] Custom font selection  
+- [x] Support Google Fonts (paste font name to load dynamically)
 - [ ] Auto-fit long descriptions  
 - [ ] Category templates (e.g., Drinks, Starters, Specials)
 
