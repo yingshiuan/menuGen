@@ -24,6 +24,11 @@ const fileInput = ref<HTMLInputElement | null>(null) // DOM uses ref
 const fileName = ref<string | null>(null)
 const menuStore = useMenuStore()
 
+// Generate a unique ID
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+}
+
 function getOptionsFromRow(row: Record<string, string>): MenuOption[] {
   const map: Record<string, MenuOption> = {
     Recommend: 'Recommend',
@@ -71,10 +76,11 @@ function parseCsvFile(file: File) {
           currentCategory = row['Name']?.trim() ?? ''
         } else {
           processed.push({
+            id: generateId(), // Generate unique ID for each item
             No: row['No.'] ?? '',
             Price: row['Price'] ?? '',
             Name: row['Name'] ?? '',
-            Measure: row['Measure'] ?? '', 
+            Measure: row['Measure'] ?? '',
             ChineseName: row['Chinese Name'] ?? '',
             Description: row['Description'] ?? '',
             Options: getOptionsFromRow(row),
@@ -92,7 +98,7 @@ function parseCsvFile(file: File) {
 function handleFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
-  fileName.value = null  
+  fileName.value = null
   fileName.value = file.name
   parseCsvFile(file)
   if (fileInput.value) fileInput.value.value = ''
@@ -178,13 +184,13 @@ function downloadCSV() {
       <div class="text-container">
         <div class="text-gray-600 text-center group-hover:text-white transition-colors text-sm">
           <p>
-            {{ fileName ? fileName :'Please upload a CSV file.'}}
+            {{ fileName ? fileName : 'Please upload a CSV file.' }}
           </p>
           <p>
             {{ 'Drag & drop your CSV here, or click to browse' }}
           </p>
         </div>
-        
+
         <!-- Browse Button (optional, still clickable) -->
         <!-- <button
         type="button"

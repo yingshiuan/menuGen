@@ -61,6 +61,7 @@ const state = reactive<MenuState>({
 
 const demoMenu: MenuItem[] = [
   {
+    id: '0',
     No: '1',
     Price: '00.00',
     Name: 'Sample 1',
@@ -71,6 +72,7 @@ const demoMenu: MenuItem[] = [
     Category: 'Sample Category',
   },
   {
+    id: '1',
     No: '2',
     Price: '18.00',
     Name: 'Sample 2',
@@ -108,10 +110,18 @@ function loadSampleMenu() {
 }
 
 function onItemUpdated(updated: MenuItem) {
-  // First try to find by Name
-  let idx = state.menuCsv.findIndex((it) => it.Name === updated.Name)
+  let idx = -1
 
-  // If not found by Name, fallback to match by No
+  if (updated.id) {
+    idx = state.menuCsv.findIndex((it) => it.id === updated.id)
+  }
+
+  // Fallback to Name if no ID
+  if (idx === -1) {
+    idx = state.menuCsv.findIndex((it) => it.Name === updated.Name)
+  }
+
+  // Final fallback to No
   if (idx === -1 && updated.No != null) {
     idx = state.menuCsv.findIndex((it) => it.No === updated.No)
   }
@@ -123,10 +133,72 @@ function onItemUpdated(updated: MenuItem) {
   }
 }
 
-// Helpers for preview actions
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+}
+
+function getNextNo(category?: string): string {
+  // Get all numeric No. values globally
+  const globalUsedNumbers = new Set<number>()
+  state.menuCsv.forEach((item) => {
+    const num = parseInt(item.No, 10)
+    if (!isNaN(num)) {
+      globalUsedNumbers.add(num)
+    }
+  })
+
+  // If no items exist, start from 1
+  if (globalUsedNumbers.size === 0) return '1'
+
+  // If category provided, prioritize filling gaps within category's range
+  if (category) {
+    const categoryItems = state.menuCsv.filter((item) => item.Category === category)
+    let minInCategory = Infinity
+    let maxInCategory = 0
+
+    categoryItems.forEach((item) => {
+      const num = parseInt(item.No, 10)
+      if (!isNaN(num)) {
+        minInCategory = Math.min(minInCategory, num)
+        maxInCategory = Math.max(maxInCategory, num)
+      }
+    })
+
+    // If category has items, check for gaps within its range first
+    if (maxInCategory > 0) {
+      for (let i = minInCategory; i <= maxInCategory; i++) {
+        if (!globalUsedNumbers.has(i)) {
+          return i.toString()
+        }
+      }
+
+      // No gaps found in range, add after max
+      let nextNum = maxInCategory + 1
+      while (globalUsedNumbers.has(nextNum)) {
+        nextNum++
+      }
+      return nextNum.toString()
+    }
+  }
+
+  // No category or category has no items, find first global gap
+  const sortedGlobal = Array.from(globalUsedNumbers).sort((a, b) => a - b)
+
+  // Check for gaps in the global sequence
+  for (let i = 0; i < sortedGlobal.length - 1; i++) {
+    if (sortedGlobal[i + 1]! - sortedGlobal[i]! > 1) {
+      return (sortedGlobal[i]! + 1).toString()
+    }
+  }
+
+  // No gaps found, return next number after the maximum
+  return (sortedGlobal[sortedGlobal.length - 1]! + 1).toString()
+}
+
 function createNewItem(defaultNo?: string, defaultCategory?: string) {
-  const no = defaultNo ?? (state.menuCsv.length + 1).toString()
+  const no = defaultNo ?? getNextNo(defaultCategory)
   return {
+    id: generateId(),
     No: no,
     Price: '',
     Name: `New Item ${no}`,

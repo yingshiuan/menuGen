@@ -61,6 +61,7 @@ interface PageEntry {
   item: MenuItem
 }
 
+// Pagination logic
 const pages = computed<PageEntry[][]>(() => {
   const grouped: Record<string, MenuItem[]> = {}
   props.items.forEach((item) => {
@@ -73,23 +74,37 @@ const pages = computed<PageEntry[][]>(() => {
   let currentPage: PageEntry[] = []
 
   if (props.keepCategoryTogether) {
-    // Keep entire category on the same page
     for (const [category, items] of Object.entries(grouped)) {
       const categoryEntries = items.map((item) => ({ category, item }))
+      const categoryLength = categoryEntries.length
 
-      // If category doesn't fit on current page, start new page
-      if (
-        currentPage.length > 0 &&
-        currentPage.length + categoryEntries.length > props.itemsPerPage
-      ) {
-        result.push(currentPage)
-        currentPage = []
+      // If category itself exceeds 11, split it across pages
+      if (categoryLength > 11) {
+        // flush current page first
+        if (currentPage.length) {
+          result.push(currentPage)
+          currentPage = []
+        }
+
+        // split category into pages of 11
+        for (let i = 0; i < categoryLength; i += 11) {
+          result.push(categoryEntries.slice(i, i + 11))
+        }
+        continue
+      }
+
+      // If current page already has items
+      if (currentPage.length > 0) {
+        // If adding this category would exceed 10 => start new page
+        if (currentPage.length + categoryLength > 10) {
+          result.push(currentPage)
+          currentPage = []
+        }
       }
 
       currentPage.push(...categoryEntries)
-
-      // Start new page if current page is full
-      if (currentPage.length >= props.itemsPerPage) {
+      // If current page hits 10, push it
+      if (currentPage.length >= 10) {
         result.push(currentPage)
         currentPage = []
       }
@@ -98,7 +113,6 @@ const pages = computed<PageEntry[][]>(() => {
     // Original behavior: break categories across pages
     for (const [category, items] of Object.entries(grouped)) {
       items.forEach((item) => {
-        // Start a new page if current is full
         if (currentPage.length >= props.itemsPerPage) {
           result.push(currentPage)
           currentPage = []
@@ -111,6 +125,7 @@ const pages = computed<PageEntry[][]>(() => {
   if (currentPage.length > 0) result.push(currentPage)
   return result
 })
+
 
 const totalPages = computed(() => pages.value.length)
 

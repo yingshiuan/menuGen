@@ -8,6 +8,7 @@ It supports:
 
 ✔ CSV Parsing
 ✔ Inline Editing (No, Name, ChineseName, Price, Description, options, picture, Category) 
+✔ Auto category-aware item numbering with intelligent gap reuse
 ✔ Auto Layout (Tailwind CSS v4)
 ✔ Icon & Image Upload
 ✔ Automatic image/SVG compression
