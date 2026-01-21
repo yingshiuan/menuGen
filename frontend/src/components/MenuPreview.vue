@@ -27,6 +27,7 @@ const emit = defineEmits<{
   (e: 'add-after', payload: { No: string }): void
   (e: 'delete-item', payload: { No: string }): void
   (e: 'reorder', payload: { fromNo: string; toNo: string }): void
+  (e: 'update:totalPages', value: number): void
 }>()
 
 interface DragState {
@@ -129,6 +130,10 @@ const pages = computed<PageEntry[][]>(() => {
 
 const totalPages = computed(() => pages.value.length)
 
+watch(totalPages, (val) => {
+  emit('update:totalPages', val)
+}, { immediate: true })
+
 const clampedPage = computed(() =>
   Math.min(Math.max(props.currentPage, 0), Math.max(totalPages.value - 1, 0)),
 )
@@ -214,10 +219,8 @@ function onDrop(e: DragEvent) {
         :readonly="readonly"
         @update:logo="
           (base64: string) => {
-            console.log('MenuPreview received logo upload, length:', base64.length)
             logoBase64 = base64
             emit('update:logo', base64)
-            console.log('MenuPreview emitted update:logo')
           }
         "
       />

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, ref, computed, watch, onMounted } from 'vue'
+import { reactive, ref, watch, onMounted } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuPreview from '@/components/MenuPreview.vue'
 import GeneratePdf from '@/components/GeneratePdf.vue'
@@ -35,6 +35,7 @@ interface MenuState {
 interface MeunPage {
   currentPage: number
   itemsPerPage: number
+  totalPages: number
   width: string
   height: string
   keepCategoryTogether: boolean
@@ -43,6 +44,7 @@ interface MeunPage {
 const menuPage = reactive<MeunPage>({
   currentPage: 0,
   itemsPerPage: 9,
+  totalPages: 1,
   width: '210mm',
   height: '297mm',
   keepCategoryTogether: true,
@@ -92,7 +94,7 @@ const pdfRenderRef = ref<HTMLElement | null>(null)
 
 const pdfRenderKey = ref(0)
 
-const totalPages = computed(() => Math.ceil(state.menuCsv.length / menuPage.itemsPerPage))
+// const totalPages = computed(() => Math.ceil(state.menuCsv.length / menuPage.itemsPerPage))
 
 onMounted(() => {
   loadSampleMenu()
@@ -253,6 +255,16 @@ function reorderItems(fromNo: string, toNo: string) {
 // );
 
 // watch each items deeply
+
+watch(
+  () => menuPage.totalPages,
+  (newTotal) => {
+    if (menuPage.currentPage >= newTotal) {
+      menuPage.currentPage = Math.max(0, newTotal - 1)
+    }
+  }
+)
+
 watch(
   () => ({
     items: state.menuCsv.map((item) => ({
@@ -266,8 +278,7 @@ watch(
     })),
     logo: state.logoBase64,
   }),
-  (newVal) => {
-    console.log('Watch triggered - logo:', newVal.logo ? 'present' : 'empty')
+  () => {
     pdfRenderKey.value++
   },
   { deep: true },
@@ -282,7 +293,7 @@ watch(
         <MenuPage
           v-if="state.menuCsv.length"
           :current-page="menuPage.currentPage"
-          :total-pages="totalPages"
+          :total-pages="menuPage.totalPages"
           @update:page="menuPage.currentPage = $event"
         />
       </div>
@@ -354,6 +365,7 @@ watch(
             @add-after="(p) => addItemAfter(p.No)"
             @delete-item="(p) => deleteItemByNo(p.No)"
             @reorder="(p) => reorderItems(p.fromNo, p.toNo)"
+            @update:totalPages="(val) => (menuPage.totalPages = val)"
             @update:logo="(base64: string) => (state.logoBase64 = base64)"
           />
         </div>
@@ -373,7 +385,7 @@ watch(
       <!-- PDF DOM-->
       <div style="display: none">
         <div ref="pdfRenderRef" :key="pdfRenderKey">
-          <div v-for="page in totalPages" :key="page" class="pdf-page">
+          <div v-for="page in menuPage.totalPages" :key="page" class="pdf-page">
             <MenuPreview
               v-model:footerText="state.footerText"
               :items="state.menuCsv"
