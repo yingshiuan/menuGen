@@ -11,8 +11,10 @@ import ScaleControl from '@/components/ScaleControl.vue'
 import MenuPage from '@/components/MenuPage.vue'
 import ItemsPerCategorySelector from '@/components/ItemsPerCategorySelector.vue'
 import MultiImageUpload from '@/components/MultiImageUpload.vue'
+import ItemSpacingControl from '@/components/ItemSpacingControl.vue'
+import type { ItemSpacing } from '@/components/ItemSpacingControl.vue'
 
-type FontValue = string;
+type FontValue = string
 
 // const csvData = ref<MenuItem[]>([])
 
@@ -22,8 +24,10 @@ interface MenuState {
   selectedFont: FontValue
   bgColor: string
   textColor: string
+  scalePage: number
   footerText: string
   logoBase64: string | null
+  itemSpacing: ItemSpacing
 }
 
 interface MeunPage {
@@ -51,8 +55,10 @@ const state = reactive<MenuState>({
   selectedFont: 'sans-serif',
   bgColor: '#ffffff',
   textColor: '#000000',
+  scalePage: 0.8,
   footerText: 'All prices are in CHF, including VAT',
   logoBase64: null,
+  itemSpacing: 'fill',
 })
 
 const demoMenu: MenuItem[] = [
@@ -80,13 +86,13 @@ const demoMenu: MenuItem[] = [
   },
 ]
 
-const scale = ref(0.8)
-const csvKey = ref(0)
+// const itemSpacing = ref<ItemSpacing>('fill')
 
 const menuPreviewRef = ref<HTMLElement | null>(null)
 const pdfRenderRef = ref<HTMLElement | null>(null)
 
 const pdfRenderKey = ref(0)
+const csvKey = ref(0)
 
 // const totalPages = computed(() => Math.ceil(state.menuCsv.length / menuPage.itemsPerPage))
 
@@ -256,7 +262,7 @@ watch(
     if (menuPage.currentPage >= newTotal) {
       menuPage.currentPage = Math.max(0, newTotal - 1)
     }
-  }
+  },
 )
 
 watch(
@@ -319,9 +325,12 @@ watch(
         <div class="py-2"><ColorPicker type="bg" v-model:color="state.bgColor" /></div>
         <div class="py-2"><ColorPicker type="text" v-model:color="state.textColor" /></div>
         <div class="py-2">
+          <ItemSpacingControl v-model="state.itemSpacing" />
+        </div>
+        <div class="py-2">
           <PageSizeSelector v-model:width="menuPage.width" v-model:height="menuPage.height" />
         </div>
-        <div class="py-2"><ScaleControl v-model="scale" label="Scale" /></div>
+        <div class="py-2"><ScaleControl v-model="state.scalePage" label="Scale" /></div>
         <div class="py-2">
           <ItemsPerCategorySelector
             v-model:itemsPerPage="menuPage.itemsPerPage"
@@ -340,7 +349,7 @@ watch(
           class="menu-preview-wrapper md:menu-md lg:menu-lg"
           ref="menuPreviewRef"
           v-if="state.menuCsv.length"
-          :style="{ '--ui-scale': scale }"
+          :style="{ '--ui-scale': state.scalePage }"
         >
           <MenuPreview
             v-model:footerText="state.footerText"
@@ -348,6 +357,7 @@ watch(
             :font-family="state.selectedFont"
             :bg-color="state.bgColor"
             :text-color="state.textColor"
+            :item-spacing="state.itemSpacing"
             :readonly="state.pdfReadonly"
             :current-page="menuPage.currentPage"
             :items-per-page="menuPage.itemsPerPage"
@@ -378,7 +388,7 @@ watch(
         </div>
       </div>
       <!-- PDF DOM-->
-      <div style="display: none;">
+      <div style="display: none">
         <div ref="pdfRenderRef" :key="pdfRenderKey">
           <div v-for="page in menuPage.totalPages" :key="page" class="pdf-page">
             <MenuPreview
@@ -387,6 +397,7 @@ watch(
               :fontFamily="state.selectedFont"
               :bgColor="state.bgColor"
               :textColor="state.textColor"
+              :item-spacing="state.itemSpacing"
               :readonly="state.pdfReadonly"
               :current-page="page - 1"
               :items-per-page="menuPage.itemsPerPage"

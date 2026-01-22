@@ -1,6 +1,10 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
 
+const props = defineProps<{
+  font: string
+}>()
+
 const emit = defineEmits<{
   (e: 'update:font', font: string): void
 }>()
@@ -19,7 +23,16 @@ const fonts: FontOption[] = [
   { label: 'Times New Roman', value: "'Times New Roman', serif" },
 ]
 
-const selectedFont = ref<string>(fonts[0]?.value || 'sans-serif')
+const selectedFont = ref<string>(props.font)
+
+  watch(
+  () => props.font,
+  (val) => {
+    if (val !== selectedFont.value) {
+      selectedFont.value = val
+    }
+  }
+)
 
 // watch(selectedFont, (newFont) => emit('update:font', newFont))
 

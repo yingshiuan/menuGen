@@ -34,7 +34,7 @@ It supports:
 - [x] Export Multi-page pdf  
 - [ ] Preview two pages 
 - [x] Allow users to set custom width and height for the menu PDF
-- [ ] Add common size for users to select
+- [ ] Add common page size for users to select
 - [ ] Set cover layout styles
 
 ### UI Improvements

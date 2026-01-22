@@ -4,14 +4,16 @@ import type { MenuItem } from '@/types/types'
 import MenuItemComponent from '@/components/MenuItem.vue'
 import LogoUpload from '@/components/AddLogo.vue'
 import MeunInfo from '@/components/MeunInfo.vue'
+import type { ItemSpacing } from '@/components/ItemSpacingControl.vue'
 
 const props = defineProps<{
   items: MenuItem[]
   footerText: string
-  fontFamily?: string
-  bgColor?: string
-  textColor?: string
-  readonly?: boolean
+  fontFamily: string
+  bgColor: string
+  textColor: string
+  itemSpacing: ItemSpacing
+  readonly: boolean
   currentPage: number
   itemsPerPage: number
   defaultSrc?: string
@@ -201,6 +203,24 @@ function onDrop(e: DragEvent) {
   emit('reorder', { fromNo: fromItem.No, toNo: toItem.No })
 }
 
+const itemFlexClass = computed(() =>
+  props.itemSpacing === 'fill' ? 'flex-1' : 'flex-none'
+)
+
+// spacing behavior, currently only compact and fill is implemented
+const itemSpacingClass = computed(() => {
+  switch (props.itemSpacing) {
+    case 'compact':
+      return 'mb-0'
+    case 'normal':
+      return 'mb-1'
+    case 'spacious':
+      return 'mb-1.5'
+    default:
+      return ''
+  }
+})
+
 </script>
 
 <template>
@@ -230,7 +250,8 @@ function onDrop(e: DragEvent) {
     <div
       v-for="(entry, index) in pageItems"
       :key="`${clampedPage}-${entry.category}-${entry.item.No || 'item'}-${index}`"
-      class="flex-1 group relative"
+      class="group relative"
+      :class="[itemFlexClass, itemSpacingClass]"
       :draggable="!props.readonly"
       @dragstart="(e) => onDragStart(e, index)"
       @dragover="(e) => onDragOver(e, index)"
