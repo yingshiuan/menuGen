@@ -74,7 +74,7 @@ watch(selectedFont, (newFont) => {
 <template>
   <div class="flex items-center gap-2">
     <div class="flex items-center gap-2">
-      <label for="fontSelect" class="font-medium">Select Font</label>
+      <label for="fontSelect" class="">Select Font</label>
       <select
         id="fontSelect"
         v-model="selectedFont"
@@ -93,7 +93,7 @@ watch(selectedFont, (newFont) => {
     </div>
   </div>
   <div class="flex items-center gap-2 mt-2">
-    <label class="font-medium">Paste Font Name</label>
+    <label class="">Paste Font Name</label>
     <input
       v-model="selectedFont"
       placeholder="Paste Google Font name (e.g., Roboto, Poppins)"

@@ -541,29 +541,45 @@ watch(
       <!-- min-w and min-h need to change by the w-20 and h-20-->
       <div
         v-if="displayedPicture || !props.readonly"
-        class="shrink-0 w-20 h-20 flex justify-center items-center relative rounded-full overflow-hidden cursor-pointer"
-        :class="displayedPicture && pictureState.visible ? 'border border-gray-300' : ''"
+        class="shrink-0 w-20 h-20 relative rounded-full cursor-pointer overflow-hidden"
         @click="triggerUpload"
-        style="min-width: 5rem; min-height: 5rem"
       >
-        <!-- Image exists and loaded -->
-        <img
-          v-if="displayedPicture && pictureState.visible"
-          :key="displayedPicture"
-          :src="displayedPicture"
-          alt="Item Picture"
-          class="w-full h-full object-cover rounded-full transform scale-110 overflow-hidden"
-          @error="onImageError"
-        />
+        <!-- Normal img -->
+        <div v-if="displayedPicture && pictureState.visible" class="absolute inset-0 rounded-full overflow-hidden m-[12%] w-[76%] h-[76%]">
+          <img
+            v-if="displayedPicture && pictureState.visible"
+            :src="displayedPicture"
+            class="w-full h-full object-cover rounded-full transform scale-110 overflow-hidden"
+            @error="onImageError"
+          />
+        </div>
 
-        <div
-          v-else
-          class="w-full h-full flex justify-center items-center opacity-30 hover:bg-gray-100 hover:text-gray-600 hover:opacity-100 rounded-full"
-          :class="!displayedPicture && props.readonly ? '' : 'bg-transparent'"
+        <!-- Curved text overlay (SVG only for text path) -->
+        <svg
+          v-if="displayedPicture && pictureState.visible"
+          viewBox="0 0 100 100"
+          class="absolute inset-0 w-full h-full pointer-events-none"
         >
-          <span v-if="!props.readonly" data-ui-only :title="`Click to upload the Picture...`"
-            >Upload</span
-          >
+          <path
+            :id="`path-${props.item.id}`"
+            d="M 50,50 m -40,0 a 40,40 0 1,1 80,0 a 40,40 0 1,1 -80,0"
+            fill="none"
+            stroke="none"
+          />
+
+          <text class="font-extralight text-[0.6rem]" :style="{ fill: lighterTextColor }">
+            <textPath :href="`#path-${props.item.id}`" startOffset="0%" text-anchor="start">
+              {{ local.Name }}
+            </textPath>
+          </text>
+        </svg>
+
+        <!-- Upload fallback -->
+        <div
+          v-if="!displayedPicture || !pictureState.visible"
+          class="absolute inset-0 flex items-center justify-center opacity-30 hover:bg-gray-100 hover:text-gray-600 hover:opacity-100 rounded-full"
+        >
+          <span v-if="!props.readonly">Upload</span>
         </div>
 
         <input

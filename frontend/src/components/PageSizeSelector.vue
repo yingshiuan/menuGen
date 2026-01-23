@@ -60,6 +60,7 @@ function onHeightInput(e: Event) {
 
 <template>
   <div class="flex gap-2 items-center">
+    <label class="">Page Size</label>
     <label class="flex items-center select-none gap-2">
       <span class="cursor-ew-resize" @pointerdown.prevent="(e) => startDrag(e, 'width')">
         W

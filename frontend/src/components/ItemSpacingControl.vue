@@ -21,7 +21,7 @@ const options: { label: string; value: ItemSpacing }[] = [
 
 <template>
   <div class="flex items-center gap-2">
-    <label class="font-medium">Item spacing</label>
+    <label class="">Item Spacing</label>
 
     <select
       class="border rounded px-2 py-1"
