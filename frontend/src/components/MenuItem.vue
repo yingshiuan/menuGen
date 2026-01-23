@@ -258,6 +258,17 @@ function uploadPicture(event: Event) {
   if (fileInputRef.value) fileInputRef.value.value = ''
 }
 
+function deletePicture() {
+  if (props.readonly) return
+
+  local.mainImageBase64 = null
+  local.lastUpdated = Date.now()
+
+  setDisplayedPicture(null)
+
+  emit('update:item', { ...local, mainImageBase64: null, lastUpdated: local.lastUpdated })
+}
+
 watch(
   () => props.item,
   (newItem) => {
@@ -545,7 +556,10 @@ watch(
         @click="triggerUpload"
       >
         <!-- Normal img -->
-        <div v-if="displayedPicture && pictureState.visible" class="absolute inset-0 rounded-full overflow-hidden m-[12%] w-[76%] h-[76%]">
+        <div
+          v-if="displayedPicture && pictureState.visible"
+          class="absolute inset-0 rounded-full overflow-hidden m-[12%] w-[76%] h-[76%]"
+        >
           <img
             v-if="displayedPicture && pictureState.visible"
             :src="displayedPicture"
@@ -573,6 +587,21 @@ watch(
             </textPath>
           </text>
         </svg>
+
+        <!-- Delete button -->
+        <div
+          v-if="displayedPicture && pictureState.visible && !props.readonly"
+          data-ui-only
+          class="absolute bottom-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+        >
+          <button
+            class="w-4 h-4 text-xs flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
+            @click.stop="deletePicture"
+            title="Delete picture"
+          >
+            ✕
+          </button>
+        </div>
 
         <!-- Upload fallback -->
         <div

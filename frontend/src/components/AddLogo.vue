@@ -103,7 +103,7 @@ watch(
       class="absolute -top-4 -right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
     >
       <button
-        class="btn-sm text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
+        class="w-5 h-5 flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
         @click="deleteLogo"
         title="Delete logo"
       >

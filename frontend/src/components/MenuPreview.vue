@@ -129,12 +129,15 @@ const pages = computed<PageEntry[][]>(() => {
   return result
 })
 
-
 const totalPages = computed(() => pages.value.length)
 
-watch(totalPages, (val) => {
-  emit('update:totalPages', val)
-}, { immediate: true })
+watch(
+  totalPages,
+  (val) => {
+    emit('update:totalPages', val)
+  },
+  { immediate: true },
+)
 
 const clampedPage = computed(() =>
   Math.min(Math.max(props.currentPage, 0), Math.max(totalPages.value - 1, 0)),
@@ -203,9 +206,7 @@ function onDrop(e: DragEvent) {
   emit('reorder', { fromNo: fromItem.No, toNo: toItem.No })
 }
 
-const itemFlexClass = computed(() =>
-  props.itemSpacing === 'fill' ? 'flex-1' : 'flex-none'
-)
+const itemFlexClass = computed(() => (props.itemSpacing === 'fill' ? 'flex-1' : 'flex-none'))
 
 // spacing behavior, currently only compact and fill is implemented
 const itemSpacingClass = computed(() => {
@@ -220,7 +221,6 @@ const itemSpacingClass = computed(() => {
       return ''
   }
 })
-
 </script>
 
 <template>
@@ -286,10 +286,10 @@ const itemSpacingClass = computed(() => {
         <div
           v-if="!props.readonly"
           data-ui-only
-          class="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
+          class="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
         >
           <button
-            class="btn-sm rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
+            class="w-5 h-5 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
             @click.stop.prevent="() => emit('add-before', { No: entry.item.No })"
             title="Add item before"
           >
@@ -303,7 +303,7 @@ const itemSpacingClass = computed(() => {
           class="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
         >
           <button
-            class="btn-sm rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
+            class="w-5 h-5 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
             @click.stop.prevent="() => emit('add-after', { No: entry.item.No })"
             title="Add item after"
           >
@@ -314,10 +314,10 @@ const itemSpacingClass = computed(() => {
         <div
           v-if="!props.readonly"
           data-ui-only
-          class="absolute -top-3 -right-2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
+          class="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
         >
           <button
-            class="btn-sm text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
+            class="w-5 h-5 flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
             @click.stop.prevent="() => emit('delete-item', { No: entry.item.No })"
             title="Delete item"
           >
