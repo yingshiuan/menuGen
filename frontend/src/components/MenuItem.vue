@@ -595,7 +595,7 @@ watch(
           class="absolute bottom-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
         >
           <button
-            class="w-4 h-4 text-xs flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
+            class="w-3.5 h-3.5 text-xs flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
             @click.stop="deletePicture"
             title="Delete picture"
           >

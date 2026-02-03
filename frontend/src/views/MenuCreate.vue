@@ -84,6 +84,28 @@ const demoMenu: MenuItem[] = [
     Options: ['Vegan', 'Gluten Free'],
     Category: 'Sample Category',
   },
+  {
+    id: '2',
+    No: '3',
+    Price: '18.00',
+    Name: 'Sample 3',
+    Measure: '',
+    ChineseName: '中文菜名 3',
+    Description: 'Sample description 3',
+    Options: ['Vegan', 'Gluten Free'],
+    Category: 'Sample Category 2',
+  },
+  {
+    id: '3',
+    No: '4',
+    Price: '18.00',
+    Name: 'Sample 4',
+    Measure: '',
+    ChineseName: '中文菜名 4',
+    Description: 'Sample description 4',
+    Options: ['Vegan', 'Gluten Free'],
+    Category: 'Sample Category 2',
+  },
 ]
 
 // const itemSpacing = ref<ItemSpacing>('fill')
