@@ -96,11 +96,16 @@ async function handleFiles(files: FileList | File[]) {
       const base64 = await compressImage(file)
       const filename = file.name.replace(/\.[^/.]+$/, '')
 
-      const matched = props.menuItems.find(
-        (item) =>
+      const matched = props.menuItems.find((item) => {
+        const num = item.No.toString()
+
+        return (
           item.Name === filename ||
-          (item.No && filename === `${item.No.toString().padStart(2, '0')}_${item.Name}`),
-      )
+          filename === `${num}_${item.Name}` ||
+          filename === `${num.padStart(2, '0')}_${item.Name}`
+        )
+      })
+
       if (!matched) return
 
       const pictures = matched.images ?? []
@@ -155,6 +160,9 @@ function toggleExpand() {
 
 <template>
   <div>
+    <div>
+      <p>Multi Image Upload</p>
+    </div>
     <!-- Upload area -->
     <div
       class="p-4 border-2 border-dashed rounded-lg cursor-pointer flex flex-col items-center justify-center gap-4 hover:bg-blue-500 transition-colors group"
@@ -165,9 +173,15 @@ function toggleExpand() {
       @drop="onDrop"
     >
       <div class="text-gray-600 text-center group-hover:text-white transition-colors">
-        <p v-if="!imageState.isUploading">Click or drag pictures here to upload</p>
+        <p v-if="!imageState.isUploading">Click or drag images here to upload</p>
         <div v-else class="loader w-6 h-6"></div>
       </div>
+    </div>
+    <div>
+      <p class="text-sm text-gray-600">
+        Please name the image like this: <strong>No_Name</strong><br />
+        Example: <strong>01_Sample 1</strong>
+      </p>
     </div>
 
     <input
