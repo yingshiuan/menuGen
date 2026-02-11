@@ -130,7 +130,7 @@ menu-gen/
 ## **1. Clone Repo**
 
 ```bash
-git clone https://github.com/yourname/menu-gen.git
+git clone https://github.com/yingshiuan/menuGen.git
 cd menu-gen
 ```
 
@@ -205,7 +205,7 @@ User uploads a CSV file like:
 
 ```
 No,Price,Name,ChineseName,Description,Recommend,Spicy,Vegan,Vegetarian,Gluten Free
-1,12.99,Pizza,披萨,Cheese and tomato sauce,true,false,false,false,true
+1,12.99,Pizza,披薩,Cheese and tomato sauce,true,false,false,false,true
 ```
 
 Frontend parses → structured menu → editable state.
