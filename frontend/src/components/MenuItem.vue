@@ -551,7 +551,7 @@ watch(
       <!-- Picture -->
       <!-- min-w and min-h need to change by the w-20 and h-20-->
       <div
-        v-if="displayedPicture || !props.readonly"
+        
         class="shrink-0 w-20 h-20 relative rounded-full cursor-pointer overflow-hidden"
         @click="triggerUpload"
       >

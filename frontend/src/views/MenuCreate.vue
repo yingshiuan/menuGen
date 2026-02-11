@@ -13,6 +13,7 @@ import ItemsPerCategorySelector from '@/components/ItemsPerCategorySelector.vue'
 import MultiImageUpload from '@/components/MultiImageUpload.vue'
 import ItemSpacingControl from '@/components/ItemSpacingControl.vue'
 import type { ItemSpacing } from '@/components/ItemSpacingControl.vue'
+import MenuCover from '@/components/MenuCover.vue'
 
 type FontValue = string
 
@@ -28,6 +29,9 @@ interface MenuState {
   footerText: string
   logoBase64: string | null
   itemSpacing: ItemSpacing
+  coverTitle: string
+  coverSubtitle: string
+  coverLogoBase64: string | null
 }
 
 interface MeunPage {
@@ -59,6 +63,9 @@ const state = reactive<MenuState>({
   footerText: 'All prices are in CHF, including VAT',
   logoBase64: null,
   itemSpacing: 'fill',
+  coverTitle: 'Menu',
+  coverSubtitle: 'Welcome to our restaurant',
+  coverLogoBase64: null,
 })
 
 const demoMenu: MenuItem[] = [
@@ -124,12 +131,12 @@ onMounted(() => {
 
 function handleCsvLoaded(items: MenuItem[]) {
   state.menuCsv = items
-  menuPage.currentPage = 0
+  menuPage.currentPage = 1
 }
 
 function loadSampleMenu() {
   state.menuCsv = demoMenu.map((item) => ({ ...item }))
-  menuPage.currentPage = 0
+  menuPage.currentPage = 1
   csvKey.value++
 }
 
@@ -313,7 +320,6 @@ watch(
       <h1 class="w-1/4 text-xl font-bold p-1">Menu Gen (CSV to PDF)</h1>
       <div class="w-2/4">
         <MenuPage
-          v-if="state.menuCsv.length"
           :current-page="menuPage.currentPage"
           :total-pages="menuPage.totalPages"
           @update:page="menuPage.currentPage = $event"
@@ -368,12 +374,28 @@ watch(
       <!-- Right side: preview -->
       <div class="w-2/4 flex justify-center pt-2">
         <div
-          class="menu-preview-wrapper md:menu-md lg:menu-lg"
+          class="menu-preview-wrapper"
           ref="menuPreviewRef"
-          v-if="state.menuCsv.length"
           :style="{ '--ui-scale': state.scalePage }"
         >
+          <!-- COVER PAGE (Page 0) -->
+          <MenuCover
+            v-if="menuPage.currentPage === 0"
+            v-model:title="state.coverTitle"
+            v-model:subtitle="state.coverSubtitle"
+            v-model:coverLogo="state.coverLogoBase64"
+            :bg-color="state.bgColor"
+            :text-color="state.textColor"
+            :font-family="state.selectedFont"
+            :style="{
+              width: menuPage.width,
+              height: menuPage.height,
+            }"
+          />
+
+          <!-- MENU PAGES -->
           <MenuPreview
+            v-else-if="state.menuCsv.length"
             v-model:footerText="state.footerText"
             :items="state.menuCsv"
             :font-family="state.selectedFont"
@@ -381,53 +403,70 @@ watch(
             :text-color="state.textColor"
             :item-spacing="state.itemSpacing"
             :readonly="state.pdfReadonly"
-            :current-page="menuPage.currentPage"
+            :current-page="menuPage.currentPage - 1"
             :items-per-page="menuPage.itemsPerPage"
             :page-width="menuPage.width"
             :page-height="menuPage.height"
             :keep-category-together="menuPage.keepCategoryTogether"
             :default-src="state.logoBase64 || undefined"
-            class="relative flex-1"
             @add-before="(p) => addItemBefore(p.No)"
             @add-after="(p) => addItemAfter(p.No)"
             @delete-item="(p) => deleteItemByNo(p.No)"
             @reorder="(p) => reorderItems(p.fromNo, p.toNo)"
-            @update:totalPages="(val) => (menuPage.totalPages = val)"
+            @update:totalPages="(val) => (menuPage.totalPages = val + 1)"
             @update:logo="(base64: string) => (state.logoBase64 = base64)"
           />
-        </div>
-        <div
-          v-else
-          class="a4-preview"
-          :style="{
-            width: menuPage.width,
-            height: menuPage.height,
-          }"
-        >
-          <p class="text-gray-400 text-center text-2xl italic">
-            No menu data loaded. Please upload a CSV file.
-          </p>
+
+          <!-- EMPTY STATE (Only when on menu page but no CSV loaded) -->
+          <div
+            v-else
+            class="a4-preview flex items-center justify-center"
+            :style="{
+              width: menuPage.width,
+              height: menuPage.height,
+            }"
+          >
+            <p class="text-gray-400 text-center text-2xl italic">
+              No menu data loaded. Please upload a CSV file.
+            </p>
+          </div>
         </div>
       </div>
       <!-- PDF DOM-->
       <div style="display: none">
         <div ref="pdfRenderRef" :key="pdfRenderKey">
-          <div v-for="page in menuPage.totalPages" :key="page" class="pdf-page">
+          <!-- COVER PAGE -->
+          <div class="pdf-page">
+            <MenuCover
+              :title="state.coverTitle"
+              :subtitle="state.coverSubtitle"
+              :bg-color="state.bgColor"
+              :text-color="state.textColor"
+              :font-family="state.selectedFont"
+              :coverLogo="state.coverLogoBase64 || undefined"
+              :style="{
+                width: menuPage.width,
+                height: menuPage.height,
+              }"
+            />
+          </div>
+
+          <!-- MENU PAGES -->
+          <div v-for="page in menuPage.totalPages - 1" :key="page" class="pdf-page">
             <MenuPreview
-              v-model:footerText="state.footerText"
+              :footerText="state.footerText"
               :items="state.menuCsv"
               :fontFamily="state.selectedFont"
               :bgColor="state.bgColor"
-              :textColor="state.textColor"
+              :text-color="state.textColor"
               :item-spacing="state.itemSpacing"
-              :readonly="state.pdfReadonly"
+              :readonly="true"
               :current-page="page - 1"
               :items-per-page="menuPage.itemsPerPage"
               :page-width="menuPage.width"
               :page-height="menuPage.height"
               :keep-category-together="menuPage.keepCategoryTogether"
               :default-src="state.logoBase64 || undefined"
-              @update:logo="(base64: string) => (state.logoBase64 = base64)"
             />
           </div>
         </div>
