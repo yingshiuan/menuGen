@@ -20,6 +20,13 @@ It supports:
 See the full roadmap in [ROADMAP.md](./ROADMAP.md)
 
 ---
+# See It In Action
+
+![CSV to PDF](frontend/public/demo/gif/1_cvs.gif)
+
+---
+
+
 # Features
 
 ### **Frontend (Vue + Tailwind CSS v4)**
