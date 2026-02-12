@@ -14,6 +14,7 @@ import MultiImageUpload from '@/components/MultiImageUpload.vue'
 import ItemSpacingControl from '@/components/ItemSpacingControl.vue'
 import type { ItemSpacing } from '@/components/ItemSpacingControl.vue'
 import MenuCover from '@/components/MenuCover.vue'
+import AddIcon from '@/components/AddIcon.vue'
 
 type FontValue = string
 
@@ -364,6 +365,9 @@ watch(
             v-model:itemsPerPage="menuPage.itemsPerPage"
             v-model:keepCategoryTogether="menuPage.keepCategoryTogether"
           />
+        </div>
+        <div class="py-2">
+          <AddIcon/>
         </div>
 
         <div class="py-2">

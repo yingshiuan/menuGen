@@ -92,7 +92,7 @@ async function generatePDF(): Promise<void> {
     >
       <span v-if="!pdfState.uploading">Generate PDF</span>
 
-      <span v-else class="flex items-center gap-2">
+      <span v-else class="flex flex-col items-center gap-2">
          Exporting...<span class="loader"></span>
       </span>
     </button>

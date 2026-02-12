@@ -1,12 +1,7 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch, nextTick } from 'vue'
 import type { MenuItem, MenuOption } from '@/types/types'
-
-import RecommendedIcon from '@/asset/svg/recommend.svg'
-import SpicyIcon from '@/asset/svg/spicy.svg'
-import VeganIcon from '@/asset/svg/vegan.svg'
-import VegetarianIcon from '@/asset/svg/vegetarian.svg'
-import GlutenFreeIcon from '@/asset/svg/glutenfree.svg'
+import { useIcons } from '@/composables/useIcons'
 
 const props = defineProps<{
   item: MenuItem
@@ -38,16 +33,14 @@ const pictureState = reactive<PictureState>({
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 // Icon mapping
-const iconMap: Record<MenuOption, string> = {
-  Recommend: RecommendedIcon,
-  Spicy: SpicyIcon,
-  Vegan: VeganIcon,
-  Vegetarian: VegetarianIcon,
-  'Gluten Free': GlutenFreeIcon,
-}
+const { iconMap } = useIcons()
 
-const allOptions = Object.keys(iconMap) as MenuOption[]
-const otherOptions = allOptions.filter((o) => o !== 'Recommend')
+const allOptions = computed(() =>
+  Object.keys(iconMap.value) as MenuOption[]
+)
+const otherOptions = computed(() =>
+  allOptions.value.filter(o => o !== 'Recommend')
+)
 
 type Field = 'No' | 'Name' | 'ChineseName' | 'Measure' | 'Description' | 'Price' | 'Category'
 
@@ -96,7 +89,9 @@ function toggleRecommend() {
 const displayedRecommend = computed(() => !props.readonly || local.Options.includes('Recommend'))
 
 const displayedOtherOptions = computed(() =>
-  otherOptions.filter((opt) => !props.readonly || local.Options.includes(opt)),
+  otherOptions.value.filter(
+    (opt) => !props.readonly || local.Options.includes(opt)
+  )
 )
 
 // Determine which picture URL actually exists. Some files in `/public/picture` are
@@ -551,7 +546,6 @@ watch(
       <!-- Picture -->
       <!-- min-w and min-h need to change by the w-20 and h-20-->
       <div
-        
         class="shrink-0 w-20 h-20 relative rounded-full cursor-pointer overflow-hidden"
         @click="triggerUpload"
       >

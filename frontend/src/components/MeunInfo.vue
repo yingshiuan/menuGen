@@ -1,12 +1,7 @@
 <script lang="ts" setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import type { MenuOption } from '@/types/types'
-
-import RecommendedIcon from '@/asset/svg/recommend.svg'
-import SpicyIcon from '@/asset/svg/spicy.svg'
-import VeganIcon from '@/asset/svg/vegan.svg'
-import VegetarianIcon from '@/asset/svg/vegetarian.svg'
-import GlutenFreeIcon from '@/asset/svg/glutenfree.svg'
+import { useIcons } from '@/composables/useIcons'
 
 const props = defineProps<{
   modelValue?: MenuOption[]
@@ -20,16 +15,14 @@ const emit = defineEmits<{
   (e: 'update:footerText', value: string): void
 }>()
 
-const iconMap: Record<MenuOption, string> = {
-  Recommend: RecommendedIcon,
-  Spicy: SpicyIcon,
-  Vegan: VeganIcon,
-  Vegetarian: VegetarianIcon,
-  'Gluten Free': GlutenFreeIcon,
-}
+const { iconMap } = useIcons()
 
-const allOptions = Object.keys(iconMap) as MenuOption[]
-const selected = ref<MenuOption[]>(props.modelValue?.length ? props.modelValue : [...allOptions])
+const allOptions = computed(() =>
+  Object.keys(iconMap.value) as MenuOption[]
+)
+
+const selected = ref<MenuOption[]>(props.modelValue?.length ? props.modelValue : [...allOptions.value])
+
 const infoText = ref(props.footerText)
 const editingInfo = ref(false)
 

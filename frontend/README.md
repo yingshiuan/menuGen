@@ -316,12 +316,3 @@ async function exportPDF() {
 * For local development, `npm run dev` + backend server works fine.
 
 ---
-
-If you want, I can **rewrite your Vue menu builder + Puppeteer backend example** so that:
-
-* CSV upload → Vue editing → live Tailwind preview
-* Click “Export PDF” → Puppeteer backend generates **pixel-perfect PDF**
-
-This would be a complete working solution for your app.
-
-Do you want me to do that
