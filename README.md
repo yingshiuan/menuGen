@@ -21,8 +21,34 @@ See the full roadmap in [ROADMAP.md](./ROADMAP.md)
 
 ---
 # See It In Action
+<h3>CSV to PDF</h3>
+<img src="frontend/public/demo/gif/1_cvs.gif" alt="CSV to PDF" />
 
-![CSV to PDF](frontend/public/demo/gif/1_cvs.gif)
+---
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="frontend/public/demo/gif/2_inlineEdit.gif" alt="Inline Edit" style="max-width: 100%; height: auto;" />
+      <p>Inline Edit</p>
+    </td>
+    <td align="center">
+      <img src="frontend/public/demo/gif/5_itemEdit.gif" alt="Edit Items" style="max-width: 100%; height: auto;" />
+      <p>Edit Items</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="frontend/public/demo/gif/4_uplaodPicutres.gif" alt="Upload Multi Pictures" style="max-width: 100%; height: auto;" />
+      <p>Upload Multi Pictures</p>
+    </td>
+    <td align="center">
+      <img src="frontend/public/demo/gif/3_iconEdit.gif" alt="Customize Icons" style="max-width: 100%; height: auto;" />
+      <p>Customize Icons</p>
+    </td>
+  </tr>
+</table>
+
 
 ---
 
