@@ -1,4 +1,38 @@
-# ✅ TODO List (Roadmap)
+# Product Roadmap
+
+## Phase 1 – Polish & Usability (Next Release)
+- [ ] Preview two pages side-by-side
+- [ ] Add common page size presets (A4, Letter, etc.)
+- [ ] Offer multiple cover layout templates
+- [ ] Auto-fit long descriptions
+- [ ] Dark / Light theme toggle
+
+## Phase 2 – Data & Export Improvements
+- [ ] Export as JSON
+- [ ] Import JSON back into editor
+- [ ] Export high-res PNG (front/back)
+- [ ] Cache processed images for faster exports
+
+## Phase 3 – Print & Production Features
+- [ ] Print-ready bleed & margin mode
+- [ ] Headless Chrome optimization flags
+- [ ] CLI: `menugen generate menu.json → PDF`
+
+## Phase 4 – Deployment & Scaling
+- [ ] Docker support
+- [ ] Production deployment guide (Railway / Render)
+- [ ] Vercel-compatible Puppeteer build
+
+
+## AI Features
+- [ ] One-click menu translation (multi-language support)
+- [ ] Bilingual layout mode
+- [ ] AI description enhancement
+- [ ] Bulk translate entire m
+
+---
+
+## TODO
 
 ### Core Features
 - [x] CSV Upload + Parsing  
@@ -46,7 +80,7 @@
 - [ ] Enable “Print-ready bleed & margins” mode  
 - [ ] CLI: `menugen generate menu.json` → PDF
 
-### 🚀 Deployment
+### Deployment
 - [ ] Docker support  
 - [ ] Production build guide for Railway / Render  
 - [ ] Vercel-compatible Puppeteer build (edge-compatible optional)
