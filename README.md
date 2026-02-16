@@ -7,12 +7,13 @@ MenuGen is a smart menu-building tool that transforms a CSV file into an editabl
 It supports:
 
 ✔ CSV Parsing
-✔ Inline Editing (No, Name, ChineseName, Price, Description, Options, Pictures, Icons, Category) 
+✔ Inline Editing (No, Name, ChineseName, Measure, Price, Description, Options, Pictures, Icons, Category)
 ✔ Auto category-aware item numbering with intelligent gap reuse
+✔ Logo upload and display in PDF
+✔ Unique item ID tracking (UUID-based, no conflicts)
 ✔ Auto Layout (Tailwind CSS v4)
 ✔ Support Google Fonts (paste font name to load dynamically)
-✔ Icon & Image Upload
-✔ Automatic image/SVG compression
+✔ Icon & Image Upload with compression
 ✔ Perfect PDF Export (exact same look as the on-screen preview)
 
 ---
@@ -20,7 +21,9 @@ It supports:
 See the full roadmap in [ROADMAP.md](./ROADMAP.md)
 
 ---
+
 # See It In Action
+
 <h3>CSV to PDF</h3>
 <img src="frontend/public/demo/gif/1_cvs.gif" alt="CSV to PDF" />
 
@@ -49,31 +52,34 @@ See the full roadmap in [ROADMAP.md](./ROADMAP.md)
   </tr>
 </table>
 
-
 ---
-
 
 # Features
 
 ### **Frontend (Vue + Tailwind CSS v4)**
 
-* Upload CSV → auto-structured menu items
-* Inline editable UI (names, description, price, categories, icons)
-* Upload custom images or SVG icons
+- Upload CSV → auto-structured menu items with auto-generated unique IDs
+- Inline editable UI (No, Name, ChineseName, Measure, Price, Description, Categories, Icons)
+- Upload custom images or SVG icons per item
+- Upload logo image (displays in PDF)
+- Drag-and-drop item reordering
+- Add/delete items before or after any item
+- Smart pagination: keep categories together (11 items per category, 10 when combining)
+
 * Live Tailwind-styled preview
 * Sends HTML directly to backend for PDF generation
 
 ### **Backend (Node.js + Puppeteer)**
 
-* Wraps incoming HTML with Tailwind CSS
-* Inlines & compresses:
+- Wraps incoming HTML with Tailwind CSS
+- Inlines & compresses:
+  - PNG / JPG images → compressed Base64
+  - SVG → converted to PNG (96–200px) or inlined SVG
 
-  * PNG / JPG images → compressed Base64
-  * SVG → converted to PNG (96–200px) or inlined SVG
-* Waits for images + fonts to load
-* Exports **A4, full-color, print-background PDF**
-* Returns PDF inline or downloadable
-* Fully CORS enabled
+- Waits for images + fonts to load
+- Exports **A4, full-color, print-background PDF**
+- Returns PDF inline or downloadable
+- Fully CORS enabled
 
 ---
 
@@ -90,7 +96,7 @@ menu-gen/
 │  │  │  ├─ svg/
 │  │  │  ├─ pictures/
 │  │  │  └─ styles/
-│  │  │     └── style.css  
+│  │  │     └── style.css
 │  ├─ public/
 │  │  ├── picture/
 │  │  ├── data/
@@ -149,11 +155,11 @@ npm install
 
 Includes:
 
-* express
-* puppeteer
-* jsdom
-* sharp
-* cors
+- express
+- puppeteer
+- jsdom
+- sharp
+- cors
 
 ---
 
@@ -196,13 +202,17 @@ Frontend parses → structured menu → editable state.
 
 ---
 
-## **2. User Edits Inline** (coming soon)
+## **2. User Edits Inline**
 
-* Change text
-* Add images/icons
-* Reorder items
-* Modify sections
-* Live Tailwind preview
+- Edit all fields: No, Name, ChineseName, Measure, Price, Description, Category
+- Change text color and font (support Google Fonts (paste font name to load dynamically))
+- Add images/icons per item
+- Upload logo image
+- Reorder items via drag-and-drop
+- Add/delete items before or after any item
+- Live Tailwind preview
+- Auto category-aware item numbering (fills gaps, respects per-category ranges)
+- Keep categories together on pages (up to 11 items per category, 10 when combining multiple categories)
 
 ---
 
@@ -231,55 +241,56 @@ POST http://localhost:3000/generate-pdf
 #### **1. Parse incoming HTML**
 
 ```js
-const dom = new JSDOM(html);
-const document = dom.window.document;
+const dom = new JSDOM(html)
+const document = dom.window.document
 ```
 
 #### **2. Detect all `<img>` elements**
 
 Handles:
 
-* `/src/assets/...`
-* `public/...`
-* `<img src="data:image/...">`
-* SVG icons
+- `/src/assets/...`
+- `public/...`
+- `<img src="data:image/...">`
+- SVG icons
 
 #### **3. Compress everything**
 
-| Type      | How it's processed                   |
-| --------- | ------------------------------------ |
-| PNG/JPG   | compress → resize → Base64           |
-| Large SVG | rasterize using Sharp → PNG → Base64 |
-| Small SVG | inline SVG text → Base64             |
+| Type                | How it's processed                    |
+| ------------------- | ------------------------------------- |
+| Logo (PNG/JPG)      | compress → resize to 32x32px → Base64 |
+| Menu Item (PNG/JPG) | compress → resize to 80x80px → Base64 |
+| Large SVG           | rasterize using Sharp → PNG → Base64  |
+| Small SVG           | inline SVG text → Base64              |
 
 #### **4. Puppeteer loads optimized HTML**
 
 ```js
-await page.setContent(optimizedHtml, { waitUntil: "networkidle0" });
+await page.setContent(optimizedHtml, { waitUntil: 'networkidle0' })
 ```
 
 #### **5. Ensure all images and fonts load**
 
 ```js
-await page.evaluate(() => document.fonts.ready);
+await page.evaluate(() => document.fonts.ready)
 ```
 
 #### **6. Generate PDF**
 
 ```js
 const pdf = await page.pdf({
-  format: "A4",
+  format: 'A4',
   printBackground: true,
-});
+})
 ```
 
 #### **7. Send PDF back**
 
 ```js
 res.set({
-  "Content-Type": "application/pdf",
-  "Content-Disposition": "inline; filename='menu.pdf'"
-});
+  'Content-Type': 'application/pdf',
+  'Content-Disposition': "inline; filename='menu.pdf'",
+})
 ```
 
 ---
@@ -288,9 +299,9 @@ res.set({
 
 ## **Image compression (PNG/JPG)**
 
-* If user uploads a 5MB PNG → backend compresses automatically
-* Target size: 96–200px (configurable)
-* Converted to Base64 for Puppeteer rendering
+- If user uploads a 5MB PNG → backend compresses automatically
+- Target size: 96–200px (configurable)
+- Converted to Base64 for Puppeteer rendering
 
 ## **SVG handling**
 
@@ -310,16 +321,16 @@ Rasterize to PNG via Sharp:
 
 ```js
 const optimizedBuffer = await sharp(buffer)
-  .resize(96, 96, { fit: "contain" })
+  .resize(96, 96, { fit: 'contain' })
   .png({ quality: 100 })
-  .toBuffer();
+  .toBuffer()
 ```
 
 This ensures:
 
-* No missing SVG in PDF
-* Perfect rendering
-* Shrinks file size massively
+- No missing SVG in PDF
+- Perfect rendering
+- Shrinks file size massively
 
 ---
 
@@ -334,11 +345,11 @@ This ensures:
 ### Example:
 
 ```ts
-await fetch("http://localhost:3000/generate-pdf", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
+await fetch('http://localhost:3000/generate-pdf', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ html }),
-});
+})
 ```
 
 ---
