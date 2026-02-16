@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import type { MenuOption } from '@/types/types'
 import { useIcons } from '@/composables/useIcons'
 
@@ -17,10 +17,11 @@ const iconState = reactive<IconState>({
   draggingOption: null,
 })
 
-function uploadIcon(option: MenuOption, event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
+const fileInputs = ref<Record<MenuOption, HTMLInputElement | null>>(
+  {} as Record<MenuOption, HTMLInputElement | null>,
+)
 
+function handleFile(option: MenuOption, file: File) {
   if (!file.type.startsWith('image/')) {
     alert('Please upload a valid image')
     return
@@ -34,11 +35,16 @@ function uploadIcon(option: MenuOption, event: Event) {
   reader.readAsDataURL(file)
 }
 
+function uploadIcon(option: MenuOption, event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  handleFile(option, file)
+}
+
 function toggleExpand() {
   iconState.isExpanded = !iconState.isExpanded
 }
 
-// ----- Drag & Drop functions -----
 function onDragOver(option: MenuOption, event: DragEvent) {
   event.preventDefault()
   iconState.draggingOption = option
@@ -55,16 +61,7 @@ function onDrop(option: MenuOption, event: DragEvent) {
   const file = event.dataTransfer?.files?.[0]
   if (!file) return
 
-  if (!file.type.startsWith('image/')) {
-    alert('Please upload a valid image')
-    return
-  }
-
-  const reader = new FileReader()
-  reader.onload = () => {
-    setUserIcon(option, reader.result as string)
-  }
-  reader.readAsDataURL(file)
+  handleFile(option, file)
 }
 </script>
 
@@ -85,28 +82,35 @@ function onDrop(option: MenuOption, event: DragEvent) {
       v-if="iconState.isExpanded"
       class="space-y-2 p-2 transition-all duration-200 border rounded bg-gray-50 overflow-y-scroll"
     >
-      <div
-        v-for="opt in options"
-        :key="opt"
-        class="flex items-center gap-4 p-1 rounded border border-dashed transition-colors"
-        :class="{
-          'border-blue-500 bg-blue-50': iconState.draggingOption === opt,
-          'border-gray-300': iconState.draggingOption !== opt,
-        }"
-        @dragover="(e) => onDragOver(opt, e)"
-        @dragleave="() => onDragLeave(opt)"
-        @drop="(e) => onDrop(opt, e)"
-      >
-        <img :src="iconMap[opt]" class="w-6 h-6" />
-
-        <label
-          class="bg-blue-500 p-1 text-sm text-white rounded hover:bg-blue-700 hover:text-white transition-colors duration-200 shadow-md"
+      <div v-for="opt in options" :key="opt" class="flex items-center gap-3">
+        <!-- Dropzone -->
+        <div
+          class="flex items-center gap-4 p-2 flex-1 rounded border border-dashed transition-colors cursor-pointer group"
+          :class="{
+            'border-blue-500 bg-blue-50': iconState.draggingOption === opt,
+            'border-gray-300 hover:bg-blue-50 hover:border-blue-500':
+              iconState.draggingOption !== opt,
+          }"
+          @dragover="(e) => onDragOver(opt, e)"
+          @dragleave="() => onDragLeave(opt)"
+          @drop="(e) => onDrop(opt, e)"
+          @click="fileInputs[opt]?.click()"
         >
-          Upload
-          <input type="file" class="hidden" accept="image/*" @change="(e) => uploadIcon(opt, e)" />
-        </label>
-
-        <button class="p-1 text-sm bg-gray-200 rounded hover:bg-gray-300" @click="resetIcon(opt)">
+          <!-- Icon -->
+          <img :src="iconMap[opt]" class="w-6 h-6" />
+          <!-- Text -->
+          <p class="text-sm text-gray-600 flex-1 group-hover:text-blue-500">Drag & drop or click to upload</p>
+          <!-- Hidden File Input -->
+          <input
+            type="file"
+            class="hidden"
+            accept="image/*"
+            :ref="(el) => (fileInputs[opt] = el as HTMLInputElement)"
+            @change="(e) => uploadIcon(opt, e)"
+          />
+        </div>
+        <!-- Reset Button (Outside Dropzone) -->
+        <button class="p-2 text-sm bg-gray-200 rounded hover:bg-gray-300" @click="resetIcon(opt)">
           Reset
         </button>
       </div>
