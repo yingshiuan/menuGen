@@ -80,12 +80,12 @@ function onDrop(option: MenuOption, event: DragEvent) {
 
     <div
       v-if="iconState.isExpanded"
-      class="space-y-2 p-2 transition-all duration-200 border rounded bg-gray-50 overflow-y-scroll"
+      class="space-y-2 p-1 transition-all duration-200 border rounded bg-gray-50 overflow-y-scroll"
     >
       <div v-for="opt in options" :key="opt" class="flex items-center gap-3">
         <!-- Dropzone -->
         <div
-          class="flex items-center gap-4 p-2 flex-1 rounded border border-dashed transition-colors cursor-pointer group"
+          class="flex items-center gap-4 p-1 flex-1 rounded border border-dashed transition-colors cursor-pointer group"
           :class="{
             'border-blue-500 bg-blue-50': iconState.draggingOption === opt,
             'border-gray-300 hover:bg-blue-50 hover:border-blue-500':
@@ -99,7 +99,7 @@ function onDrop(option: MenuOption, event: DragEvent) {
           <!-- Icon -->
           <img :src="iconMap[opt]" class="w-6 h-6" />
           <!-- Text -->
-          <p class="text-sm text-gray-600 flex-1 group-hover:text-blue-500">Drag & drop or click to upload</p>
+          <p class="text-sm text-center text-gray-600 flex-1 group-hover:text-blue-500">Drag & drop or click to upload</p>
           <!-- Hidden File Input -->
           <input
             type="file"
@@ -110,7 +110,7 @@ function onDrop(option: MenuOption, event: DragEvent) {
           />
         </div>
         <!-- Reset Button (Outside Dropzone) -->
-        <button class="p-2 text-sm bg-gray-200 rounded hover:bg-gray-300" @click="resetIcon(opt)">
+        <button class="p-1 bg-gray-200 rounded hover:bg-gray-300" @click="resetIcon(opt)">
           Reset
         </button>
       </div>

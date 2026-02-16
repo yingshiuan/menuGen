@@ -354,12 +354,12 @@ watch(
         <div class="py-2"><ColorPicker type="bg" v-model:color="state.bgColor" /></div>
         <div class="py-2"><ColorPicker type="text" v-model:color="state.textColor" /></div>
         <div class="py-2">
-          <ItemSpacingControl v-model="state.itemSpacing" />
-        </div>
-        <div class="py-2">
           <PageSizeSelector v-model:width="menuPage.width" v-model:height="menuPage.height" />
         </div>
         <div class="py-2"><ScaleControl v-model="state.scalePage" label="Scale" /></div>
+        <div class="py-2">
+          <ItemSpacingControl v-model="state.itemSpacing" />
+        </div>
         <div class="py-2">
           <ItemsPerCategorySelector
             v-model:itemsPerPage="menuPage.itemsPerPage"
@@ -367,7 +367,7 @@ watch(
           />
         </div>
         <div class="py-2">
-          <AddIcon/>
+          <AddIcon />
         </div>
 
         <div class="py-2">
