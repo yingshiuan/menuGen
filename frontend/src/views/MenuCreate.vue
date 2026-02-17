@@ -127,7 +127,14 @@ const showTwoPage = ref(false)
 const pdfRenderKey = ref(0)
 const csvKey = ref(0)
 
-// const totalPages = computed(() => Math.ceil(state.menuCsv.length / menuPage.itemsPerPage))
+const computedTotalPages = computed(() => {
+  const itemsCount = state.menuCsv.length
+  const itemsPerPage = menuPage.itemsPerPage
+  const pages = showTwoPage.value
+    ? Math.ceil(itemsCount / (itemsPerPage * 2))
+    : Math.ceil(itemsCount / itemsPerPage)
+  return Math.max(1, pages) + 1
+})
 
 onMounted(() => {
   loadSampleMenu()
@@ -287,14 +294,7 @@ function reorderItems(fromNo: string, toNo: string) {
 //   { deep: true }
 // );
 
-const computedTotalPages = computed(() => {
-  const itemsCount = state.menuCsv.length
-  const itemsPerPage = menuPage.itemsPerPage
-  const pages = showTwoPage.value
-    ? Math.ceil(itemsCount / (itemsPerPage * 2))
-    : Math.ceil(itemsCount / itemsPerPage)
-  return Math.max(1, pages) + 1 // +1 for cover page
-})
+
 
 watch([() => state.menuCsv.length, showTwoPage, () => menuPage.itemsPerPage], () => {
   menuPage.totalPages = computedTotalPages.value
@@ -323,6 +323,11 @@ watch(
     }
   },
 )
+
+const pdfTotalPages = computed(() => {
+  const totalItems = state.menuCsv.length
+  return Math.max(1, Math.ceil(totalItems / menuPage.itemsPerPage))
+})
 
 watch(
   () => ({
@@ -533,7 +538,7 @@ watch(
           </div>
 
           <!-- MENU PAGES -->
-          <div v-for="page in menuPage.totalPages - 1" :key="page" class="pdf-page">
+          <div v-for="page in pdfTotalPages" :key="page" class="pdf-page">
             <MenuPreview
               :footerText="state.footerText"
               :items="state.menuCsv"

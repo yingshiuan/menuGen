@@ -1,18 +1,25 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import type { MenuOption } from '@/types/types'
 
-import RecommendedIcon from '@/asset/svg/recommend.svg'
-import SpicyIcon from '@/asset/svg/spicy.svg'
-import VeganIcon from '@/asset/svg/vegan.svg'
-import VegetarianIcon from '@/asset/svg/vegetarian.svg'
-import GlutenFreeIcon from '@/asset/svg/glutenfree.svg'
+// Import SVG files and wrap them as data URIs for PDF export compatibility
+import RecommendedIconSvg from '@/asset/svg/recommend.svg?raw'
+import SpicyIconSvg from '@/asset/svg/spicy.svg?raw'
+import VeganIconSvg from '@/asset/svg/vegan.svg?raw'
+import VegetarianIconSvg from '@/asset/svg/vegetarian.svg?raw'
+import GlutenFreeIconSvg from '@/asset/svg/glutenfree.svg?raw'
+
+// Convert raw SVG strings to data URIs for consistent rendering across browser and PDF
+const svgToDataUri = (svg: string): string => {
+  const encoded = encodeURIComponent(svg)
+  return `data:image/svg+xml;utf8,${encoded}`
+}
 
 const defaultIcons: Record<MenuOption, string> = {
-  Recommend: RecommendedIcon,
-  Spicy: SpicyIcon,
-  Vegan: VeganIcon,
-  Vegetarian: VegetarianIcon,
-  'Gluten Free': GlutenFreeIcon,
+  Recommend: svgToDataUri(RecommendedIconSvg),
+  Spicy: svgToDataUri(SpicyIconSvg),
+  Vegan: svgToDataUri(VeganIconSvg),
+  Vegetarian: svgToDataUri(VegetarianIconSvg),
+  'Gluten Free': svgToDataUri(GlutenFreeIconSvg),
 }
 
 const userIcons = ref<Partial<Record<MenuOption, string>>>({})
@@ -41,7 +48,7 @@ watch(
   (val) => {
     localStorage.setItem('menu-user-icons', JSON.stringify(val))
   },
-  { deep: true }
+  { deep: true },
 )
 
 onMounted(() => {
