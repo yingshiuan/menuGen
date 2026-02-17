@@ -20,7 +20,11 @@ export const useMenuStore = defineStore('menu', {
       this.items = rows.slice(1).map((row) => {
         const columns = row.split(',')
 
+        // generate a simple unique id for each row to satisfy MenuItem.id
+        const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+
         return {
+          id,
           No: columns[0] ?? '',
           Name: columns[1] ?? '',
           Measure: columns[2] ?? '',
@@ -38,7 +42,7 @@ export const useMenuStore = defineStore('menu', {
         'No.',
         'Price',
         'Name',
-        'Measure', 
+        'Measure',
         'Chinese Name',
         'Description',
         'Recommend',

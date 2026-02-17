@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, ref, watch, onMounted } from 'vue'
+import { reactive, ref, watch, onMounted, computed } from 'vue'
 import type { MenuItem } from '@/types/types'
 import MenuPreview from '@/components/MenuPreview.vue'
 import GeneratePdf from '@/components/GeneratePdf.vue'
@@ -15,6 +15,7 @@ import ItemSpacingControl from '@/components/ItemSpacingControl.vue'
 import type { ItemSpacing } from '@/components/ItemSpacingControl.vue'
 import MenuCover from '@/components/MenuCover.vue'
 import AddIcon from '@/components/AddIcon.vue'
+import TwoPage from '@/components/TwoPage.vue'
 
 type FontValue = string
 
@@ -120,6 +121,8 @@ const demoMenu: MenuItem[] = [
 
 const menuPreviewRef = ref<HTMLElement | null>(null)
 const pdfRenderRef = ref<HTMLElement | null>(null)
+const twoPageRef = ref<HTMLElement | null>(null)
+const showTwoPage = ref(false)
 
 const pdfRenderKey = ref(0)
 const csvKey = ref(0)
@@ -132,12 +135,12 @@ onMounted(() => {
 
 function handleCsvLoaded(items: MenuItem[]) {
   state.menuCsv = items
-  menuPage.currentPage = 1
+  menuPage.currentPage = 0
 }
 
 function loadSampleMenu() {
   state.menuCsv = demoMenu.map((item) => ({ ...item }))
-  menuPage.currentPage = 1
+  menuPage.currentPage = 0
   csvKey.value++
 }
 
@@ -284,7 +287,33 @@ function reorderItems(fromNo: string, toNo: string) {
 //   { deep: true }
 // );
 
-// watch each items deeply
+const computedTotalPages = computed(() => {
+  const itemsCount = state.menuCsv.length
+  const itemsPerPage = menuPage.itemsPerPage
+  const pages = showTwoPage.value
+    ? Math.ceil(itemsCount / (itemsPerPage * 2))
+    : Math.ceil(itemsCount / itemsPerPage)
+  return Math.max(1, pages) + 1 // +1 for cover page
+})
+
+watch([() => state.menuCsv.length, showTwoPage, () => menuPage.itemsPerPage], () => {
+  menuPage.totalPages = computedTotalPages.value
+  if (menuPage.currentPage >= menuPage.totalPages) {
+    menuPage.currentPage = menuPage.totalPages - 1
+  }
+})
+
+watch(showTwoPage, (newVal) => {
+  if (newVal) {
+    // Single → two page
+    menuPage.currentPage = Math.max(1, menuPage.currentPage)
+    menuPage.currentPage = Math.floor(menuPage.currentPage / 2)
+  } else {
+    // Two → single page
+    menuPage.currentPage = menuPage.currentPage * 2
+  }
+  menuPage.totalPages = computedTotalPages.value
+})
 
 watch(
   () => menuPage.totalPages,
@@ -325,6 +354,14 @@ watch(
           :total-pages="menuPage.totalPages"
           @update:page="menuPage.currentPage = $event"
         />
+      </div>
+      <div class="w-1/4 flex justify-end">
+        <button
+          @click="showTwoPage = !showTwoPage"
+          class="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-700 border-2 border-blue-500 transition-colors duration-200 shadow-md disabled:opacity-50"
+        >
+          {{ showTwoPage ? 'Show Single Page' : 'Show Two Page' }}
+        </button>
       </div>
     </div>
     <div class="flex gap-2 divide-x divide-gray-300">
@@ -377,12 +414,14 @@ watch(
 
       <!-- Right side: preview -->
       <div class="w-2/4 flex justify-center pt-2">
+        <!-- Single-page menu preview -->
         <div
           class="menu-preview-wrapper"
+          v-show="!showTwoPage"
           ref="menuPreviewRef"
           :style="{ '--ui-scale': state.scalePage }"
         >
-          <!-- COVER PAGE (Page 0) -->
+          <!-- COVER PAGE -->
           <MenuCover
             v-if="menuPage.currentPage === 0"
             v-model:title="state.coverTitle"
@@ -391,15 +430,12 @@ watch(
             :bg-color="state.bgColor"
             :text-color="state.textColor"
             :font-family="state.selectedFont"
-            :style="{
-              width: menuPage.width,
-              height: menuPage.height,
-            }"
+            :style="{ width: menuPage.width, height: menuPage.height }"
           />
 
-          <!-- MENU PAGES -->
+          <!-- Single-page MENU PREVIEW -->
           <MenuPreview
-            v-else-if="state.menuCsv.length"
+            v-else
             v-model:footerText="state.footerText"
             :items="state.menuCsv"
             :font-family="state.selectedFont"
@@ -420,15 +456,56 @@ watch(
             @update:totalPages="(val) => (menuPage.totalPages = val + 1)"
             @update:logo="(base64: string) => (state.logoBase64 = base64)"
           />
+        </div>
 
-          <!-- EMPTY STATE (Only when on menu page but no CSV loaded) -->
+        <!-- Two-page menu preview -->
+        <div
+          class="menu-preview-wrapper"
+          v-show="showTwoPage"
+          ref="twoPageRef"
+          :style="{ '--ui-scale': state.scalePage }"
+        >
+          <!-- COVER PAGE (Two-page mode) -->
+          <MenuCover
+            v-if="menuPage.currentPage === 0"
+            v-model:title="state.coverTitle"
+            v-model:subtitle="state.coverSubtitle"
+            v-model:coverLogo="state.coverLogoBase64"
+            :bg-color="state.bgColor"
+            :text-color="state.textColor"
+            :font-family="state.selectedFont"
+            :style="{ width: menuPage.width, height: menuPage.height }"
+          />
+
+          <!-- Two-page MENU PREVIEW -->
+          <TwoPage
+            v-else-if="menuPage.currentPage > 0"
+            :items="state.menuCsv"
+            :font-family="state.selectedFont"
+            :bg-color="state.bgColor"
+            :text-color="state.textColor"
+            :item-spacing="state.itemSpacing"
+            :current-page="menuPage.currentPage - 1"
+            :items-per-page="menuPage.itemsPerPage"
+            :page-width="menuPage.width"
+            :page-height="menuPage.height"
+            :keep-category-together="menuPage.keepCategoryTogether"
+            :footer-text="state.footerText"
+            :default-src="state.logoBase64 || undefined"
+            :readonly="state.pdfReadonly"
+            @add-before="(p) => addItemBefore(p.No)"
+            @add-after="(p) => addItemAfter(p.No)"
+            @delete-item="(p) => deleteItemByNo(p.No)"
+            @reorder="(p) => reorderItems(p.fromNo, p.toNo)"
+            @update:logo="(base64: string) => (state.logoBase64 = base64)"
+            @update:totalPages="() => (menuPage.totalPages = computedTotalPages)"
+          />
+
+          <!-- EMPTY STATE -->
           <div
             v-else
             class="a4-preview flex items-center justify-center"
-            :style="{
-              width: menuPage.width,
-              height: menuPage.height,
-            }"
+            :style="{ width: menuPage.width, height: menuPage.height }"
           >
             <p class="text-gray-400 text-center text-2xl italic">
               No menu data loaded. Please upload a CSV file.

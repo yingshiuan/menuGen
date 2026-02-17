@@ -14,6 +14,7 @@ It supports:
 ✔ Auto Layout (Tailwind CSS v4)
 ✔ Support Google Fonts (paste font name to load dynamically)
 ✔ Icon & Image Upload with compression
+✔ Preview in Single or Two Page
 ✔ Perfect PDF Export (exact same look as the on-screen preview)
 
 ---

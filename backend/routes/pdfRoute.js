@@ -116,12 +116,32 @@ router.post('/generate-pdf', async (req, res) => {
       </html>
     `
 
-    // Launch Puppeteer
-    const browser = await puppeteer.launch({
+    // Launch Puppeteer - prefer a system-installed Chromium if available (helps on arm64 hosts)
+    const launchOptions = {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
       timeout: 30000,
-    })
+    }
+
+    // If an environment-provided path exists, use it. Otherwise try common system paths.
+    if (process.env.CHROMIUM_PATH && fs.existsSync(process.env.CHROMIUM_PATH)) {
+      launchOptions.executablePath = process.env.CHROMIUM_PATH
+    } else {
+      const candidates = [
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/usr/bin/google-chrome-stable',
+        '/snap/bin/chromium',
+      ]
+      for (const p of candidates) {
+        if (fs.existsSync(p)) {
+          launchOptions.executablePath = p
+          break
+        }
+      }
+    }
+
+    const browser = await puppeteer.launch(launchOptions)
     const page = await browser.newPage()
 
     // Set the HTML content

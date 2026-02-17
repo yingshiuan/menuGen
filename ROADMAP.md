@@ -1,7 +1,7 @@
 # Product Roadmap
 
 ## Phase 1 – Polish & Usability (Next Release)
-- [ ] Preview two pages side-by-side
+- [x] Preview two pages side-by-side
 - [ ] Add common page size presets (A4, Letter, etc.)
 - [ ] Offer multiple cover layout templates
 - [ ] Auto-fit long descriptions
@@ -48,7 +48,7 @@
 - [X] Drag-and-drop image replacement  
 - [X] Drag-and-drop icon replacement  
 - [x] Export Multi-page pdf  
-- [ ] Preview two pages 
+- [x] Preview two pages 
 - [x] Allow users to set custom width and height for the menu PDF
 - [ ] Add common page size for users to select
 - [x] Set cover layout styles
