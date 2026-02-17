@@ -413,7 +413,7 @@ watch(
       </div>
 
       <!-- Right side: preview -->
-      <div class="w-2/4 flex justify-center pt-2">
+      <div class="w-2/4 flex pt-2">
         <!-- Single-page menu preview -->
         <div
           class="menu-preview-wrapper"
@@ -565,13 +565,13 @@ watch(
 
 .menu-preview-wrapper {
   transform: scale(var(--ui-scale));
-  transform-origin: top center;
+  transform-origin: top left;
 }
 
 @media screen {
   .a4-preview {
     /* transform: scale(0.8); */
-    transform-origin: top center;
+    transform-origin: top left;
   }
 }
 </style>

@@ -87,7 +87,7 @@ function handleTotalPagesUpdate(val: number) {
 <style scoped>
 .two-page-wrapper {
   display: flex;
-  justify-content: end;
-  translate: 16% 0;
+  /* justify-content: end; */
+  /* translate: -10% 0; */
 }
 </style>
