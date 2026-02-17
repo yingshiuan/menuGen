@@ -1,0 +1,48 @@
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - ./frontend:/usr/src/frontend:ro
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+
+  frontend:
+    build: ./frontend
+    ports:
+      - '8080:80'
+    depends_on:
+      - backend
+
+  # Development services (use `docker compose up frontend-dev backend-dev` or all)
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend:/usr/src/app:cached
+      - ./frontend:/usr/src/frontend:ro
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    ports:
+      - '3000:3000'
+
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app:cached
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=5173
+      - HOST=0.0.0.0
+    ports:
+      - '5173:5173'
+    depends_on:
+      - backend-dev

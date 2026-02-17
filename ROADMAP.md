@@ -19,7 +19,7 @@
 - [ ] CLI: `menugen generate menu.json → PDF`
 
 ## Phase 4 – Deployment & Scaling
-- [ ] Docker support
+- [x] Docker support
 - [ ] Production deployment guide (Railway / Render)
 - [ ] Vercel-compatible Puppeteer build
 

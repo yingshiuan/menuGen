@@ -166,7 +166,7 @@ Includes:
 
 # Running the App
 
-## **Frontend**
+## **Frontend (Local)**
 
 ```bash
 cd frontend
@@ -176,7 +176,7 @@ npm run dev
 Default:
 👉 [http://localhost:5173/](http://localhost:5173/)
 
-## **Backend**
+## **Backend (Local)**
 
 ```bash
 cd backend
@@ -185,6 +185,22 @@ node server.js
 
 Default:
 👉 [http://localhost:3000/](http://localhost:3000/)
+
+## **Docker (Production & Development)**
+
+See [Docker.md](./Docker.md) for full instructions on running with Docker Compose.
+
+**Quick start (production):**
+
+```bash
+docker compose up --build backend frontend
+```
+
+**Quick start (development with live reload):**
+
+```bash
+docker compose up --build backend-dev frontend-dev
+```
 
 ---
 
