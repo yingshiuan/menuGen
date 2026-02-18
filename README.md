@@ -51,6 +51,12 @@ See the full roadmap in [ROADMAP.md](./ROADMAP.md)
       <p>Customize Icons</p>
     </td>
   </tr>
+  <tr>
+    <td align="center">
+      <img src="frontend/public/demo/gif/6_twoPage.gif" alt="Two-Page" style="max-width: 100%; height: auto;" />
+      <p>View in Single and Two Page</p>
+    </td>
+  </tr>
 </table>
 
 ---
