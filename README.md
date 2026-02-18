@@ -6,16 +6,16 @@ MenuGen is a smart menu-building tool that transforms a CSV file into an editabl
 
 It supports:
 
-✔ CSV Parsing  
-✔ Inline Editing (No, Name, ChineseName, Measure, Price, Description, Options, Pictures, Icons, Category)  
-✔ Auto category-aware item numbering with intelligent gap reuse  
-✔ Logo upload and display in PDF  
-✔ Unique item ID tracking (UUID-based, no conflicts)  
-✔ Auto Layout (Tailwind CSS v4)  
-✔ Support Google Fonts (paste font name to load dynamically)  
-✔ Icon & Image Upload with compression  
-✔ Preview in Single or Two Page  
-✔ Perfect PDF Export (exact same look as the on-screen preview)  
+- CSV Parsing  
+- Inline Editing (No, Name, ChineseName, Measure, Price, Description, Options, Pictures, Icons, Category)  
+- Auto category-aware item numbering with intelligent gap reuse  
+- Logo upload and display in PDF  
+- Unique item ID tracking (UUID-based, no conflicts)  
+- Auto Layout (Tailwind CSS v4)  
+- Support Google Fonts (paste font name to load dynamically)  
+- Icon & Image Upload with compression  
+- Preview in Single or Two Page  
+- Perfect PDF Export (exact same look as the on-screen preview)  
 ---
 
 See the full roadmap in [ROADMAP.md](./ROADMAP.md)
