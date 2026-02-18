@@ -142,12 +142,12 @@ onMounted(() => {
 
 function handleCsvLoaded(items: MenuItem[]) {
   state.menuCsv = items
-  menuPage.currentPage = 0
+  menuPage.currentPage = 1
 }
 
 function loadSampleMenu() {
   state.menuCsv = demoMenu.map((item) => ({ ...item }))
-  menuPage.currentPage = 0
+  menuPage.currentPage = 1
   csvKey.value++
 }
 
@@ -360,10 +360,10 @@ watch(
           @update:page="menuPage.currentPage = $event"
         />
       </div>
-      <div class="w-1/4 flex justify-end">
+      <div class="w-1/4 flex justify-start">
         <button
           @click="showTwoPage = !showTwoPage"
-          class="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-700 border-2 border-blue-500 transition-colors duration-200 shadow-md disabled:opacity-50"
+          class="border-blue-500 px-3 py-1 rounded-lg hover:bg-blue-50 hover:text-blue-500 border-2 transition-colors duration-200 shadow-md disabled:opacity-50"
         >
           {{ showTwoPage ? 'Show Single Page' : 'Show Two Page' }}
         </button>
@@ -418,7 +418,7 @@ watch(
       </div>
 
       <!-- Right side: preview -->
-      <div class="w-2/4 flex pt-2">
+      <div class="w-3/4 flex pt-2">
         <!-- Single-page menu preview -->
         <div
           class="menu-preview-wrapper"

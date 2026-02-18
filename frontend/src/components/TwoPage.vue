@@ -35,7 +35,7 @@ function handleTotalPagesUpdate(val: number) {
 </script>
 
 <template>
-  <div class="two-page-wrapper flex gap-4">
+  <div class="two-page-wrapper flex gap-2">
     <!-- Left Page -->
     <MenuPreview
       :items="props.items"
