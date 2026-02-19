@@ -1,20 +1,5 @@
+version: '3.8'
 services:
-  backend:
-    build: ./backend
-    ports:
-      - '3000:3000'
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-
-  frontend:
-    build: ./frontend
-    ports:
-      - '8080:80'
-    depends_on:
-      - backend
-
-  # Development services (use `docker compose up frontend-dev backend-dev` or all)
   backend-dev:
     build:
       context: ./backend

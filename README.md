@@ -6,16 +6,17 @@ MenuGen is a smart menu-building tool that transforms a CSV file into an editabl
 
 It supports:
 
-- CSV Parsing  
-- Inline Editing (No, Name, ChineseName, Measure, Price, Description, Options, Pictures, Icons, Category)  
-- Auto category-aware item numbering with intelligent gap reuse  
-- Logo upload and display in PDF  
-- Unique item ID tracking (UUID-based, no conflicts)  
-- Auto Layout (Tailwind CSS v4)  
-- Support Google Fonts (paste font name to load dynamically)  
-- Icon & Image Upload with compression  
-- Preview in Single or Two Page  
-- Perfect PDF Export (exact same look as the on-screen preview)  
+- CSV Parsing
+- Inline Editing (No, Name, ChineseName, Measure, Price, Description, Options, Pictures, Icons, Category)
+- Auto category-aware item numbering with intelligent gap reuse
+- Logo upload and display in PDF
+- Unique item ID tracking (UUID-based, no conflicts)
+- Auto Layout (Tailwind CSS v4)
+- Support Google Fonts (paste font name to load dynamically)
+- Icon & Image Upload with compression
+- Preview in Single or Two Page
+- Perfect PDF Export (exact same look as the on-screen preview)
+
 ---
 
 See the full roadmap in [ROADMAP.md](./ROADMAP.md)
@@ -191,21 +192,23 @@ node server.js
 Default:
 👉 [http://localhost:3000/](http://localhost:3000/)
 
-## **Docker (Production & Development)**
+## **Docker**
 
 See [Docker.md](./Docker.md) for full instructions on running with Docker Compose.
 
-**Quick start (production):**
+**Quick start (production — uses `docker-compose.yml`):**
 
 ```bash
 docker compose up --build backend frontend
 ```
 
-**Quick start (development with live reload):**
+**Quick start (development with live reload — uses `docker-compose.dev.yml`):**
 
 ```bash
-docker compose up --build backend-dev frontend-dev
+docker compose -f docker-compose.dev.yml up --build backend-dev frontend-dev
 ```
+
+Alternatively, if you prefer a single file with profiles, the repo also supports tagging dev services with a `dev` profile (ask me to switch to profiles if you'd like that).
 
 ---
 
