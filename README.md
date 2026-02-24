@@ -261,6 +261,10 @@ POST http://localhost:3000/generate-pdf
 
 # PDF Export Pipeline (Backend)
 
+See [backend/README.md](./backend/README.md) for full backend architecture and image inlining details.
+
+---
+
 ### Backend server flow:
 
 #### **1. Parse incoming HTML**
