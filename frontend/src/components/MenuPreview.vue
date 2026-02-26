@@ -6,6 +6,7 @@ import LogoUpload from '@/components/AddLogo.vue'
 import MeunInfo from '@/components/MeunInfo.vue'
 import type { ItemSpacing } from '@/components/ItemSpacingControl.vue'
 
+/* Props & Emits */
 const props = defineProps<{
   items: MenuItem[]
   footerText: string
@@ -32,91 +33,73 @@ const emit = defineEmits<{
   (e: 'update:totalPages', value: number): void
 }>()
 
-interface DragState {
-  dragOverIndex: number | null
-  draggingIndex: number | null
-}
-
-const dragState = reactive<DragState>({
-  dragOverIndex: null,
-  draggingIndex: null,
-})
-
-const logoBase64 = ref<string | null>(null)
-
-// Sync parent's defaultSrc prop to local logoBase64
-watch(
-  () => props.defaultSrc,
-  (newVal) => {
-    logoBase64.value = newVal || null
-  },
-  { immediate: true },
-)
-
-const styleObject = computed(() => ({
-  fontFamily: props.fontFamily ?? 'sans-serif',
-  backgroundColor: props.bgColor ?? '#ffffff',
-  color: props.textColor ?? '#000000',
-}))
-
+/* State */
 interface PageEntry {
   category: string
   item: MenuItem
 }
 
-// Pagination logic
-const pages = computed<PageEntry[][]>(() => {
+const dragState = reactive<{ draggingIndex: number | null; dragOverIndex: number | null }>({
+  draggingIndex: null,
+  dragOverIndex: null,
+})
+
+const logoBase64 = ref<string | null>(props.defaultSrc ?? null)
+
+/* Domain / Computed */
+// Group items by category
+function groupItems(items: MenuItem[]): Record<string, MenuItem[]> {
   const grouped: Record<string, MenuItem[]> = {}
-  props.items.forEach((item) => {
+  items.forEach((item) => {
     const cat = item.Category || 'Uncategorized'
     if (!grouped[cat]) grouped[cat] = []
     grouped[cat].push(item)
   })
+  return grouped
+}
+
+// Pagination logic
+function paginateItems(
+  items: MenuItem[],
+  itemsPerPage: number,
+  keepCategoryTogether?: boolean
+): PageEntry[][] {
+  const grouped = groupItems(items) 
 
   const result: PageEntry[][] = []
   let currentPage: PageEntry[] = []
 
-  if (props.keepCategoryTogether) {
+  if (keepCategoryTogether) {
     for (const [category, items] of Object.entries(grouped)) {
-      const categoryEntries = items.map((item) => ({ category, item }))
+      const categoryEntries = items.map(item => ({ category, item }))
       const categoryLength = categoryEntries.length
 
-      // If category itself exceeds 11, split it across pages
       if (categoryLength > 11) {
-        // flush current page first
         if (currentPage.length) {
           result.push(currentPage)
           currentPage = []
         }
-
-        // split category into pages of 11
         for (let i = 0; i < categoryLength; i += 11) {
           result.push(categoryEntries.slice(i, i + 11))
         }
         continue
       }
 
-      // If current page already has items
-      if (currentPage.length > 0) {
-        // If adding this category would exceed 10 => start new page
-        if (currentPage.length + categoryLength > 10) {
-          result.push(currentPage)
-          currentPage = []
-        }
+      if (currentPage.length > 0 && currentPage.length + categoryLength > 10) {
+        result.push(currentPage)
+        currentPage = []
       }
 
       currentPage.push(...categoryEntries)
-      // If current page hits 10, push it
       if (currentPage.length >= 10) {
         result.push(currentPage)
         currentPage = []
       }
     }
   } else {
-    // Original behavior: break categories across pages
     for (const [category, items] of Object.entries(grouped)) {
-      items.forEach((item) => {
-        if (currentPage.length >= props.itemsPerPage) {
+      items.forEach(item => {
+        if (currentPage.length >= itemsPerPage) {
           result.push(currentPage)
           currentPage = []
         }
@@ -127,23 +110,26 @@ const pages = computed<PageEntry[][]>(() => {
 
   if (currentPage.length > 0) result.push(currentPage)
   return result
-})
+}
 
+const pages = computed(() =>
+  paginateItems(props.items, props.itemsPerPage, props.keepCategoryTogether),
+)
 const totalPages = computed(() => pages.value.length)
+const clampedPage = computed(() => Math.min(Math.max(props.currentPage, 0), totalPages.value - 1))
+const pageItems = computed(() => pages.value[clampedPage.value] ?? [])
 
+// Sync total pages with parent
+watch(totalPages, (val) => emit('update:totalPages', val), { immediate: true })
+
+/* Infrastructure / Helpers */
 watch(
-  totalPages,
+  () => props.defaultSrc,
   (val) => {
-    emit('update:totalPages', val)
+    logoBase64.value = val ?? null
   },
   { immediate: true },
 )
-
-const clampedPage = computed(() =>
-  Math.min(Math.max(props.currentPage, 0), Math.max(totalPages.value - 1, 0)),
-)
-
-const pageItems = computed(() => pages.value[clampedPage.value] ?? [])
 
 function shouldShowCategoryHeader(index: number) {
   const current = pageItems.value[index]
@@ -152,7 +138,7 @@ function shouldShowCategoryHeader(index: number) {
   return index === 0 || current.category !== prev?.category
 }
 
-// Drag helpers
+// Drag & Drop
 function onDragStart(e: DragEvent, index: number) {
   dragState.draggingIndex = index
   if (!e.dataTransfer) return
@@ -168,7 +154,6 @@ function onDragStart(e: DragEvent, index: number) {
   ghost.style.position = 'absolute'
   ghost.style.top = '-9999px'
   document.body.appendChild(ghost)
-
   e.dataTransfer.setDragImage(ghost, 50, 20)
   setTimeout(() => document.body.removeChild(ghost), 0)
 }
@@ -177,38 +162,32 @@ function onDragOver(e: DragEvent, index: number) {
   e.preventDefault()
   const target = e.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
-  const midY = rect.top + rect.height / 2
-
-  // Insert above or below depending on cursor
-  if (e.clientY < midY) {
-    dragState.dragOverIndex = index
-  } else {
-    dragState.dragOverIndex = index + 1
-  }
+  dragState.dragOverIndex = e.clientY < rect.top + rect.height / 2 ? index : index + 1
 }
 
 function onDrop(e: DragEvent) {
   e.preventDefault()
   const from = dragState.draggingIndex
   const to = dragState.dragOverIndex
-
   dragState.draggingIndex = null
   dragState.dragOverIndex = null
-
   if (from === null || to === null || from === to) return
-
   const fromItem = pageItems.value[from]?.item
-  const toIndex = to > pageItems.value.length - 1 ? pageItems.value.length - 1 : to
-  const toItem = pageItems.value[toIndex]?.item
-
+  const toItem =
+    pageItems.value[to > pageItems.value.length - 1 ? pageItems.value.length - 1 : to]?.item
   if (!fromItem || !toItem) return
-
   emit('reorder', { fromNo: fromItem.No, toNo: toItem.No })
 }
 
+/* UI */
+const styleObject = computed(() => ({
+  fontFamily: props.fontFamily ?? 'sans-serif',
+  backgroundColor: props.bgColor ?? '#ffffff',
+  color: props.textColor ?? '#000000',
+}))
+
 const itemFlexClass = computed(() => (props.itemSpacing === 'fill' ? 'flex-1' : 'flex-none'))
 
-// spacing behavior, currently only compact and fill is implemented
 const itemSpacingClass = computed(() => {
   switch (props.itemSpacing) {
     case 'compact':
@@ -261,7 +240,6 @@ const itemSpacingClass = computed(() => {
         {{ entry.category }}
       </h2>
 
-      <!-- Placeholder line -->
       <div
         v-if="dragState.dragOverIndex === index"
         data-ui-only
@@ -282,7 +260,7 @@ const itemSpacingClass = computed(() => {
           @update:item="(updated) => Object.assign(entry.item, updated)"
         />
 
-        <!-- overlay controls -->
+        <!-- Overlay Controls -->
         <div
           v-if="!props.readonly"
           data-ui-only
@@ -296,7 +274,6 @@ const itemSpacingClass = computed(() => {
             ＋
           </button>
         </div>
-
         <div
           v-if="!props.readonly"
           data-ui-only
@@ -310,7 +287,6 @@ const itemSpacingClass = computed(() => {
             ＋
           </button>
         </div>
-
         <div
           v-if="!props.readonly"
           data-ui-only
