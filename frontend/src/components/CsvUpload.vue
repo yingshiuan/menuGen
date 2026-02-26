@@ -24,7 +24,7 @@ const fileInput = ref<HTMLInputElement | null>(null) // DOM uses ref
 const fileName = ref<string | null>(null)
 const menuStore = useMenuStore()
 
-// Generate a unique ID
+/* Helpers */
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
@@ -43,6 +43,7 @@ function getOptionsFromRow(row: Record<string, string>): MenuOption[] {
     .map(([, value]) => value)
 }
 
+/* CSV Handling */
 function handleDrop(e: DragEvent) {
   e.preventDefault()
   csvState.isDragging = false

@@ -15,7 +15,6 @@ interface ColorState {
   defaultColor: string
 }
 
-
 const colorState = reactive<ColorState>({
   localColor: props.color,
   defaultColor: props.type === 'bg' ? '#ffffff' : '#000000'

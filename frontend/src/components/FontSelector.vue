@@ -25,13 +25,13 @@ const fonts: FontOption[] = [
 
 const selectedFont = ref<string>(props.font)
 
-  watch(
+watch(
   () => props.font,
   (val) => {
     if (val !== selectedFont.value) {
       selectedFont.value = val
     }
-  }
+  },
 )
 
 // watch(selectedFont, (newFont) => emit('update:font', newFont))

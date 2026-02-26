@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch, nextTick } from 'vue'
 import type { MenuItem, MenuOption } from '@/types/types'
 import { useIcons } from '@/composables/useIcons'
 
+/* Props & Emits */
 const props = defineProps<{
   item: MenuItem
   readonly?: boolean // PDF/export mode
@@ -13,6 +14,7 @@ const emit = defineEmits<{
   (e: 'update:item', item: MenuItem): void
 }>()
 
+/* State */
 const local = reactive({
   ...props.item,
   Options: props.item.Options ? [...props.item.Options] : [],
@@ -31,7 +33,9 @@ const pictureState = reactive<PictureState>({
 })
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const displayedPicture = ref<string | null>(null)
 
+  
 // Icon mapping
 const { iconMap } = useIcons()
 
@@ -42,6 +46,29 @@ const otherOptions = computed(() =>
   allOptions.value.filter(o => o !== 'Recommend')
 )
 
+const displayedRecommend = computed(() => !props.readonly || local.Options.includes('Recommend'))
+
+const displayedOtherOptions = computed(() =>
+  otherOptions.value.filter(
+    (opt) => !props.readonly || local.Options.includes(opt)
+  )
+)
+
+// Toggle Options
+function toggleOption(option: MenuOption) {
+  if (props.readonly) return
+
+  const list = local.Options
+  const i = list.indexOf(option)
+
+  i >= 0 ? list.splice(i, 1) : list.push(option)
+}
+
+function toggleRecommend() {
+  toggleOption('Recommend')
+}
+
+/* Editing State */
 type Field = 'No' | 'Name' | 'ChineseName' | 'Measure' | 'Description' | 'Price' | 'Category'
 
 // Editing state
@@ -71,33 +98,31 @@ function stopEditing(field: Field) {
   emit('update:item', { ...local })
 }
 
-// Toggle Options
-function toggleOption(option: MenuOption) {
-  if (props.readonly) return
+/* Color Logic */
+const lighterTextColor = computed(() => {
+  const hex = props.textColor ?? '#000000'
+  return lightenColor(hex, 40) // 40% lighter
+})
 
-  const list = local.Options
-  const i = list.indexOf(option)
+function lightenColor(hex: string, percent: number) {
+  const num = parseInt(hex.replace('#', ''), 16)
+  let r = (num >> 16) & 0xff
+  let g = (num >> 8) & 0xff
+  let b = num & 0xff
 
-  i >= 0 ? list.splice(i, 1) : list.push(option)
+  r = Math.min(255, Math.round(r + (255 - r) * (percent / 100)))
+  g = Math.min(255, Math.round(g + (255 - g) * (percent / 100)))
+  b = Math.min(255, Math.round(b + (255 - b) * (percent / 100)))
+
+  return `rgb(${r}, ${g}, ${b})`
 }
 
-function toggleRecommend() {
-  toggleOption('Recommend')
-}
 
-// Display logic
-const displayedRecommend = computed(() => !props.readonly || local.Options.includes('Recommend'))
-
-const displayedOtherOptions = computed(() =>
-  otherOptions.value.filter(
-    (opt) => !props.readonly || local.Options.includes(opt)
-  )
-)
+/* Image Logic */
 
 // Determine which picture URL actually exists. Some files in `/public/picture` are
 // prefixed with a number like `01_Name.png`, others are plain `Name.png`.
 // We probe candidate URLs and pick the first that loads successfully.
-const displayedPicture = ref<string | null>(null)
 
 function checkImage(url: string): Promise<boolean> {
   return new Promise((resolve) => {
@@ -144,24 +169,6 @@ watch(
   { immediate: true },
 )
 
-const lighterTextColor = computed(() => {
-  const hex = props.textColor ?? '#000000'
-  return lightenColor(hex, 40) // 40% lighter
-})
-
-function lightenColor(hex: string, percent: number) {
-  const num = parseInt(hex.replace('#', ''), 16)
-  let r = (num >> 16) & 0xff
-  let g = (num >> 8) & 0xff
-  let b = num & 0xff
-
-  r = Math.min(255, Math.round(r + (255 - r) * (percent / 100)))
-  g = Math.min(255, Math.round(g + (255 - g) * (percent / 100)))
-  b = Math.min(255, Math.round(b + (255 - b) * (percent / 100)))
-
-  return `rgb(${r}, ${g}, ${b})`
-}
-
 // Image upload
 function triggerUpload() {
   if (props.readonly) return
@@ -171,50 +178,6 @@ function triggerUpload() {
 function onImageError() {
   pictureState.visible = false
 }
-
-// async function uploadPicture(event: Event){
-//   const file = (event.target as HTMLInputElement).files?.[0]
-//   if (!file) return
-
-//    const itemNo = local.No;
-//   if (!itemNo) {
-//     alert('Please enter a No before uploading an image.');
-//     return;
-//   }
-
-//   if (!file.type.startsWith('image/')) {
-//     alert('Please upload a valid image file (PNG, JPG, JPEG, GIF, etc.).');
-//     return;
-//   }
-
-//   const formData = new FormData();
-//   formData.append('image', file);
-//   formData.append('No', itemNo.toString());
-
-//   try {
-//     uploading.value = true;
-//     const response = await fetch('http://localhost:3000/api/upload', {
-//       method: 'POST',
-//       body: formData,
-//     });
-
-//     if (!response.ok) {
-//       throw new Error('Failed to upload image');
-//     }
-
-//     const data = await response.json();
-//     const uploadedFileName = data.fileUrl; // Assuming the backend sends the image URL
-
-//     local.No = uploadedFileName.split('.')[0]; // Update the URL or the field in your local state
-//     imageVersion.value += 1; // Trigger re-rendering of the image
-
-//   } catch (error) {
-//     console.error('Error uploading image:', error);
-//     pictureVisible.value = false;  // Hide image on error
-//   } finally {
-//     uploading.value = false;
-//   }
-// };
 
 function setDisplayedPicture(src: string | null) {
   // Clear first to force Vue to re-render
