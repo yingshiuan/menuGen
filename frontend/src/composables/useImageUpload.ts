@@ -3,7 +3,8 @@ import { ref, computed } from 'vue'
 export function useImageUpload(
   initialValue: string | undefined,
   readonly: boolean | undefined,
-  emit: (value: string) => void
+  emit: (value: string) => void,
+  onDragStateChange?: (dragging: boolean) => void // optional callback to notify parent
 ) {
   const pictureBase64 = ref<string>(initialValue ?? '')
   const pictureVisible = ref<boolean>(!!initialValue)
@@ -42,15 +43,17 @@ export function useImageUpload(
     if (fileInputRef.value) fileInputRef.value.value = ''
   }
 
-  /* Drop and Drag Handlers */
+  /* Drag & Drop Handlers */
   function handleDragOver(e: DragEvent) {
     e.preventDefault()
     if (readonly) return
     isDragging.value = true
+    onDragStateChange?.(true) // notify parent
   }
 
   function handleDragLeave() {
     isDragging.value = false
+    onDragStateChange?.(false) // notify parent
   }
 
   function handleDrop(e: DragEvent) {
@@ -58,6 +61,7 @@ export function useImageUpload(
     if (readonly) return
 
     isDragging.value = false
+    onDragStateChange?.(false) // notify parent
 
     const file = e.dataTransfer?.files?.[0]
     if (!file) return
@@ -65,7 +69,7 @@ export function useImageUpload(
     processFile(file)
   }
 
-   /* Delete */
+  /* Delete */
   function deletePicture(event?: MouseEvent) {
     event?.stopPropagation()
     pictureBase64.value = ''
