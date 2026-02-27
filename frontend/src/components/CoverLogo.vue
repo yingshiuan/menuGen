@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { reactive, ref, computed, watch } from 'vue'
+import { watch } from 'vue'
+import { useImageUpload } from '@/composables/useImageUpload'
 
 const props = defineProps<{
   modelValue?: string
@@ -10,66 +11,44 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
 }>()
 
-const state = reactive({
-  pictureBase64: props.modelValue ?? '',
-})
-
-const fileInputRef = ref<HTMLInputElement | null>(null)
-const pictureVisible = ref(true)
-
-const displayedPicture = computed(() => state.pictureBase64)
-
-function triggerUpload() {
-  if (props.readonly) return
-  fileInputRef.value?.click()
-}
-
-function onImageError() {
-  pictureVisible.value = false
-}
-
-function uploadPicture(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  if (!file.type.startsWith('image/')) {
-    alert('Please upload a valid image file')
-    return
-  }
-
-  const reader = new FileReader()
-  reader.onload = () => {
-    state.pictureBase64 = reader.result as string
-    pictureVisible.value = true
-    emit('update:modelValue', state.pictureBase64)
-  }
-  reader.readAsDataURL(file)
-
-  if (fileInputRef.value) fileInputRef.value.value = ''
-}
-
-function deleteLogo(event: MouseEvent) {
-  event.stopPropagation()
-  state.pictureBase64 = ''
-  pictureVisible.value = false
-  emit('update:modelValue', '')
-}
+const {
+  fileInputRef,
+  pictureVisible,
+  displayedPicture,
+  isDragging,
+  triggerUpload,
+  uploadPicture,
+  handleDragOver,
+  handleDragLeave,
+  handleDrop,
+  deletePicture,
+  onImageError,
+  setPicture,
+} = useImageUpload(props.modelValue, props.readonly, (value) => emit('update:modelValue', value))
 
 watch(
   () => props.modelValue,
-  (val) => {
-    state.pictureBase64 = val ?? ''
-    pictureVisible.value = !!val
-  },
+  (val) => setPicture(val),
   { immediate: true },
 )
 </script>
 
-
 <template>
   <div
     class="relative group w-60 h-full flex items-center justify-center cursor-pointer"
+    :class="isDragging ? 'border-blue-500 bg-blue-50' : 'border-transparent'"
     @click="triggerUpload"
+    @dragover.prevent="handleDragOver"
+    @dragleave="handleDragLeave"
+    @drop.prevent="handleDrop"
   >
+    <div
+      v-if="isDragging"
+      class="absolute inset-0 w-auto flex items-center justify-center bg-blue-100/70 text-blue-500 text-sm font-medium"
+    >
+      Drop image here
+    </div>
+
     <!-- Image -->
     <div
       v-if="displayedPicture && pictureVisible"
@@ -85,38 +64,30 @@ watch(
     <!-- Upload Placeholder -->
     <div
       v-else
-      class="flex justify-center items-center opacity-30 transition hover:opacity-100 w-full" 
+      class="flex justify-center items-center opacity-30 transition hover:opacity-100 w-full"
       :class="{
         'hover:outline rounded-sm outline-gray-300 hover:bg-gray-100 hover:text-gray-600':
           !props.readonly && !displayedPicture,
         'outline-none': props.readonly,
       }"
     >
-      <span data-ui-only v-if="!readonly">Upload Logo</span>
+      <span data-ui-only v-if="!props.readonly">Upload Logo</span>
     </div>
 
     <!-- Delete Button -->
     <div
-      v-if="displayedPicture && !readonly"
+      v-if="displayedPicture && !props.readonly"
       data-ui-only
       class="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition"
     >
       <button
         class="w-6 h-6 flex items-center justify-center text-red-500 rounded-full shadow hover:bg-blue-500 hover:text-white"
-        @click="deleteLogo"
+        @click="deletePicture"
       >
         ✕
       </button>
     </div>
 
-    <input
-      ref="fileInputRef"
-      type="file"
-      class="hidden"
-      accept="image/*"
-      @change="uploadPicture"
-    />
+    <input ref="fileInputRef" type="file" class="hidden" accept="image/*" @change="uploadPicture" />
   </div>
 </template>
-
-
