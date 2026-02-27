@@ -75,6 +75,7 @@ const uiState = reactive({
   showTwoPage: false,
   pdfRenderKey: 0,
   csvKey: 0,
+  previewRenderKey: 0,
 })
 
 /* Demo Data */
@@ -265,6 +266,7 @@ function onItemUpdated(updated: MenuItem) {
   } else {
     menuState.menuCsv.push({ ...updated })
   }
+  uiState.previewRenderKey++
 }
 
 /* Application Action */
@@ -302,7 +304,6 @@ function reorderItems(fromNo: string, toNo: string) {
   menuState.menuCsv.splice(clamped, 0, item)
 }
 
-
 /* Infrastructure / Side Effect */
 
 // watch(
@@ -321,17 +322,19 @@ watch([() => menuState.menuCsv.length, uiState.showTwoPage, () => pageState.item
 })
 
 watch(
-  () => uiState.showTwoPage, (newVal) => {
-  if (newVal) {
-    // Single → two page
-    pageState.currentPage = Math.max(1, pageState.currentPage)
-    pageState.currentPage = Math.floor(pageState.currentPage / 2)
-  } else {
-    // Two → single page
-    pageState.currentPage = pageState.currentPage * 2
-  }
-  pageState.totalPages = computedTotalPages.value
-})
+  () => uiState.showTwoPage,
+  (newVal) => {
+    if (newVal) {
+      // Single → two page
+      pageState.currentPage = Math.max(1, pageState.currentPage)
+      pageState.currentPage = Math.floor(pageState.currentPage / 2)
+    } else {
+      // Two → single page
+      pageState.currentPage = pageState.currentPage * 2
+    }
+    pageState.totalPages = computedTotalPages.value
+  },
+)
 
 watch(
   () => pageState.totalPages,
@@ -341,7 +344,6 @@ watch(
     }
   },
 )
-
 
 watch(
   () => ({
@@ -388,7 +390,12 @@ watch(
       <div class="w-1/4 divide-y divide-gray-300 px-2">
         <!-- Drag & Drop CSV and Generate PDF side by side -->
         <div class="flex gap-2 py-2">
-          <CsvUpload :key="uiState.csvKey" @csvLoaded="handleCsvLoaded" :items="menuState.menuCsv" class="" />
+          <CsvUpload
+            :key="uiState.csvKey"
+            @csvLoaded="handleCsvLoaded"
+            :items="menuState.menuCsv"
+            class=""
+          />
           <GeneratePdf
             :contentRef="pdfRenderRef"
             :page-width="pageState.width"
@@ -427,7 +434,11 @@ watch(
         </div>
 
         <div class="py-2">
-          <MultiImageUpload :menuItems="menuState.menuCsv" @update:item="onItemUpdated" />
+          <MultiImageUpload
+            :menuItems="menuState.menuCsv"
+            @update:item="onItemUpdated"
+            @update:menuItems="menuState.menuCsv = $event"
+          />
         </div>
       </div>
 
@@ -455,6 +466,7 @@ watch(
           <!-- Single-page MENU PREVIEW -->
           <MenuPreview
             v-else
+            :key="uiState.previewRenderKey"
             v-model:footerText="menuState.footerText"
             :items="menuState.menuCsv"
             :font-family="menuState.selectedFont"

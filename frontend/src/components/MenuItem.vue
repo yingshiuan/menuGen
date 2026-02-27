@@ -219,13 +219,18 @@ function uploadPicture(event: Event) {
 function deletePicture() {
   if (props.readonly) return
 
-  local.mainImageBase64 = null
-  local.lastUpdated = Date.now()
+  const remainingImages = (local.images ?? []).slice(1)
 
-  setDisplayedPicture(null)
+  const updatedItem: MenuItem = {
+    ...local,
+    images: remainingImages,
+    mainImageBase64: remainingImages[0]?.base64 ?? null,
+    lastUpdated: Date.now(),
+  }
 
-  emit('update:item', { ...local, mainImageBase64: null, lastUpdated: local.lastUpdated })
+  emit('update:item', updatedItem)
 }
+
 
 watch(
   () => props.item,
@@ -237,15 +242,15 @@ watch(
 )
 
 // for update contain in the items
-watch(
-  local,
-  () => {
-    if (!Object.values(editingState).some((state) => state)) {
-      emit('update:item', local)
-    }
-  },
-  { deep: true },
-)
+// watch(
+//   local,
+//   () => {
+//     if (!Object.values(editingState).some((state) => state)) {
+//       emit('update:item', local)
+//     }
+//   },
+//   { deep: true },
+// )
 </script>
 
 <template>
