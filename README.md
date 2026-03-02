@@ -10,6 +10,7 @@ It supports:
 - Inline Editing (No, Name, ChineseName, Measure, Price, Description, Options, Pictures, Icons, Category)
 - Auto category-aware item numbering with intelligent gap reuse
 - Logo upload and display in PDF
+- Generic image uploader component with variant-based placeholders
 - Unique item ID tracking (UUID-based, no conflicts)
 - Auto Layout (Tailwind CSS v4)
 - Support Google Fonts (paste font name to load dynamically)
@@ -69,6 +70,7 @@ See the full roadmap in [ROADMAP.md](./ROADMAP.md)
 - Inline editable UI (No, Name, ChineseName, Measure, Price, Description, Categories, Icons)
 - Upload custom images or SVG icons per item
 - Upload logo image (displays in PDF)
+- Reusable `ImageUploader` component supports variants (logo, cover, avatar) and powers AddLogo/CoverLogo wrappers
 - Drag-and-drop item reordering
 - Add/delete items before or after any item
 - Smart pagination: keep categories together (11 items per category, 10 when combining)

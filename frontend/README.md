@@ -4,7 +4,6 @@
 
 MenuGen is an interactive **menu creation tool** that converts a CSV file into an editable menu interface. Users can modify items visually and export a **pixel-perfect PDF** using a backend powered by Puppeteer + Tailwind CSS v4.
 
-
 # Features
 
 ### CSV Import
@@ -21,16 +20,15 @@ Fully responsive layout using Tailwind CSS v4.
 
 ### Smart Image Handling
 
-* Images uploaded from frontend are stored locally
-* Large images/icons automatically compressed in backend
-* SVGs auto-inlined before PDF export
-* Ensures that **all images render in the final PDF**
+- Images uploaded from frontend are stored locally
+- Large images/icons automatically compressed in backend
+- Reusable `ImageUploader` component with variants (`logo`, `cover`) simplifies file inputs across the UI
+- SVGs auto-inlined before PDF export
+- Ensures that **all images render in the final PDF**
 
 ### Pixel-Perfect PDF Export (via backend)
 
 Your frontend sends HTML → the backend renders it in headless Chrome (Puppeteer) → returns an accurate PDF.
-
-
 
 # Project Structure (Frontend)
 
@@ -46,7 +44,7 @@ frontend/
 │   │   ├── picture/            # uploaded/used images
 │   │   └── svg/                # local SVG icons
 │   │   └── styles/
-│   │       └── style.css     
+│   │       └── style.css
 │   ├── components/             # menu builder UI components
 │   ├── views/                  # main view
 │   ├── stores/
@@ -56,8 +54,6 @@ frontend/
 │   └── index.html
 └── package.json
 ```
-
-
 
 # Install Dependencies
 
@@ -91,22 +87,21 @@ When user clicks **Export PDF**, the frontend:
 2. Sends it to the backend:
 
 ```js
-await fetch("http://localhost:3000/generate-pdf", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
+await fetch('http://localhost:3000/generate-pdf', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ html }),
-});
+})
 ```
 
 3. Backend:
-
-   * Parses HTML
-   * Detects `<img>` tags
-   * Compresses PNG/JPG
-   * Converts SVG → PNG or inline SVG
-   * Injects Tailwind CSS
-   * Generates PDF using Puppeteer
-   * Returns the PDF
+   - Parses HTML
+   - Detects `<img>` tags
+   - Compresses PNG/JPG
+   - Converts SVG → PNG or inline SVG
+   - Injects Tailwind CSS
+   - Generates PDF using Puppeteer
+   - Returns the PDF
 
 4. Frontend receives the PDF as a Blob and opens/downloads it.
 
@@ -116,16 +111,16 @@ await fetch("http://localhost:3000/generate-pdf", {
 
 ```ts
 async function exportPDF(html) {
-  const response = await fetch("http://localhost:3000/generate-pdf", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('http://localhost:3000/generate-pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ html }),
-  });
+  })
 
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
 
-  window.open(url, "_blank"); // display PDF in new tab
+  window.open(url, '_blank') // display PDF in new tab
 }
 ```
 
@@ -135,10 +130,10 @@ async function exportPDF(html) {
 
 ### ✔ The backend now automatically:
 
-* compresses **PNG/JPG**
-* converts **SVG → PNG**
-* inlines SVGs when needed
-* ensures *all images appear* in the PDF
+- compresses **PNG/JPG**
+- converts **SVG → PNG**
+- inlines SVGs when needed
+- ensures _all images appear_ in the PDF
 
 ### ✔ The frontend does NOT need to handle image compression
 
@@ -150,7 +145,9 @@ Just send the original HTML — backend takes care of it.
 /src/asset/picture/
 /src/asset/svg/
 ```
+
 or
+
 ```
 /public/picture
 ```
@@ -159,24 +156,18 @@ So backend can find and compress them.
 
 ---
 
-
 # Status: PDF Export System is Complete
 
 Your frontend + backend now work together to produce:
 
-* pixel-perfect
-* styled
-* image-safe
-* Tailwind-compatible
+- pixel-perfect
+- styled
+- image-safe
+- Tailwind-compatible
 
 PDFs exactly matching your Vue UI.
 
 ---
-
-
-
-
-
 
 TODO LIST
 
@@ -196,18 +187,16 @@ Perfect! If you choose **Option B (Puppeteer / headless Chrome)**, your workflow
 Since Puppeteer is **Node.js based**, your app will have two parts:
 
 1. **Frontend (Vue + Tailwind)**
-
-   * Upload CSV → Vue state
-   * Live editing + preview
-   * Display menu with Tailwind classes
-   * Send the current menu state to the backend when “Export PDF” is clicked
+   - Upload CSV → Vue state
+   - Live editing + preview
+   - Display menu with Tailwind classes
+   - Send the current menu state to the backend when “Export PDF” is clicked
 
 2. **Backend (Node.js + Puppeteer)**
-
-   * Receives menu data from frontend (JSON or rendered HTML)
-   * Loads a Vue-rendered page or generates an HTML template using the menu data
-   * Uses Puppeteer to render the HTML page and generate PDF
-   * Returns PDF to the frontend for download
+   - Receives menu data from frontend (JSON or rendered HTML)
+   - Loads a Vue-rendered page or generates an HTML template using the menu data
+   - Uses Puppeteer to render the HTML page and generate PDF
+   - Returns PDF to the frontend for download
 
 ---
 
@@ -233,43 +222,43 @@ npm install puppeteer
 **Example Node.js server endpoint (Express):**
 
 ```js
-const express = require('express');
-const puppeteer = require('puppeteer');
-const app = express();
-app.use(express.json());
+const express = require('express')
+const puppeteer = require('puppeteer')
+const app = express()
+app.use(express.json())
 
 app.post('/export-pdf', async (req, res) => {
-  const menuData = req.body; // menu JSON
+  const menuData = req.body // menu JSON
 
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
+  const browser = await puppeteer.launch()
+  const page = await browser.newPage()
 
   // You can either:
   // 1) Load a static HTML page and inject menuData via query or JS
   // 2) Generate HTML string directly
-  const html = generateMenuHTML(menuData); // function that returns full HTML with Tailwind
+  const html = generateMenuHTML(menuData) // function that returns full HTML with Tailwind
 
-  await page.setContent(html, { waitUntil: 'networkidle0' });
-  await page.evaluate(() => document.fonts.ready); // ensure fonts loaded
+  await page.setContent(html, { waitUntil: 'networkidle0' })
+  await page.evaluate(() => document.fonts.ready) // ensure fonts loaded
 
   const pdfBuffer = await page.pdf({
     format: 'A4',
     printBackground: true,
     margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' },
-  });
+  })
 
-  await browser.close();
+  await browser.close()
 
   res.set({
     'Content-Type': 'application/pdf',
     'Content-Disposition': 'attachment; filename=menu.pdf',
     'Content-Length': pdfBuffer.length,
-  });
+  })
 
-  res.send(pdfBuffer);
-});
+  res.send(pdfBuffer)
+})
 
-app.listen(3000, () => console.log('Server running on port 3000'));
+app.listen(3000, () => console.log('Server running on port 3000'))
 ```
 
 ---
@@ -285,34 +274,35 @@ async function exportPDF() {
   })
     .then((res) => res.blob())
     .then((blob) => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'menu.pdf';
-      a.click();
-      window.URL.revokeObjectURL(url);
-    });
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'menu.pdf'
+      a.click()
+      window.URL.revokeObjectURL(url)
+    })
 }
 ```
 
-* The frontend sends the **current menu JSON** to the backend.
-* Backend renders PDF using Tailwind exactly as seen on screen.
+- The frontend sends the **current menu JSON** to the backend.
+- Backend renders PDF using Tailwind exactly as seen on screen.
 
 ---
 
 ## **5. Benefits of this approach**
 
-* Pixel-perfect PDF with all Tailwind styles, fonts, colors, and layout.
-* Works with multi-page menus (Puppeteer handles page breaks).
-* No need to duplicate Tailwind styles in a hidden PDF container.
-* Easy to maintain: your live preview and PDF can share the same layout logic.
+- Pixel-perfect PDF with all Tailwind styles, fonts, colors, and layout.
+- Works with multi-page menus (Puppeteer handles page breaks).
+- No need to duplicate Tailwind styles in a hidden PDF container.
+- Easy to maintain: your live preview and PDF can share the same layout logic.
 
 ---
 
 ## **6. Considerations**
 
-* Puppeteer cannot run fully in the browser; you need **Node.js backend**.
-* Hosting: if deploying to serverless (Vercel, Netlify), you need a **Puppeteer-compatible environment** (some require chromium flags).
-* For local development, `npm run dev` + backend server works fine.
+- Puppeteer cannot run fully in the browser; you need **Node.js backend**.
+- Hosting: if deploying to serverless (Vercel, Netlify), you need a **Puppeteer-compatible environment** (some require chromium flags).
+- For local development, `npm run dev` + backend server works fine.
+- For Listen on all interfaces `npm run dev -- --host`
 
 ---

@@ -6,16 +6,16 @@ const props = defineProps<{
   pageWidth: string
   pageHeight: string
   fontFamily: string
-}>();
+}>()
 
 interface PdfState {
   uploading: boolean
   readonly: boolean
-} 
+}
 
 const pdfState = reactive<PdfState>({
   uploading: false,
-  readonly: false
+  readonly: false,
 })
 
 // const htmlPreview = ref<string>("");
@@ -26,74 +26,90 @@ async function generatePDF(): Promise<void> {
     alert('No content to export')
     return
   }
-  
+
   pdfState.readonly = true
-  pdfState.uploading = true;
+  pdfState.uploading = true
   await nextTick()
-  
-  await new Promise(resolve => setTimeout(resolve, 50));
+
+  await new Promise((resolve) => setTimeout(resolve, 50))
 
   // only html content without <head>
   const htmlContent = `
         ${element.innerHTML}
-  `;
+  `
 
   //  htmlPreview.value = htmlContent;
-   
+
   try {
-    const response: Response = await fetch("http://localhost:3000/generate-pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
+    const response: Response = await fetch('/api/generate-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         html: htmlContent,
         width: props.pageWidth,
         height: props.pageHeight,
         font: props.fontFamily,
       }),
-    });
+    })
 
     if (!response.ok) {
-      alert("Failed to generate PDF");
-      return;
+      alert('Failed to generate PDF')
+      return
     }
 
-    const blob: Blob = await response.blob();
-    const url: string = URL.createObjectURL(blob);
+    const blob: Blob = await response.blob()
+    const url: string = URL.createObjectURL(blob)
 
-    window.open(url, "_blank"); // Preview PDF in browser
+    // window.open(url, '_blank') // Preview PDF in browser
 
-    // const a: HTMLAnchorElement = document.createElement("a");
-    // a.href = url;
-    // a.download = "file.pdf";
-    // a.click();
+    const a: HTMLAnchorElement = document.createElement("a")
+    a.href = url 
+    if (isMobile()) {
+      // Convert Blob to Base64 and use a data URL for immediate download
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const a = document.createElement('a')
+        a.href = reader.result as string // data URL
+        a.download = 'menu.pdf'
+      }
+      reader.readAsDataURL(blob)
+    } else {
+      // Desktop: open in new tab
+      a.target = '_blank'
+    }
+
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
 
     // URL.revokeObjectURL(url); // clean up
   } catch (err) {
-    console.error("Error generating PDF:", err);
-    alert("An error occurred while generating PDF");
+    console.error('Error generating PDF:', err)
+    alert('An error occurred while generating PDF')
   } finally {
     pdfState.readonly = false
     pdfState.uploading = false
   }
-};
+}
+
+function isMobile(): boolean {
+  return /iPhone|iPod|Android/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 1 && /MacIntel/i.test(navigator.platform)) // modern iPad
+}
 </script>
 
 <template>
-  
-
   <div class="max-w-xl mx-auto flex justify-center">
     <!-- Generate PDF Button -->
     <button
       @click="generatePDF"
       :disabled="pdfState.uploading"
-      class="relative flex items-center gap-2 p-1 bg-blue-500 text-white rounded-lg 
-            hover:bg-blue-700 border-2 border-blue-500 transition-colors duration-200 
-            shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+      class="relative flex items-center gap-2 p-1 bg-blue-500 text-white rounded-lg hover:bg-blue-700 border-2 border-blue-500 transition-colors duration-200 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
     >
       <span v-if="!pdfState.uploading">Generate PDF</span>
 
       <span v-else class="flex flex-col items-center gap-2">
-         Exporting...<span class="loader"></span>
+        Exporting...<span class="loader"></span>
       </span>
     </button>
   </div>
@@ -122,4 +138,3 @@ async function generatePDF(): Promise<void> {
   }
 }
 </style>
-

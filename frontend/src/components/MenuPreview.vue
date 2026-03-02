@@ -45,6 +45,7 @@ const dragState = reactive<{ draggingIndex: number | null; dragOverIndex: number
 })
 
 const logoBase64 = ref<string | null>(props.defaultSrc ?? null)
+const tappedIndex = ref<number | null>(null)
 
 /* Domain / Computed */
 // Group items by category
@@ -62,16 +63,16 @@ function groupItems(items: MenuItem[]): Record<string, MenuItem[]> {
 function paginateItems(
   items: MenuItem[],
   itemsPerPage: number,
-  keepCategoryTogether?: boolean
+  keepCategoryTogether?: boolean,
 ): PageEntry[][] {
-  const grouped = groupItems(items) 
+  const grouped = groupItems(items)
 
   const result: PageEntry[][] = []
   let currentPage: PageEntry[] = []
 
   if (keepCategoryTogether) {
     for (const [category, items] of Object.entries(grouped)) {
-      const categoryEntries = items.map(item => ({ category, item }))
+      const categoryEntries = items.map((item) => ({ category, item }))
       const categoryLength = categoryEntries.length
 
       if (categoryLength > 11) {
@@ -98,7 +99,7 @@ function paginateItems(
     }
   } else {
     for (const [category, items] of Object.entries(grouped)) {
-      items.forEach(item => {
+      items.forEach((item) => {
         if (currentPage.length >= itemsPerPage) {
           result.push(currentPage)
           currentPage = []
@@ -251,7 +252,9 @@ const itemSpacingClass = computed(() => {
         :class="[
           'transition-all duration-200 ease-in-out',
           dragState.draggingIndex === index ? 'scale-90 opacity-60 z-10' : '',
+          tappedIndex === index ? 'scale-102 shadow-sm' : '', // touch feedback
         ]"
+        @click="tappedIndex = tappedIndex === index ? null : index"
       >
         <MenuItemComponent
           :item="entry.item"
@@ -264,7 +267,11 @@ const itemSpacingClass = computed(() => {
         <div
           v-if="!props.readonly"
           data-ui-only
-          class="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
+          class="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
+          :class="{
+            'opacity-100 pointer-events-auto group-hover:pointer-events-auto':
+              tappedIndex === index,
+          }"
         >
           <button
             class="w-5 h-5 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
@@ -277,7 +284,11 @@ const itemSpacingClass = computed(() => {
         <div
           v-if="!props.readonly"
           data-ui-only
-          class="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
+          class="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
+          :class="{
+            'opacity-100 pointer-events-auto group-hover:pointer-events-auto':
+              tappedIndex === index,
+          }"
         >
           <button
             class="w-5 h-5 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
@@ -290,7 +301,11 @@ const itemSpacingClass = computed(() => {
         <div
           v-if="!props.readonly"
           data-ui-only
-          class="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-150"
+          class="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
+          :class="{
+            'opacity-100 pointer-events-auto group-hover:pointer-events-auto':
+              tappedIndex === index,
+          }"
         >
           <button
             class="w-5 h-5 flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"

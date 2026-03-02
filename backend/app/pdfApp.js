@@ -40,6 +40,11 @@ export async function generatePdfFromHtml({ html, width = '210mm', height = '297
     </html>
   `
 
-  const pdfBuffer = await renderPdf(optimizedHtml, { width, height })
-  return pdfBuffer
+  try {
+    const pdfBuffer = await renderPdf(optimizedHtml, { width, height })
+    return pdfBuffer
+  } catch (err) {
+    console.error('PDF generation failed:', err)
+    throw err
+  }
 }

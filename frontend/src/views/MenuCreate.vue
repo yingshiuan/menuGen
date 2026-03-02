@@ -367,27 +367,29 @@ watch(
 
 <template>
   <div class="">
-    <div class="flex gap-2 p-2 items-center border-b border-gray-300">
-      <h1 class="w-1/4 text-xl font-bold p-1">Menu Gen (CSV to PDF)</h1>
-      <div class="w-2/4">
-        <MenuPage
-          :current-page="pageState.currentPage"
-          :total-pages="pageState.totalPages"
-          @update:page="pageState.currentPage = $event"
-        />
-      </div>
-      <div class="w-1/4 flex justify-start">
-        <button
-          @click="uiState.showTwoPage = !uiState.showTwoPage"
-          class="border-blue-500 px-3 py-1 rounded-lg hover:bg-blue-50 hover:text-blue-500 border-2 transition-colors duration-200 shadow-md disabled:opacity-50"
-        >
-          {{ uiState.showTwoPage ? 'Show Single Page' : 'Show Two Page' }}
-        </button>
+    <div class="flex flex-col lg:flex-row gap-2 p-2 items-center border-b border-gray-300">
+      <h1 class="w-full lg:w-1/4 text-xl font-bold p-1">Menu Gen (CSV to PDF)</h1>
+      <div class="w-full flex lg:contents">
+        <div class="w-1/2 lg:w-2/4">
+          <MenuPage
+            :current-page="pageState.currentPage"
+            :total-pages="pageState.totalPages"
+            @update:page="pageState.currentPage = $event"
+          />
+        </div>
+        <div class="w-1/2 lg:w-1/4 flex lg:justify-start justify-end">
+          <button
+            @click="uiState.showTwoPage = !uiState.showTwoPage"
+            class="border-blue-500 px-3 py-1 rounded-lg hover:bg-blue-50 hover:text-blue-500 border-2 transition-colors duration-200 shadow-md disabled:opacity-50"
+          >
+            {{ uiState.showTwoPage ? 'Show Single Page' : 'Show Two Page' }}
+          </button>
+        </div>
       </div>
     </div>
     <div class="flex gap-2 divide-x divide-gray-300">
       <!-- Left side: controls -->
-      <div class="w-1/4 divide-y divide-gray-300 px-2">
+      <div class="w-full lg:w-1/4 divide-y divide-gray-300 px-2">
         <!-- Drag & Drop CSV and Generate PDF side by side -->
         <div class="flex gap-2 py-2">
           <CsvUpload
@@ -443,7 +445,7 @@ watch(
       </div>
 
       <!-- Right side: preview -->
-      <div class="w-3/4 flex pt-2">
+      <div class="w-full lg:w-3/4 flex pt-2">
         <!-- Single-page menu preview -->
         <div
           class="menu-preview-wrapper"

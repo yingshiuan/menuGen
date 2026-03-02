@@ -2,6 +2,7 @@
 
 ## Phase 1 – Polish & Usability (Next Release)
 - [x] Preview two pages side-by-side
+- [x] Fully responsive UI (Desktop, Tablet, Mobile)
 - [ ] Add common page size presets (A4, Letter, etc.)
 - [ ] Offer multiple cover layout templates
 - [ ] Auto-fit long descriptions

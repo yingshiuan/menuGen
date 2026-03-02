@@ -35,23 +35,16 @@ const pictureState = reactive<PictureState>({
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const displayedPicture = ref<string | null>(null)
 
-  
 // Icon mapping
 const { iconMap } = useIcons()
 
-const allOptions = computed(() =>
-  Object.keys(iconMap.value) as MenuOption[]
-)
-const otherOptions = computed(() =>
-  allOptions.value.filter(o => o !== 'Recommend')
-)
+const allOptions = computed(() => Object.keys(iconMap.value) as MenuOption[])
+const otherOptions = computed(() => allOptions.value.filter((o) => o !== 'Recommend'))
 
 const displayedRecommend = computed(() => !props.readonly || local.Options.includes('Recommend'))
 
 const displayedOtherOptions = computed(() =>
-  otherOptions.value.filter(
-    (opt) => !props.readonly || local.Options.includes(opt)
-  )
+  otherOptions.value.filter((opt) => !props.readonly || local.Options.includes(opt)),
 )
 
 // Toggle Options
@@ -116,7 +109,6 @@ function lightenColor(hex: string, percent: number) {
 
   return `rgb(${r}, ${g}, ${b})`
 }
-
 
 /* Image Logic */
 
@@ -230,7 +222,6 @@ function deletePicture() {
 
   emit('update:item', updatedItem)
 }
-
 
 watch(
   () => props.item,
@@ -555,6 +546,10 @@ watch(
           v-if="displayedPicture && pictureState.visible && !props.readonly"
           data-ui-only
           class="absolute bottom-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+          :class="{
+            'opacity-100 pointer-events-auto': true,
+            'opacity-0': false, 
+          }"
         >
           <button
             class="w-3.5 h-3.5 text-xs flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"

@@ -47,7 +47,7 @@ watch(() => props.modelValue, setPicture, { immediate: true })
 
 <template>
   <div
-    class="relative group flex items-center justify-center cursor-pointer border border-transparent"
+    class="relative group flex  items-center justify-center cursor-pointer border border-transparent"
     :class="[isDragging ? 'border-blue-500 bg-blue-50' : '', props.class]"
     @click="triggerUpload"
     @dragover.prevent="handleDragOver"
@@ -76,7 +76,7 @@ watch(() => props.modelValue, setPicture, { immediate: true })
       <img
         v-else
         :src="displayedPicture"
-        class="max-w-full max-h-full object-contain"
+        class="w-60 h-60 overflow-hidden object-cover rounded-full"
         @error="onImageError"
       />
     </div>
@@ -100,10 +100,14 @@ watch(() => props.modelValue, setPicture, { immediate: true })
     <div
       v-if="displayedPicture && !props.readonly"
       data-ui-only
-      class="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition"
+      class="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition"
+      :class="{
+        'opacity-100 pointer-events-auto': true,
+        'opacity-0': false,
+      }"
     >
       <button
-        class="w-6 h-6 flex items-center justify-center text-red-500 rounded-full shadow hover:bg-blue-500 hover:text-white"
+        class="w-3.5 h-3.5 text-xs flex items-center justify-center text-red-500 rounded-full shadow hover:bg-blue-500 hover:text-white"
         @click="deletePicture"
       >
         ✕
