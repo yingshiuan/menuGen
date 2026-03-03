@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
-import ImageUploader from '@/components/ImageUploader.vue'
+// import ImageUploader from '@/components/ImageUploader.vue'
+import ImageCropper from '@/components/ImageCropper.vue'
 
 const props = defineProps<{
   defaultSrc?: string
@@ -30,10 +31,19 @@ function handleUpdate(val: string) {
 </script>
 
 <template>
-  <ImageUploader
+  <!-- <ImageUploader
     :model-value="local"
     :readonly="props.readonly"
     variant="logo"
+    @update:modelValue="handleUpdate"
+  /> -->
+  <ImageCropper
+    v-model="local"
+    variant="logo"
+    :aspectRatio="1"
+    :cropWidth="240"
+    :cropHeight="32"
+    :readonly="props.readonly"
     @update:modelValue="handleUpdate"
   />
 </template>

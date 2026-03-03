@@ -74,7 +74,7 @@ watch(() => props.modelValue, setPicture, { immediate: true })
         @error="onImageError"
       />
       <img
-        v-else
+        v-else-if="props.variant === 'cover'"
         :src="displayedPicture"
         class="w-60 h-60 overflow-hidden object-cover rounded-full"
         @error="onImageError"
