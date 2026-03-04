@@ -51,17 +51,19 @@ watch(
   { deep: true },
 )
 
-onMounted(() => {
-  const saved = localStorage.getItem('menu-user-icons')
-  if (saved) {
-    userIcons.value = JSON.parse(saved)
-  }
-})
+watch(
+  userIcons,
+  (val) => {
+    localStorage.setItem('menu-user-icons', JSON.stringify(val))
+  },
+  { deep: true }
+)
 
 export function useIcons() {
   return {
     iconMap,
     setUserIcon,
     resetIcon,
+    userIcons,
   }
 }

@@ -21,9 +21,15 @@ watch(
   },
 )
 
-function handleUpdate(val: string) {
-  local.value = val
-  emit('update:modelValue', val)
+
+function handleUpdate(val: string | null) {
+  if (val !== null) {
+    local.value = val
+    emit('update:modelValue', val)
+  } else {
+    local.value = ''
+    emit('update:modelValue', '')
+  }
 }
 </script>
 

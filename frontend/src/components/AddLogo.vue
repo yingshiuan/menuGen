@@ -24,9 +24,14 @@ watch(
   },
 )
 
-function handleUpdate(val: string) {
-  local.value = val
-  emit('update:logo', val)
+function handleUpdate(val: string | null) {
+  if (val !== null) {
+    local.value = val
+    emit('update:logo', val)
+  } else {
+    local.value = ''
+    emit('update:logo', '')
+  }
 }
 </script>
 

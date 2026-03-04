@@ -314,12 +314,19 @@ function reorderItems(fromNo: string, toNo: string) {
 //   { deep: true }
 // );
 
-watch([() => menuState.menuCsv.length, uiState.showTwoPage, () => pageState.itemsPerPage], () => {
-  pageState.totalPages = computedTotalPages.value
-  if (pageState.currentPage >= pageState.totalPages) {
-    pageState.currentPage = pageState.totalPages - 1
+watch(
+  [
+    () => menuState.menuCsv.length,
+    () => uiState.showTwoPage,
+    () => pageState.itemsPerPage,
+  ],
+  () => {
+    pageState.totalPages = computedTotalPages.value
+    if (pageState.currentPage >= pageState.totalPages) {
+      pageState.currentPage = pageState.totalPages - 1
+    }
   }
-})
+)
 
 watch(
   () => uiState.showTwoPage,

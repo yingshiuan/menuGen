@@ -1,11 +1,11 @@
-<!-- CropModal.vue -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, reactive } from 'vue'
 import { useImageUpload } from '@/composables/useImageUpload.ts'
+import { useImageCropper } from '@/composables/useImageCropper'
 
 /** Props */
 const props = defineProps<{
-  modelValue?: string 
+  modelValue?: string | null
   readonly?: boolean
   placeholder?: string
   class?: string
@@ -31,7 +31,8 @@ const computedPlaceholder = computed(() => {
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: string): void
+  (e: 'update:modelValue', val: string | null): void
+  (e: 'update:modalOpen', val: boolean): void
 }>()
 
 /** Image upload composable */
@@ -41,42 +42,115 @@ const {
   isDragging,
   fileInputRef,
   triggerUpload,
-  handleDrop,
   handleDragOver,
   handleDragLeave,
   deletePicture,
   setPicture,
   onImageError,
-} = useImageUpload(props.modelValue, props.readonly, (val) => emit('update:modelValue', val))
+} = useImageUpload(props.modelValue ?? null, props.readonly, (val) =>
+  emit('update:modelValue', val),
+)
 
 watch(() => props.modelValue, setPicture, { immediate: true })
 
 /** Crop state */
-const isModalVisible = ref(false)
-const imageSrc = ref<string | null>(null)
-const croppedImage = ref<string | null>(null)
+interface CropFrame {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+interface CropState {
+  isModalVisible: boolean
+  imageSrc: string | null
+  croppedImage: string | null
+  aspectRatio: number
+  cropFrame: CropFrame
+}
+
+interface DragState {
+  dragStart: { x: number; y: number }
+  isResizing: boolean
+  resizeStart: CropFrame
+  resizeDirection: 'se' | 'e' | 's'
+}
+
+const cropState = reactive<CropState>({
+  isModalVisible: false,
+  imageSrc: null,
+  croppedImage: null,
+  aspectRatio: props.aspectRatio ?? (props.variant === 'logo' ? 300 / 32 : 1),
+  cropFrame: {
+    x: 50,
+    y: 50,
+    width: props.cropWidth ?? (props.variant === 'logo' ? 300 : 240),
+    height: props.cropHeight ?? (props.variant === 'logo' ? 32 : 240),
+  },
+})
+
+/** Drag & Resize state */
+const dragState = reactive<DragState>({
+  dragStart: { x: 0, y: 0 },
+  isResizing: false,
+  resizeStart: { x: 0, y: 0, width: 0, height: 0 },
+  resizeDirection: 'se',
+})
+
 const containerRef = ref<HTMLElement | null>(null)
 const imageRef = ref<HTMLImageElement | null>(null)
 
-const aspectRatio = ref(props.aspectRatio ?? (props.variant === 'logo' ? 300 / 32 : 1))
-
-const cropFrame = ref<{ x: number; y: number; width: number; height: number }>({
-  x: 50,
-  y: 50,
-  width: props.cropWidth ?? (props.variant === 'logo' ? 300 : 240),
-  height: props.cropHeight ?? (props.variant === 'logo' ? 32 : 240),
+const aspectRatio = computed(() => {
+  return props.aspectRatio ?? (props.variant === 'logo' ? 300 / 32 : 1)
 })
 
-/** Drag & resize */
-const dragStart = ref<{ x: number; y: number }>({ x: 0, y: 0 })
-const isResizing = ref(false)
-const resizeStart = ref<{ x: number; y: number; width: number; height: number }>({
-  x: 0,
-  y: 0,
-  width: 0,
-  height: 0,
-})
-const resizeDirection = ref<'se' | 'e' | 's'>('se')
+const { cropImage } = useImageCropper()
+
+const handleCrop = () => {
+  if (!cropState.imageSrc || !containerRef.value || !imageRef.value) return
+
+  const result = cropImage(
+    cropState.imageSrc,
+    containerRef.value,
+    imageRef.value,
+    cropState.cropFrame,
+  )
+
+  if (!result) return
+
+  cropState.croppedImage = result
+  emit('update:modelValue', result)
+  setPicture(result)
+  closeModal()
+}
+
+/** Upload and read image */
+const readFileAndOpenCropper = (file: File) => {
+  const reader = new FileReader()
+
+  reader.onload = () => {
+    cropState.imageSrc = reader.result as string
+    cropState.isModalVisible = true
+  }
+
+  reader.readAsDataURL(file)
+}
+
+const handleDropAndCrop = (event: DragEvent) => {
+  if (props.readonly) return
+
+  const file = event.dataTransfer?.files?.[0]
+  if (!file) return
+
+  readFileAndOpenCropper(file)
+}
+
+const uploadPictureAndCrop = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+
+  readFileAndOpenCropper(file)
+}
 
 /** Helpers for safe mouse/touch coords */
 const getClientXY = (event: MouseEvent | TouchEvent) => {
@@ -94,32 +168,19 @@ const getClientXY = (event: MouseEvent | TouchEvent) => {
 
 /** Open / Close modal */
 const openCropper = () => {
-  if (imageSrc.value) isModalVisible.value = true
+  if (cropState.imageSrc) cropState.isModalVisible = true
 }
 const closeModal = () => {
-  isModalVisible.value = false
-  croppedImage.value = null
-  imageSrc.value = null
-}
-
-/** Upload and read image */
-const uploadPictureAndCrop = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = () => {
-    imageSrc.value = reader.result as string
-    openCropper()
-  }
-  reader.readAsDataURL(file)
+  cropState.isModalVisible = false
+  cropState.croppedImage = null
+  cropState.imageSrc = null
 }
 
 /** Drag handlers */
 const startDrag = (event: MouseEvent | TouchEvent) => {
   const { x: clientX, y: clientY } = getClientXY(event)
   isDragging.value = true
-  dragStart.value = { x: clientX - cropFrame.value.x, y: clientY - cropFrame.value.y }
+  dragState.dragStart = { x: clientX - cropState.cropFrame.x, y: clientY - cropState.cropFrame.y }
 
   window.addEventListener('mousemove', onDrag)
   window.addEventListener('mouseup', stopDrag)
@@ -136,16 +197,16 @@ const onDrag = (event: MouseEvent | TouchEvent) => {
 
   const { x: clientX, y: clientY } = getClientXY(event)
 
-  let newX = clientX - dragStart.value.x
-  let newY = clientY - dragStart.value.y
+  let newX = clientX - dragState.dragStart.x
+  let newY = clientY - dragState.dragStart.y
 
   // Clamp inside visible image
-  newX = Math.max(bounds.left, Math.min(newX, bounds.right - cropFrame.value.width))
+  newX = Math.max(bounds.left, Math.min(newX, bounds.right - cropState.cropFrame.width))
 
-  newY = Math.max(bounds.top, Math.min(newY, bounds.bottom - cropFrame.value.height))
+  newY = Math.max(bounds.top, Math.min(newY, bounds.bottom - cropState.cropFrame.height))
 
-  cropFrame.value.x = newX
-  cropFrame.value.y = newY
+  cropState.cropFrame.x = newX
+  cropState.cropFrame.y = newY
 }
 
 const stopDrag = () => {
@@ -157,15 +218,18 @@ const stopDrag = () => {
 }
 
 /** Resize handlers */
-const startResize = (direction: typeof resizeDirection.value, event: MouseEvent | TouchEvent) => {
+const startResize = (
+  direction: typeof dragState.resizeDirection,
+  event: MouseEvent | TouchEvent,
+) => {
   const { x: clientX, y: clientY } = getClientXY(event)
-  resizeDirection.value = direction
-  isResizing.value = true
-  resizeStart.value = {
+  dragState.resizeDirection = direction
+  dragState.isResizing = true
+  dragState.resizeStart = {
     x: clientX,
     y: clientY,
-    width: cropFrame.value.width,
-    height: cropFrame.value.height,
+    width: cropState.cropFrame.width,
+    height: cropState.cropFrame.height,
   }
 
   window.addEventListener('mousemove', onResize)
@@ -175,7 +239,7 @@ const startResize = (direction: typeof resizeDirection.value, event: MouseEvent 
 }
 
 const onResize = (event: MouseEvent | TouchEvent) => {
-  if (!isResizing.value) return
+  if (!dragState.isResizing) return
   if ('touches' in event) event.preventDefault()
 
   const bounds = getImageDisplayBounds()
@@ -183,113 +247,67 @@ const onResize = (event: MouseEvent | TouchEvent) => {
 
   const { x: clientX, y: clientY } = getClientXY(event)
 
-  const deltaX = clientX - resizeStart.value.x
-  const deltaY = clientY - resizeStart.value.y
+  const deltaX = clientX - dragState.resizeStart.x
+  const deltaY = clientY - dragState.resizeStart.y
 
   const MIN_SIZE = 100
 
   // SE RESIZE (Logo main case)
-  if (resizeDirection.value === 'se') {
-    let newWidth = resizeStart.value.width + deltaX
+  if (dragState.resizeDirection === 'se') {
+    let newWidth = dragState.resizeStart.width + deltaX
     newWidth = Math.max(MIN_SIZE, newWidth)
 
     let newHeight = newWidth / aspectRatio.value
 
     // Bottom limit
-    const maxHeight = bounds.bottom - cropFrame.value.y
+    const maxHeight = bounds.bottom - cropState.cropFrame.y
     if (newHeight > maxHeight) {
       newHeight = maxHeight
       newWidth = newHeight * aspectRatio.value
     }
 
     // Slide left if overflow right
-    const overflowRight = cropFrame.value.x + newWidth - bounds.right
+    const overflowRight = cropState.cropFrame.x + newWidth - bounds.right
     if (overflowRight > 0) {
-      cropFrame.value.x -= overflowRight
+      cropState.cropFrame.x -= overflowRight
     }
 
-    cropFrame.value.width = newWidth
-    cropFrame.value.height = newHeight
+    cropState.cropFrame.width = newWidth
+    cropState.cropFrame.height = newHeight
 
     return
   }
 
   // E resize
-  if (resizeDirection.value === 'e') {
-    let newWidth = Math.max(MIN_SIZE, resizeStart.value.width + deltaX)
+  if (dragState.resizeDirection === 'e') {
+    let newWidth = Math.max(MIN_SIZE, dragState.resizeStart.width + deltaX)
 
-    if (cropFrame.value.x + newWidth > bounds.right) {
-      newWidth = bounds.right - cropFrame.value.x
+    if (cropState.cropFrame.x + newWidth > bounds.right) {
+      newWidth = bounds.right - cropState.cropFrame.x
     }
 
-    cropFrame.value.width = newWidth
+    cropState.cropFrame.width = newWidth
     return
   }
 
   // S resize
-  if (resizeDirection.value === 's') {
-    let newHeight = Math.max(MIN_SIZE, resizeStart.value.height + deltaY)
+  if (dragState.resizeDirection === 's') {
+    let newHeight = Math.max(MIN_SIZE, dragState.resizeStart.height + deltaY)
 
-    if (cropFrame.value.y + newHeight > bounds.bottom) {
-      newHeight = bounds.bottom - cropFrame.value.y
+    if (cropState.cropFrame.y + newHeight > bounds.bottom) {
+      newHeight = bounds.bottom - cropState.cropFrame.y
     }
 
-    cropFrame.value.height = newHeight
+    cropState.cropFrame.height = newHeight
     return
   }
 }
 const stopResize = () => {
-  isResizing.value = false
+  dragState.isResizing = false
   window.removeEventListener('mousemove', onResize)
   window.removeEventListener('mouseup', stopResize)
   window.removeEventListener('touchmove', onResize)
   window.removeEventListener('touchend', stopResize)
-}
-
-/** Crop image */
-const cropImage = () => {
-  if (!imageSrc.value || !containerRef.value || !imageRef.value) return
-
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  const img = imageRef.value
-
-  const containerWidth = containerRef.value.clientWidth
-  const containerHeight = containerRef.value.clientHeight
-  const naturalWidth = img.naturalWidth
-  const naturalHeight = img.naturalHeight
-
-  const imageRatio = naturalWidth / naturalHeight
-  const containerRatio = containerWidth / containerHeight
-
-  let displayWidth = 0,
-    displayHeight = 0
-  if (imageRatio > containerRatio) {
-    displayWidth = containerWidth
-    displayHeight = containerWidth / imageRatio
-  } else {
-    displayHeight = containerHeight
-    displayWidth = containerHeight * imageRatio
-  }
-
-  const offsetX = (containerWidth - displayWidth) / 2
-  const offsetY = (containerHeight - displayHeight) / 2
-  const scaleX = naturalWidth / displayWidth
-  const scaleY = naturalHeight / displayHeight
-
-  const cropX = (cropFrame.value.x - offsetX) * scaleX
-  const cropY = (cropFrame.value.y - offsetY) * scaleY
-  const cropWidth = cropFrame.value.width * scaleX
-  const cropHeight = cropFrame.value.height * scaleY
-
-  canvas.width = cropFrame.value.width
-  canvas.height = cropFrame.value.height
-  ctx?.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height)
-
-  croppedImage.value = canvas.toDataURL()
-  emit('update:modelValue', croppedImage.value)
-  setPicture(croppedImage.value)
-  closeModal()
 }
 
 const getImageDisplayBounds = () => {
@@ -328,32 +346,39 @@ const centerCropFrame = () => {
   const bounds = getImageDisplayBounds()
   if (!bounds) return
 
-  cropFrame.value.x = bounds.left + (bounds.right - bounds.left - cropFrame.value.width) / 2
+  cropState.cropFrame.x = bounds.left + (bounds.right - bounds.left - cropState.cropFrame.width) / 2
 
-  cropFrame.value.y = bounds.top + (bounds.bottom - bounds.top - cropFrame.value.height) / 2
+  cropState.cropFrame.y = bounds.top + (bounds.bottom - bounds.top - cropState.cropFrame.height) / 2
 }
 
 /** Watch for external changes */
 watch([() => displayedPicture, () => pictureVisible], () => {
-  if (displayedPicture && pictureVisible && !imageSrc.value) {
-    imageSrc.value = typeof displayedPicture === 'string' ? displayedPicture : ''
+  if (displayedPicture && pictureVisible && !cropState.imageSrc) {
+    cropState.imageSrc = typeof displayedPicture === 'string' ? displayedPicture : ''
     openCropper()
   }
 })
+
+watch(
+  () => cropState.isModalVisible,
+  (val) => {
+    emit('update:modalOpen', val) // <-- emits true/false
+  },
+)
 </script>
 
 <template>
   <div
-    class="relative group flex items-center justify-center cursor-pointer border border-transparent"
+    class="relative group flex items-center justify-center cursor-pointer border border-transparent rounded-full"
     :class="[isDragging ? 'border-blue-500 bg-blue-50' : '', props.class]"
     @click="triggerUpload"
     @dragover.prevent="handleDragOver"
     @dragleave="handleDragLeave"
-    @drop.prevent="handleDrop"
+    @drop.prevent="handleDropAndCrop"
   >
     <div
       v-if="isDragging"
-      class="absolute inset-0 flex items-center justify-center bg-blue-100/70 text-blue-500 text-sm font-medium"
+      class="absolute inset-0 flex items-center justify-center bg-blue-100/70 text-blue-500 text-sm"
     >
       Drop image here
     </div>
@@ -379,29 +404,31 @@ watch([() => displayedPicture, () => pictureVisible], () => {
       <img
         v-else-if="props.variant === 'picture'"
         :src="displayedPicture"
-        class="w-20 h-20 object-cover rounded-full"
+        class="object-cover rounded-full"
         @error="onImageError"
       />
     </div>
 
     <div
       v-else
-      class="flex justify-center items-center w-full opacity-30 transition hover:opacity-100"
-      :class="{
-        'hover:outline rounded-sm outline-gray-300 hover:bg-gray-100 hover:text-gray-600':
-          !props.readonly && !displayedPicture,
-        'outline-none': props.readonly,
-      }"
+      class="flex justify-center items-center opacity-30 transition hover:opacity-100 "
+      
+      :class="[
+        props.variant === 'picture' ? 'm-[12%] w-full h-full rounded-full' : ' rounded-lg',
+        !props.readonly && !displayedPicture
+          ? 'hover:outline hover:bg-gray-100 hover:text-gray-600'
+          : '',
+      ]"
     >
-      <span v-if="!props.readonly">{{ computedPlaceholder }}</span>
+      <span data-ui-only v-if="!props.readonly" class="text-center text-sm">{{ computedPlaceholder }}</span>
     </div>
 
     <div
       v-if="displayedPicture && !props.readonly"
-      class="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition"
+      class="absolute -top-3 -right-3 opacity-100 group-hover:opacity-100 transition"
     >
       <button
-        class="w-3.5 h-3.5 text-xs flex items-center justify-center text-red-500 rounded-full shadow hover:bg-blue-500 hover:text-white"
+        class="w-3.5 h-3.5 text-xs flex items-center justify-center z-10 text-red-500 rounded-full shadow hover:bg-blue-500 hover:text-white"
         @click="deletePicture"
       >
         ✕
@@ -417,19 +444,24 @@ watch([() => displayedPicture, () => pictureVisible], () => {
     />
   </div>
 
-  <div v-if="isModalVisible" class="modal">
-    <div class="modal-content">
+  <div v-if="cropState.isModalVisible" class="modal" @click.self="closeModal">
+    <div class="modal-content" @click.stop>
       <div class="crop-container" ref="containerRef">
         <div class="image-wrapper">
-          <img ref="imageRef" :src="imageSrc || ''" alt="Uploaded Image" @load="centerCropFrame" />
+          <img
+            ref="imageRef"
+            :src="cropState.imageSrc || ''"
+            alt="Uploaded Image"
+            @load="centerCropFrame"
+          />
         </div>
         <div
           class="crop-frame"
           :style="{
-            width: `${cropFrame.width}px`,
-            height: `${cropFrame.height}px`,
-            top: `${cropFrame.y}px`,
-            left: `${cropFrame.x}px`,
+            width: `${cropState.cropFrame.width}px`,
+            height: `${cropState.cropFrame.height}px`,
+            top: `${cropState.cropFrame.y}px`,
+            left: `${cropState.cropFrame.x}px`,
             borderRadius: props.variant === 'logo' ? '0' : '50%',
           }"
           @mousedown="startDrag"
@@ -455,7 +487,7 @@ watch([() => displayedPicture, () => pictureVisible], () => {
       <div class="controls">
         <button
           class="bg-blue-500 p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
-          @click="cropImage"
+          @click="handleCrop"
         >
           Crop Image
         </button>
@@ -475,17 +507,21 @@ watch([() => displayedPicture, () => pictureVisible], () => {
 </template>
 
 <style scoped>
+.a4-preview.modal-open {
+  pointer-events: none; /* block hover & click on underlying page */
+}
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   background: rgba(0, 0, 0, 0.7);
   z-index: 1000;
+  pointer-events: all;
 }
 .modal-content {
   background: white;
@@ -493,6 +529,7 @@ watch([() => displayedPicture, () => pictureVisible], () => {
   border-radius: 1rem;
   width: 80%;
   max-width: 50rem;
+  pointer-events: all;
 }
 .crop-container {
   position: relative;

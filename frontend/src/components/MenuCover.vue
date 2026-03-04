@@ -73,7 +73,7 @@ watch(() => local.coverLogo, (val) => emit('update:coverLogo', val))
     <div class="mb-8">
       <CoverLogo
         v-model="local.coverLogo"
-        :readonly="readonly"
+        :readonly="props.readonly"
       />
     </div>
 

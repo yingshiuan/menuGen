@@ -3,7 +3,7 @@ import { watch, computed } from 'vue'
 import { useImageUpload } from '@/composables/useImageUpload.ts'
 
 const props = defineProps<{
-  modelValue?: string // logo, cover
+  modelValue?: string | null // logo, cover
   readonly?: boolean
   placeholder?: string
   class?: string // optional styling class
@@ -18,13 +18,15 @@ const computedPlaceholder = computed(() => {
       return 'Upload Logo'
     case 'cover':
       return 'Upload Cover'
+    case 'picture':
+      return 'Upload Picture'
     default:
       return 'Upload Image'
   }
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: string): void
+  (e: 'update:modelValue', val: string | null): void
 }>()
 
 const {
@@ -40,14 +42,16 @@ const {
   deletePicture,
   setPicture,
   onImageError,
-} = useImageUpload(props.modelValue, props.readonly, (val) => emit('update:modelValue', val))
+} = useImageUpload(props.modelValue ?? null, props.readonly, (val) =>
+  emit('update:modelValue', val),
+)
 
 watch(() => props.modelValue, setPicture, { immediate: true })
 </script>
 
 <template>
   <div
-    class="relative group flex  items-center justify-center cursor-pointer border border-transparent"
+    class="relative group flex items-center justify-center cursor-pointer border border-transparent"
     :class="[isDragging ? 'border-blue-500 bg-blue-50' : '', props.class]"
     @click="triggerUpload"
     @dragover.prevent="handleDragOver"
@@ -79,19 +83,27 @@ watch(() => props.modelValue, setPicture, { immediate: true })
         class="w-60 h-60 overflow-hidden object-cover rounded-full"
         @error="onImageError"
       />
+
+      <img
+        v-else-if="props.variant === 'picture'"
+        :src="displayedPicture"
+        class="m-[12%] w-[76%] h-[76%] object-cover rounded-full"
+        @error="onImageError"
+      />
     </div>
 
     <!-- Placeholder -->
     <div
       v-else
       class="flex justify-center items-center w-full opacity-30 transition hover:opacity-100"
+      data-ui-only
       :class="{
         'hover:outline rounded-sm outline-gray-300 hover:bg-gray-100 hover:text-gray-600':
           !props.readonly && !displayedPicture,
         'outline-none': props.readonly,
       }"
     >
-      <span data-ui-only v-if="!props.readonly">
+      <span v-if="!props.readonly">
         {{ computedPlaceholder }}
       </span>
     </div>

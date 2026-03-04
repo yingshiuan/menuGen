@@ -1,8 +1,8 @@
 import { ref, computed } from 'vue'
 
 export function useImageUpload(
-  initialValue: string | undefined,
-  readonly: boolean | undefined,
+  initialValue: string | null,
+  readonly: boolean | null,
   emit: (value: string) => void,
   onDragStateChange?: (dragging: boolean) => void // optional callback to notify parent
 ) {
@@ -82,7 +82,7 @@ export function useImageUpload(
     pictureVisible.value = false
   }
 
-  function setPicture(value?: string) {
+  function setPicture(value?: string | null) {
     pictureBase64.value = value ?? ''
     pictureVisible.value = !!value
   }

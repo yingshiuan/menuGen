@@ -47,6 +47,8 @@ const dragState = reactive<{ draggingIndex: number | null; dragOverIndex: number
 const logoBase64 = ref<string | null>(props.defaultSrc ?? null)
 const tappedIndex = ref<number | null>(null)
 
+const isModalOpen = ref(false)
+
 /* Domain / Computed */
 // Group items by category
 function groupItems(items: MenuItem[]): Record<string, MenuItem[]> {
@@ -141,6 +143,12 @@ function shouldShowCategoryHeader(index: number) {
 
 // Drag & Drop
 function onDragStart(e: DragEvent, index: number) {
+  // Only start drag if user clicked the handle
+  if (!(e.target as HTMLElement).closest('.drag-handle')) {
+    e.preventDefault()
+    return
+  }
+
   dragState.draggingIndex = index
   if (!e.dataTransfer) return
   e.dataTransfer.effectAllowed = 'move'
@@ -232,8 +240,6 @@ const itemSpacingClass = computed(() => {
       :key="`${clampedPage}-${entry.category}-${entry.item.No || 'item'}-${index}`"
       class="group relative"
       :class="[itemFlexClass, itemSpacingClass]"
-      :draggable="!props.readonly"
-      @dragstart="(e) => onDragStart(e, index)"
       @dragover="(e) => onDragOver(e, index)"
       @drop="onDrop"
     >
@@ -244,15 +250,16 @@ const itemSpacingClass = computed(() => {
       <div
         v-if="dragState.dragOverIndex === index"
         data-ui-only
-        class="absolute top-0 left-0 w-full h-0.5 bg-blue-500 z-20"
+        class="absolute top-0 left-0 w-full h-0.5 bg-blue-500"
       ></div>
 
       <div
-        class="relative transition-all duration-150 rounded-md group-hover:scale-102 group-hover:shadow-sm"
+        class="relative transition-all duration-150 rounded-md"
         :class="[
           'transition-all duration-200 ease-in-out',
           dragState.draggingIndex === index ? 'scale-90 opacity-60 z-10' : '',
-          tappedIndex === index ? 'scale-102 shadow-sm' : '', // touch feedback
+          tappedIndex === index ? 'scale-102 shadow-sm' : '',
+          isModalOpen ? '' : 'group-hover:scale-102 group-hover:shadow-sm',
         ]"
         @click="tappedIndex = tappedIndex === index ? null : index"
       >
@@ -261,16 +268,17 @@ const itemSpacingClass = computed(() => {
           :readonly="readonly"
           :text-color="props.textColor"
           @update:item="(updated) => Object.assign(entry.item, updated)"
+          @modalOpen="isModalOpen = $event"
         />
 
         <!-- Overlay Controls -->
         <div
           v-if="!props.readonly"
           data-ui-only
-          class="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
+          class="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center justify-center transition-opacity duration-150"
           :class="{
-            'opacity-100 pointer-events-auto group-hover:pointer-events-auto':
-              tappedIndex === index,
+            'opacity-0 pointer-events-none': isModalOpen,
+            'opacity-100 pointer-events-auto': !isModalOpen && tappedIndex === index,
           }"
         >
           <button
@@ -286,8 +294,8 @@ const itemSpacingClass = computed(() => {
           data-ui-only
           class="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
           :class="{
-            'opacity-100 pointer-events-auto group-hover:pointer-events-auto':
-              tappedIndex === index,
+            'opacity-0 pointer-events-none': isModalOpen,
+            'opacity-100 pointer-events-auto': !isModalOpen && tappedIndex === index,
           }"
         >
           <button
@@ -303,8 +311,8 @@ const itemSpacingClass = computed(() => {
           data-ui-only
           class="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
           :class="{
-            'opacity-100 pointer-events-auto group-hover:pointer-events-auto':
-              tappedIndex === index,
+            'opacity-0 pointer-events-none': isModalOpen,
+            'opacity-100 pointer-events-auto': !isModalOpen && tappedIndex === index,
           }"
         >
           <button
@@ -314,6 +322,19 @@ const itemSpacingClass = computed(() => {
           >
             ✕
           </button>
+        </div>
+        <div
+          class="drag-handle w-5 h-5 mr-2 cursor-move flex items-center justify-center text-gray-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
+          :class="{
+            'opacity-0 pointer-events-none': isModalOpen,
+            'opacity-100 pointer-events-auto': !isModalOpen && tappedIndex === index,
+          }"
+          title="Drag to reorder"
+          data-ui-only
+          @dragstart="(e) => onDragStart(e, index)"
+          draggable="true"
+        >
+          ⠿
         </div>
       </div>
     </div>

@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, onMounted } from 'vue'
 import type { MenuOption } from '@/types/types'
 import { useIcons } from '@/composables/useIcons.ts'
 import { useImageUpload } from '@/composables/useImageUpload.ts'
 
 // Grab icons composable
-const icons = useIcons() as {
-  iconMap: import('vue').ComputedRef<Record<MenuOption, string>>
-  setUserIcon: (option: MenuOption, base64: string) => void
-  resetIcon: (option: MenuOption) => void
-}
-const { setUserIcon, resetIcon } = icons
+const icons = useIcons()
+const { setUserIcon, resetIcon, userIcons } = icons
+
+// Load saved icons on component mount
+onMounted(() => {
+  const saved = localStorage.getItem('menu-user-icons')
+  if (saved) {
+    Object.assign(userIcons.value, JSON.parse(saved))
+  }
+})
+
 const options = Object.keys(icons.iconMap.value) as MenuOption[]
 
 // Keep track of expanded state & active drag option
