@@ -41,7 +41,7 @@ async function generatePDF(): Promise<void> {
   //  htmlPreview.value = htmlContent;
 
   try {
-    const response: Response = await fetch('/api/generate-pdf', {
+    const response: Response = await fetch('http://localhost:3000/generate-pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
