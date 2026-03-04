@@ -254,7 +254,7 @@ const itemSpacingClass = computed(() => {
       ></div>
 
       <div
-        class="relative transition-all duration-150 rounded-md"
+        class="relative transition-all duration-150 rounded-md flex flex-1"
         :class="[
           'transition-all duration-200 ease-in-out',
           dragState.draggingIndex === index ? 'scale-90 opacity-60 z-10' : '',
@@ -264,6 +264,7 @@ const itemSpacingClass = computed(() => {
         @click="tappedIndex = tappedIndex === index ? null : index"
       >
         <MenuItemComponent
+          class="flex-1"
           :item="entry.item"
           :readonly="readonly"
           :text-color="props.textColor"
@@ -275,14 +276,14 @@ const itemSpacingClass = computed(() => {
         <div
           v-if="!props.readonly"
           data-ui-only
-          class="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center justify-center transition-opacity duration-150"
+          class="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
           :class="{
             'opacity-0 pointer-events-none': isModalOpen,
             'opacity-100 pointer-events-auto': !isModalOpen && tappedIndex === index,
           }"
         >
           <button
-            class="w-5 h-5 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
+            class="w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
             @click.stop.prevent="() => emit('add-before', { No: entry.item.No })"
             title="Add item before"
           >
@@ -299,7 +300,7 @@ const itemSpacingClass = computed(() => {
           }"
         >
           <button
-            class="w-5 h-5 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
+            class="w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
             @click.stop.prevent="() => emit('add-after', { No: entry.item.No })"
             title="Add item after"
           >
@@ -316,7 +317,7 @@ const itemSpacingClass = computed(() => {
           }"
         >
           <button
-            class="w-5 h-5 flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
+            class="w-8 h-8 flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
             @click.stop.prevent="() => emit('delete-item', { No: entry.item.No })"
             title="Delete item"
           >
@@ -324,7 +325,8 @@ const itemSpacingClass = computed(() => {
           </button>
         </div>
         <div
-          class="drag-handle w-5 h-5 mr-2 cursor-move flex items-center justify-center text-gray-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
+          v-if="!props.readonly"
+          class="drag-handle absolute bottom-0 left-0 text-2xl cursor-move text-gray-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
           :class="{
             'opacity-0 pointer-events-none': isModalOpen,
             'opacity-100 pointer-events-auto': !isModalOpen && tappedIndex === index,
@@ -334,7 +336,11 @@ const itemSpacingClass = computed(() => {
           @dragstart="(e) => onDragStart(e, index)"
           draggable="true"
         >
-          ⠿
+          <span
+            class="w-10 h-10 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white"
+          >
+            ⠿
+          </span>
         </div>
       </div>
     </div>

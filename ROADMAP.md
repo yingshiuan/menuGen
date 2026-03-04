@@ -83,7 +83,7 @@
 - [ ] CLI: `menugen generate menu.json` → PDF
 
 ### Deployment
-- [ ] Docker support  
+- [x] Docker support  
 - [ ] Production build guide for Railway / Render  
 - [ ] Vercel-compatible Puppeteer build (edge-compatible optional)
 

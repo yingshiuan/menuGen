@@ -76,6 +76,7 @@ const uiState = reactive({
   pdfRenderKey: 0,
   csvKey: 0,
   previewRenderKey: 0,
+  showMobileControls: false,
 })
 
 /* Demo Data */
@@ -152,6 +153,14 @@ const pdfTotalPages = computed(() => {
 
 onMounted(() => {
   loadSampleMenu()
+})
+
+const isMobile = window.matchMedia('(max-width: 1024px)').matches
+
+onMounted(() => {
+  if (isMobile) {
+    menuState.scalePage = 0.6
+  }
 })
 
 /* Application Action */
@@ -315,17 +324,13 @@ function reorderItems(fromNo: string, toNo: string) {
 // );
 
 watch(
-  [
-    () => menuState.menuCsv.length,
-    () => uiState.showTwoPage,
-    () => pageState.itemsPerPage,
-  ],
+  [() => menuState.menuCsv.length, () => uiState.showTwoPage, () => pageState.itemsPerPage],
   () => {
     pageState.totalPages = computedTotalPages.value
     if (pageState.currentPage >= pageState.totalPages) {
       pageState.currentPage = pageState.totalPages - 1
     }
-  }
+  },
 )
 
 watch(
@@ -370,89 +375,142 @@ watch(
   },
   { deep: true },
 )
+
+watch(
+  () => uiState.showMobileControls,
+  (open) => {
+    if (open) {
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth
+      document.body.style.overflow = 'hidden'
+      document.body.style.paddingRight = scrollBarWidth + 'px'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.paddingRight = ''
+    }
+  },
+)
 </script>
 
 <template>
   <div class="">
-    <div class="flex flex-col lg:flex-row gap-2 p-2 items-center border-b border-gray-300">
+    <div class="flex flex-col lg:flex-row lg:gap-2 p-2 items-center border-b border-gray-300">
       <h1 class="w-full lg:w-1/4 text-xl font-bold p-1">Menu Gen (CSV to PDF)</h1>
-      <div class="w-full flex lg:contents">
-        <div class="w-1/2 lg:w-2/4">
+      <div class="w-full flex lg:contents flex-col lg:flex-row">
+        <div class="w-full lg:w-2/4">
           <MenuPage
             :current-page="pageState.currentPage"
             :total-pages="pageState.totalPages"
             @update:page="pageState.currentPage = $event"
           />
         </div>
-        <div class="w-1/2 lg:w-1/4 flex lg:justify-start justify-end">
+        <div class="flex w-full gap-2 lg:hidden p-1">
+          <!-- Show Controls button: half width -->
+          <div class="w-1/2">
+            <button
+              @click="uiState.showMobileControls = true"
+              class="w-full border-gray-500 border-2 px-2 py-1 rounded-lg font-medium"
+            >
+              ☰ Controls
+            </button>
+          </div>
+
+          <!-- Two Page toggle button: half width -->
+          <div class="w-1/2">
+            <button
+              @click="uiState.showTwoPage = !uiState.showTwoPage"
+              class="w-full border-blue-500 px-2 py-1 rounded-lg hover:bg-blue-50 hover:text-blue-500 border-2 transition-colors duration-200 shadow-md disabled:opacity-50"
+            >
+              {{ uiState.showTwoPage ? 'Show Single Page' : 'Show Two Page' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Desktop Two Page button -->
+        <div class="hidden lg:flex lg:w-1/4 lg:justify-start justify-center">
           <button
             @click="uiState.showTwoPage = !uiState.showTwoPage"
             class="border-blue-500 px-3 py-1 rounded-lg hover:bg-blue-50 hover:text-blue-500 border-2 transition-colors duration-200 shadow-md disabled:opacity-50"
           >
-            {{ uiState.showTwoPage ? 'Show Single Page' : 'Show Two Page' }}
+            {{ uiState.showTwoPage ? 'Single Page' : 'Two Page' }}
           </button>
         </div>
       </div>
     </div>
-    <div class="flex gap-2 divide-x divide-gray-300">
-      <!-- Left side: controls -->
-      <div class="w-full lg:w-1/4 divide-y divide-gray-300 px-2">
-        <!-- Drag & Drop CSV and Generate PDF side by side -->
-        <div class="flex gap-2 py-2">
-          <CsvUpload
-            :key="uiState.csvKey"
-            @csvLoaded="handleCsvLoaded"
-            :items="menuState.menuCsv"
-            class=""
-          />
-          <GeneratePdf
-            :contentRef="pdfRenderRef"
-            :page-width="pageState.width"
-            :page-height="pageState.height"
-            :font-family="menuState.selectedFont"
-            class=""
-          />
-        </div>
-        <div class="py-2">
-          <button
-            @click="loadSampleMenu"
-            class="bg-blue-500 w-full p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
-          >
-            Load Sample Menu
-          </button>
-        </div>
-        <!-- Font selector and color pickers stacked below -->
-        <div class="py-2"><FontSelector v-model:font="menuState.selectedFont" /></div>
-        <div class="py-2"><ColorPicker type="bg" v-model:color="menuState.bgColor" /></div>
-        <div class="py-2"><ColorPicker type="text" v-model:color="menuState.textColor" /></div>
-        <div class="py-2">
-          <PageSizeSelector v-model:width="pageState.width" v-model:height="pageState.height" />
-        </div>
-        <div class="py-2"><ScaleControl v-model="menuState.scalePage" label="Scale" /></div>
-        <div class="py-2">
-          <ItemSpacingControl v-model="menuState.itemSpacing" />
-        </div>
-        <div class="py-2">
-          <ItemsPerCategorySelector
-            v-model:itemsPerPage="pageState.itemsPerPage"
-            v-model:keepCategoryTogether="pageState.keepCategoryTogether"
-          />
-        </div>
-        <div class="py-2">
-          <AddIcon />
-        </div>
 
-        <div class="py-2">
-          <MultiImageUpload
-            :menuItems="menuState.menuCsv"
-            @update:item="onItemUpdated"
-            @update:menuItems="menuState.menuCsv = $event"
-          />
+    <div
+      class="flex flex-col lg:flex-row flex-1 overflow-hidden gap-2 lg:divide-x lg:divide-gray-300"
+    >
+      <!-- Left side: controls -->
+      <div
+        v-if="uiState.showMobileControls"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+        @click="uiState.showMobileControls = false"
+      ></div>
+      <div
+        class="fixed lg:static top-0 left-0 h-full lg:h-auto w-3/4 max-w-sm lg:max-w-none bg-white z-50 transform transition-transform duration-300 lg:translate-x-0 lg:w-1/4 overflow-y-auto px-3"
+        :class="{
+          '-translate-x-full lg:translate-x-0': !uiState.showMobileControls,
+          'translate-x-0': uiState.showMobileControls,
+        }"
+      >
+        <div @click.stop class="divide-y divide-gray-300">
+          <!-- Drag & Drop CSV and Generate PDF side by side -->
+          <div class="flex gap-2 py-2">
+            <CsvUpload
+              :key="uiState.csvKey"
+              @csvLoaded="handleCsvLoaded"
+              :items="menuState.menuCsv"
+              class=""
+            />
+            <GeneratePdf
+              :contentRef="pdfRenderRef"
+              :page-width="pageState.width"
+              :page-height="pageState.height"
+              :font-family="menuState.selectedFont"
+              class=""
+            />
+          </div>
+          <div class="py-2">
+            <button
+              @click="loadSampleMenu"
+              class="bg-blue-500 w-full p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
+            >
+              Load Sample Menu
+            </button>
+          </div>
+          <!-- Font selector and color pickers stacked below -->
+          <div class="py-2"><FontSelector v-model:font="menuState.selectedFont" /></div>
+          <div class="py-2"><ColorPicker type="bg" v-model:color="menuState.bgColor" /></div>
+          <div class="py-2"><ColorPicker type="text" v-model:color="menuState.textColor" /></div>
+          <div class="py-2">
+            <PageSizeSelector v-model:width="pageState.width" v-model:height="pageState.height" />
+          </div>
+          <div class="py-2"><ScaleControl v-model="menuState.scalePage" label="Scale" /></div>
+          <div class="py-2">
+            <ItemSpacingControl v-model="menuState.itemSpacing" />
+          </div>
+          <div class="py-2">
+            <ItemsPerCategorySelector
+              v-model:itemsPerPage="pageState.itemsPerPage"
+              v-model:keepCategoryTogether="pageState.keepCategoryTogether"
+            />
+          </div>
+          <div class="py-2">
+            <AddIcon />
+          </div>
+
+          <div class="py-2">
+            <MultiImageUpload
+              :menuItems="menuState.menuCsv"
+              @update:item="onItemUpdated"
+              @update:menuItems="menuState.menuCsv = $event"
+            />
+          </div>
         </div>
       </div>
 
       <!-- Right side: preview -->
-      <div class="w-full lg:w-3/4 flex pt-2">
+      <div class="w-full lg:w-3/4 flex pt-2 overflow-x-auto">
         <!-- Single-page menu preview -->
         <div
           class="menu-preview-wrapper"

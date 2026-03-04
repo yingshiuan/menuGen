@@ -17,6 +17,7 @@ It supports:
 - Icon & Image Upload with compression
 - Preview in Single or Two Page
 - Perfect PDF Export (exact same look as the on-screen preview)
+- Fully responsive UI (Desktop, Tablet, Mobile)
 
 ---
 
