@@ -523,7 +523,6 @@ async function updateDisplayedPicture() {
 
       <!-- Picture -->
       <!-- min-w and min-h need to change by the w-20 and h-20-->
-      <!-- Picture -->
       <div class="shrink-0 w-20 h-20 relative rounded-full cursor-pointer overflow-hidden">
         <!-- Normal img -->
         <div
@@ -563,7 +562,7 @@ async function updateDisplayedPicture() {
           :readonly="props.readonly"
           @update:modalOpen="handleModalOpen"
           @update:modelValue="handleImageChange"
-          class="absolute inset-0 w-full h-full rounded-full"
+          class="absolute inset-0 w-full h-full rounded-full font-extralight"
         />
 
         <!-- Delete button -->

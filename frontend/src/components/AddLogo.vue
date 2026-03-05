@@ -48,6 +48,7 @@ function handleUpdate(val: string | null) {
     :aspectRatio="1"
     :cropWidth="240"
     :cropHeight="32"
+    class="h-8 w-auto"
     :readonly="props.readonly"
     @update:modelValue="handleUpdate"
   />

@@ -97,7 +97,7 @@ const dragState = reactive<DragState>({
   isResizing: false,
   resizeStart: { x: 0, y: 0, width: 0, height: 0 },
   resizeDirection: 'se',
-  isCropDragging : false,
+  isCropDragging: false,
 })
 
 const containerRef = ref<HTMLElement | null>(null)
@@ -193,7 +193,7 @@ const startDrag = (event: MouseEvent | TouchEvent) => {
 }
 
 const onDrag = (event: MouseEvent | TouchEvent) => {
-  if (!dragState.isCropDragging) return  // uses its own flag
+  if (!dragState.isCropDragging) return // uses its own flag
   if ('touches' in event) event.preventDefault()
 
   const bounds = getImageDisplayBounds()
@@ -212,7 +212,7 @@ const onDrag = (event: MouseEvent | TouchEvent) => {
 }
 
 const stopDrag = () => {
-  dragState.isCropDragging = false  // uses its own flag
+  dragState.isCropDragging = false // uses its own flag
   window.removeEventListener('mousemove', onDrag)
   window.removeEventListener('mouseup', stopDrag)
   window.removeEventListener('touchmove', onDrag)
@@ -415,15 +415,15 @@ watch(
       v-else
       class="flex justify-center items-center opacity-30 transition hover:opacity-100"
       :class="[
-        props.variant === 'picture' ? 'w-20 h-20 rounded-full' : ' rounded-lg',
+        props.variant === 'logo' ? 'w-full h-full px-1 rounded-lg' : '',
+        props.variant === 'cover' ? 'w-full h-full object-cover rounded-full' : '',
+        props.variant === 'picture' ? 'w-20 h-20 rounded-full' : '',
         !props.readonly && !displayedPicture
           ? 'hover:outline hover:bg-gray-100 hover:text-gray-600'
           : '',
       ]"
     >
-      <span data-ui-only v-if="!props.readonly" class="text-center text-sm">{{
-        computedPlaceholder
-      }}</span>
+      <span data-ui-only v-if="!props.readonly" class="text-center">{{ computedPlaceholder }}</span>
     </div>
 
     <div

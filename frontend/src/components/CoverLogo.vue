@@ -47,6 +47,7 @@ function handleUpdate(val: string | null) {
     :cropWidth="240"    
     :cropHeight="240"
     :readonly="props.readonly"
+    class="w-60 h-60 object-cover rounded-full"
     @update:modelValue="handleUpdate"
   />
 </template>
