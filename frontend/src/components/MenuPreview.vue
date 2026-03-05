@@ -49,6 +49,10 @@ const tappedIndex = ref<number | null>(null)
 
 const isModalOpen = ref(false)
 
+watch(isModalOpen, () => {
+  tappedIndex.value = null
+})
+
 /* Domain / Computed */
 // Group items by category
 function groupItems(items: MenuItem[]): Record<string, MenuItem[]> {
@@ -182,10 +186,21 @@ function onDrop(e: DragEvent) {
   dragState.dragOverIndex = null
   if (from === null || to === null || from === to) return
   const fromItem = pageItems.value[from]?.item
-  const toItem =
-    pageItems.value[to > pageItems.value.length - 1 ? pageItems.value.length - 1 : to]?.item
+  const toIndex = Math.min(to, pageItems.value.length - 1)
+  const toItem = pageItems.value[toIndex]?.item
+
   if (!fromItem || !toItem) return
-  emit('reorder', { fromNo: fromItem.No, toNo: toItem.No })
+
+  // Optional: handle moving after last item
+  if (to === pageItems.value.length) {
+    // Move to end
+    emit('reorder', {
+      fromNo: fromItem.No,
+      toNo: pageItems.value[toIndex - 1]?.item.No ?? fromItem.No,
+    })
+  } else {
+    emit('reorder', { fromNo: fromItem.No, toNo: toItem.No })
+  }
 }
 
 /* UI */
@@ -279,7 +294,8 @@ const itemSpacingClass = computed(() => {
           class="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
           :class="{
             'opacity-0 pointer-events-none': isModalOpen,
-            'opacity-100 pointer-events-auto': !isModalOpen && tappedIndex === index,
+            'opacity-100 pointer-events-auto': tappedIndex === index,
+            'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
           }"
         >
           <button
@@ -296,7 +312,8 @@ const itemSpacingClass = computed(() => {
           class="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
           :class="{
             'opacity-0 pointer-events-none': isModalOpen,
-            'opacity-100 pointer-events-auto': !isModalOpen && tappedIndex === index,
+            'opacity-100 pointer-events-auto': tappedIndex === index,
+            'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
           }"
         >
           <button
@@ -313,7 +330,8 @@ const itemSpacingClass = computed(() => {
           class="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
           :class="{
             'opacity-0 pointer-events-none': isModalOpen,
-            'opacity-100 pointer-events-auto': !isModalOpen && tappedIndex === index,
+            'opacity-100 pointer-events-auto': tappedIndex === index,
+            'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
           }"
         >
           <button
@@ -329,7 +347,8 @@ const itemSpacingClass = computed(() => {
           class="drag-handle absolute bottom-0 left-0 text-2xl cursor-move text-gray-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
           :class="{
             'opacity-0 pointer-events-none': isModalOpen,
-            'opacity-100 pointer-events-auto': !isModalOpen && tappedIndex === index,
+            'opacity-100 pointer-events-auto': tappedIndex === index,
+            'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
           }"
           title="Drag to reorder"
           data-ui-only

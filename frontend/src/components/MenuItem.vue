@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch, nextTick } from 'vue'
 import type { MenuItem, MenuOption } from '@/types/types'
 import { useIcons } from '@/composables/useIcons'
+import ImageCropper from '@/components/ImageCropper.vue'
 
 /* Props & Emits */
 const props = defineProps<{
@@ -12,6 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:item', item: MenuItem): void
+  (e: 'modalOpen', val: boolean): void
 }>()
 
 /* State */
@@ -32,7 +34,7 @@ const pictureState = reactive<PictureState>({
   version: 0,
 })
 
-const fileInputRef = ref<HTMLInputElement | null>(null)
+// const fileInputRef = ref<HTMLInputElement | null>(null)
 const displayedPicture = ref<string | null>(null)
 
 // Icon mapping
@@ -91,6 +93,8 @@ function stopEditing(field: Field) {
   emit('update:item', { ...local })
 }
 
+// const isEditingImage = ref(false)
+
 /* Color Logic */
 const lighterTextColor = computed(() => {
   const hex = props.textColor ?? '#000000'
@@ -125,33 +129,6 @@ function checkImage(url: string): Promise<boolean> {
   })
 }
 
-async function updateDisplayedPicture() {
-  if (local.mainImageBase64) {
-    setDisplayedPicture(local.mainImageBase64)
-    return
-  }
-
-  const candidates: string[] = []
-  if (local.Name) {
-    candidates.push(`/picture/${local.Name}.png?v=${Date.now()}`)
-  }
-  if (local.No && local.Name) {
-    const noPadded = local.No.toString().padStart(2, '0')
-    candidates.push(`/picture/${noPadded}_${local.Name}.png?v=${Date.now()}`)
-  }
-
-  for (const url of candidates) {
-    const ok = await checkImage(url)
-    if (ok) {
-      setDisplayedPicture(url)
-      return
-    }
-  }
-
-  // No image found
-  setDisplayedPicture(null)
-}
-
 // Run initially and whenever name/no/base64/version change
 watch(
   () => [local.mainImageBase64, local.Name, local.No, props.item.lastUpdated],
@@ -162,51 +139,52 @@ watch(
 )
 
 // Image upload
-function triggerUpload() {
-  if (props.readonly) return
-  fileInputRef.value?.click()
+// function triggerUpload() {
+//   if (props.readonly) return
+//   // if (isEditingImage.value) return
+//   // isEditingImage.value = true
+//   emit('modalOpen', true)
+// }
+
+function handleModalOpen(val: boolean) {
+  // isEditingImage.value = val
+  emit('modalOpen', val) // forward up to MenuPreview
+  // if (!val) {
+  //   // Reset for next click
+  //   isEditingImage.value = false;
+  // }
 }
 
 function onImageError() {
   pictureState.visible = false
 }
 
-function setDisplayedPicture(src: string | null) {
-  // Clear first to force Vue to re-render
-  displayedPicture.value = null
-  nextTick(() => {
-    displayedPicture.value = src
-    pictureState.visible = !!src
-    pictureState.version++
-  })
-}
+// function uploadPicture(event: Event) {
+//   const file = (event.target as HTMLInputElement).files?.[0]
+//   if (!file) return
+//   if (!file.type.startsWith('image/')) {
+//     alert('Please upload a valid image file')
+//     return
+//   }
 
-function uploadPicture(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  if (!file.type.startsWith('image/')) {
-    alert('Please upload a valid image file')
-    return
-  }
+//   const reader = new FileReader()
+//   reader.onload = () => {
+//     const base64 = reader.result as string
+//     const now = Date.now()
 
-  const reader = new FileReader()
-  reader.onload = () => {
-    const base64 = reader.result as string
-    const now = Date.now()
+//     local.mainImageBase64 = base64
+//     local.lastUpdated = now
 
-    local.mainImageBase64 = base64
-    local.lastUpdated = now
+//     // Emit to parent
+//     emit('update:item', { ...local, lastUpdated: now })
 
-    // Emit to parent
-    emit('update:item', { ...local, lastUpdated: now })
+//     // Force UI to update immediately
+//     setDisplayedPicture(base64)
+//   }
+//   reader.readAsDataURL(file)
 
-    // Force UI to update immediately
-    setDisplayedPicture(base64)
-  }
-  reader.readAsDataURL(file)
-
-  if (fileInputRef.value) fileInputRef.value.value = ''
-}
+//   if (fileInputRef.value) fileInputRef.value.value = ''
+// }
 
 function deletePicture() {
   if (props.readonly) return
@@ -231,6 +209,47 @@ watch(
   },
   { deep: true, immediate: true },
 )
+
+function setDisplayedPicture(src: string | null) {
+  displayedPicture.value = src
+  pictureState.visible = !!src
+  pictureState.version++
+  // do NOT touch local.mainImageBase64 here
+}
+
+// Handle v-model from ImageCropper
+function handleImageChange(base64: string | null) {
+  local.mainImageBase64 = base64
+  local.lastUpdated = Date.now()
+  emit('update:item', { ...local })
+  setDisplayedPicture(base64)
+}
+
+// Update picture when props change
+async function updateDisplayedPicture() {
+  if (local.mainImageBase64) {
+    setDisplayedPicture(local.mainImageBase64)
+    return
+  }
+
+  const candidates: string[] = []
+  if (local.Name) candidates.push(`/picture/${local.Name}.png?v=${Date.now()}`)
+  if (local.No && local.Name) {
+    const noPadded = local.No.toString().padStart(2, '0')
+    candidates.push(`/picture/${noPadded}_${local.Name}.png?v=${Date.now()}`)
+  }
+
+  for (const url of candidates) {
+    const ok = await checkImage(url)
+    if (ok) {
+      setDisplayedPicture(url)
+      return
+    }
+  }
+
+  setDisplayedPicture(null)
+  // isEditingImage.value = true
+}
 
 // for update contain in the items
 // watch(
@@ -504,24 +523,21 @@ watch(
 
       <!-- Picture -->
       <!-- min-w and min-h need to change by the w-20 and h-20-->
-      <div
-        class="shrink-0 w-20 h-20 relative rounded-full cursor-pointer overflow-hidden"
-        @click="triggerUpload"
-      >
+      <!-- Picture -->
+      <div class="shrink-0 w-20 h-20 relative rounded-full cursor-pointer overflow-hidden">
         <!-- Normal img -->
         <div
           v-if="displayedPicture && pictureState.visible"
           class="absolute inset-0 rounded-full overflow-hidden m-[12%] w-[76%] h-[76%]"
         >
           <img
-            v-if="displayedPicture && pictureState.visible"
             :src="displayedPicture"
             class="w-full h-full object-cover rounded-full transform scale-110 overflow-hidden"
             @error="onImageError"
           />
         </div>
 
-        <!-- Curved text overlay (SVG only for text path) -->
+        <!-- Curved text overlay SVG -->
         <svg
           v-if="displayedPicture && pictureState.visible"
           viewBox="0 0 100 100"
@@ -533,7 +549,6 @@ watch(
             fill="none"
             stroke="none"
           />
-
           <text class="font-extralight text-[0.6rem]" :style="{ fill: lighterTextColor }">
             <textPath :href="`#path-${props.item.id}`" startOffset="0%" text-anchor="start">
               {{ local.Name }}
@@ -541,15 +556,21 @@ watch(
           </text>
         </svg>
 
+        <!-- ImageCropper always mounted — handles both upload trigger and modal events -->
+        <ImageCropper
+          v-model="local.mainImageBase64"
+          variant="picture"
+          :readonly="props.readonly"
+          @update:modalOpen="handleModalOpen"
+          @update:modelValue="handleImageChange"
+          class="absolute inset-0 w-full h-full rounded-full"
+        />
+
         <!-- Delete button -->
         <div
           v-if="displayedPicture && pictureState.visible && !props.readonly"
           data-ui-only
-          class="absolute bottom-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-          :class="{
-            'opacity-100 pointer-events-auto': true,
-            'opacity-0': false, 
-          }"
+          class="absolute bottom-2.5 right-2.5"
         >
           <button
             class="w-3.5 h-3.5 text-xs flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
@@ -559,22 +580,6 @@ watch(
             ✕
           </button>
         </div>
-
-        <!-- Upload fallback -->
-        <div
-          v-if="!displayedPicture || !pictureState.visible"
-          class="absolute inset-0 flex items-center justify-center opacity-30 hover:bg-gray-100 hover:text-gray-600 hover:opacity-100 rounded-full"
-        >
-          <span v-if="!props.readonly">Upload</span>
-        </div>
-
-        <input
-          ref="fileInputRef"
-          type="file"
-          class="hidden"
-          accept="image/*"
-          @change="uploadPicture"
-        />
       </div>
     </div>
   </div>

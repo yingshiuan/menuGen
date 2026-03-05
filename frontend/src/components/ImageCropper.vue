@@ -13,6 +13,7 @@ const props = defineProps<{
   cropWidth?: number
   cropHeight?: number
   aspectRatio?: number
+  src?: string | null
 }>()
 
 /** Placeholder text */
@@ -74,6 +75,7 @@ interface DragState {
   isResizing: boolean
   resizeStart: CropFrame
   resizeDirection: 'se' | 'e' | 's'
+  isCropDragging: boolean
 }
 
 const cropState = reactive<CropState>({
@@ -95,6 +97,7 @@ const dragState = reactive<DragState>({
   isResizing: false,
   resizeStart: { x: 0, y: 0, width: 0, height: 0 },
   resizeDirection: 'se',
+  isCropDragging : false,
 })
 
 const containerRef = ref<HTMLElement | null>(null)
@@ -178,18 +181,19 @@ const closeModal = () => {
 
 /** Drag handlers */
 const startDrag = (event: MouseEvent | TouchEvent) => {
-  const { x: clientX, y: clientY } = getClientXY(event)
-  isDragging.value = true
-  dragState.dragStart = { x: clientX - cropState.cropFrame.x, y: clientY - cropState.cropFrame.y }
+  if (props.readonly) return
+  const coords = getClientXY(event)
+  dragState.dragStart = { x: coords.x - cropState.cropFrame.x, y: coords.y - cropState.cropFrame.y }
+  dragState.isCropDragging = true
 
   window.addEventListener('mousemove', onDrag)
-  window.addEventListener('mouseup', stopDrag)
   window.addEventListener('touchmove', onDrag, { passive: false })
+  window.addEventListener('mouseup', stopDrag)
   window.addEventListener('touchend', stopDrag)
 }
 
 const onDrag = (event: MouseEvent | TouchEvent) => {
-  if (!isDragging.value) return
+  if (!dragState.isCropDragging) return  // uses its own flag
   if ('touches' in event) event.preventDefault()
 
   const bounds = getImageDisplayBounds()
@@ -200,9 +204,7 @@ const onDrag = (event: MouseEvent | TouchEvent) => {
   let newX = clientX - dragState.dragStart.x
   let newY = clientY - dragState.dragStart.y
 
-  // Clamp inside visible image
   newX = Math.max(bounds.left, Math.min(newX, bounds.right - cropState.cropFrame.width))
-
   newY = Math.max(bounds.top, Math.min(newY, bounds.bottom - cropState.cropFrame.height))
 
   cropState.cropFrame.x = newX
@@ -210,7 +212,7 @@ const onDrag = (event: MouseEvent | TouchEvent) => {
 }
 
 const stopDrag = () => {
-  isDragging.value = false
+  dragState.isCropDragging = false  // uses its own flag
   window.removeEventListener('mousemove', onDrag)
   window.removeEventListener('mouseup', stopDrag)
   window.removeEventListener('touchmove', onDrag)
@@ -351,19 +353,19 @@ const centerCropFrame = () => {
   cropState.cropFrame.y = bounds.top + (bounds.bottom - bounds.top - cropState.cropFrame.height) / 2
 }
 
-/** Watch for external changes */
-watch([() => displayedPicture, () => pictureVisible], () => {
-  if (displayedPicture && pictureVisible && !cropState.imageSrc) {
-    cropState.imageSrc = typeof displayedPicture === 'string' ? displayedPicture : ''
-    openCropper()
-  }
-})
-
 watch(
   () => cropState.isModalVisible,
   (val) => {
-    emit('update:modalOpen', val) // <-- emits true/false
+    emit('update:modalOpen', val)
   },
+)
+
+watch(
+  () => props.src,
+  (val) => {
+    if (val) cropState.imageSrc = val
+  },
+  { immediate: true },
 )
 </script>
 
@@ -401,26 +403,27 @@ watch(
         @error="onImageError"
       />
 
-      <img
+      <!-- <img
         v-else-if="props.variant === 'picture'"
         :src="displayedPicture"
         class="object-cover rounded-full"
         @error="onImageError"
-      />
+      /> -->
     </div>
 
     <div
       v-else
-      class="flex justify-center items-center opacity-30 transition hover:opacity-100 "
-      
+      class="flex justify-center items-center opacity-30 transition hover:opacity-100"
       :class="[
-        props.variant === 'picture' ? 'm-[12%] w-full h-full rounded-full' : ' rounded-lg',
+        props.variant === 'picture' ? 'w-20 h-20 rounded-full' : ' rounded-lg',
         !props.readonly && !displayedPicture
           ? 'hover:outline hover:bg-gray-100 hover:text-gray-600'
           : '',
       ]"
     >
-      <span data-ui-only v-if="!props.readonly" class="text-center text-sm">{{ computedPlaceholder }}</span>
+      <span data-ui-only v-if="!props.readonly" class="text-center text-sm">{{
+        computedPlaceholder
+      }}</span>
     </div>
 
     <div
@@ -444,66 +447,68 @@ watch(
     />
   </div>
 
-  <div v-if="cropState.isModalVisible" class="modal" @click.self="closeModal">
-    <div class="modal-content" @click.stop>
-      <div class="crop-container" ref="containerRef">
-        <div class="image-wrapper">
-          <img
-            ref="imageRef"
-            :src="cropState.imageSrc || ''"
-            alt="Uploaded Image"
-            @load="centerCropFrame"
-          />
+  <Teleport to="body">
+    <div v-if="cropState.isModalVisible" class="modal">
+      <div class="modal-content">
+        <div class="crop-container" ref="containerRef">
+          <div class="image-wrapper">
+            <img
+              ref="imageRef"
+              :src="cropState.imageSrc || ''"
+              alt="Uploaded Image"
+              @load="centerCropFrame"
+            />
+          </div>
+          <div
+            class="crop-frame"
+            :style="{
+              width: `${cropState.cropFrame.width}px`,
+              height: `${cropState.cropFrame.height}px`,
+              top: `${cropState.cropFrame.y}px`,
+              left: `${cropState.cropFrame.x}px`,
+              borderRadius: props.variant === 'logo' ? '0' : '50%',
+            }"
+            @mousedown="startDrag"
+            @touchstart.prevent="startDrag"
+          >
+            <div
+              class="resize-handle se"
+              @mousedown.stop.prevent="startResize('se', $event)"
+              @touchstart.stop.prevent="startResize('se', $event)"
+            ></div>
+            <div
+              class="resize-handle e"
+              @mousedown.stop.prevent="startResize('e', $event)"
+              @touchstart.stop.prevent="startResize('e', $event)"
+            ></div>
+            <div
+              class="resize-handle s"
+              @mousedown.stop.prevent="startResize('s', $event)"
+              @touchstart.stop.prevent="startResize('s', $event)"
+            ></div>
+          </div>
         </div>
-        <div
-          class="crop-frame"
-          :style="{
-            width: `${cropState.cropFrame.width}px`,
-            height: `${cropState.cropFrame.height}px`,
-            top: `${cropState.cropFrame.y}px`,
-            left: `${cropState.cropFrame.x}px`,
-            borderRadius: props.variant === 'logo' ? '0' : '50%',
-          }"
-          @mousedown="startDrag"
-          @touchstart.prevent="startDrag"
-        >
-          <div
-            class="resize-handle se"
-            @mousedown.stop.prevent="startResize('se', $event)"
-            @touchstart.stop.prevent="startResize('se', $event)"
-          ></div>
-          <div
-            class="resize-handle e"
-            @mousedown.stop.prevent="startResize('e', $event)"
-            @touchstart.stop.prevent="startResize('e', $event)"
-          ></div>
-          <div
-            class="resize-handle s"
-            @mousedown.stop.prevent="startResize('s', $event)"
-            @touchstart.stop.prevent="startResize('s', $event)"
-          ></div>
+        <div class="controls">
+          <button
+            class="bg-blue-500 p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
+            @click="handleCrop"
+          >
+            Crop Image
+          </button>
+          <button
+            class="border border-red-500 rounded-lg text-red-500 p-1 hover:bg-red-500 hover:text-white transition"
+            @click="closeModal"
+          >
+            Close
+          </button>
         </div>
-      </div>
-      <div class="controls">
-        <button
-          class="bg-blue-500 p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
-          @click="handleCrop"
-        >
-          Crop Image
-        </button>
-        <button
-          class="border border-red-500 rounded-lg text-red-500 p-1 hover:bg-red-500 hover:text-white transition"
-          @click="closeModal"
-        >
-          Close
-        </button>
-      </div>
-      <!-- <div v-if="croppedImage" class="cropped-preview">
+        <!-- <div v-if="croppedImage" class="cropped-preview">
         <h3>Cropped Image Preview</h3>
         <img :src="croppedImage" alt="Cropped Image" />
       </div> -->
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
