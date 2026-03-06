@@ -138,6 +138,18 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => local.mainImageBase64,
+  (val) => {
+    if (val) {
+      setDisplayedPicture(val)
+    } else {
+      updateDisplayedPicture()
+    }
+  },
+  { immediate: true },
+)
+
 // Image upload
 // function triggerUpload() {
 //   if (props.readonly) return
@@ -559,6 +571,7 @@ async function updateDisplayedPicture() {
         <ImageCropper
           v-model="local.mainImageBase64"
           variant="picture"
+          :src="displayedPicture"
           :readonly="props.readonly"
           @update:modalOpen="handleModalOpen"
           @update:modelValue="handleImageChange"

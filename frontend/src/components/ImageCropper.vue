@@ -23,7 +23,7 @@ const computedPlaceholder = computed(() => {
     case 'logo':
       return 'Upload Logo'
     case 'cover':
-      return 'Upload Cover'
+      return 'Upload Cover Logo'
     case 'picture':
       return 'Upload Picture'
     default:
@@ -38,7 +38,7 @@ const emit = defineEmits<{
 
 /** Image upload composable */
 const {
-  pictureVisible,
+  // pictureVisible,
   displayedPicture,
   isDragging,
   fileInputRef,
@@ -386,7 +386,7 @@ watch(
     </div>
 
     <div
-      v-if="displayedPicture && pictureVisible"
+      v-if="displayedPicture"
       class="w-full h-full overflow-hidden flex items-center justify-center"
       @click="openCropper"
     >
@@ -405,6 +405,7 @@ watch(
 
       <!-- <img
         v-else-if="props.variant === 'picture'"
+        data-ui-only
         :src="displayedPicture"
         class="object-cover rounded-full"
         @error="onImageError"
@@ -416,14 +417,14 @@ watch(
       class="flex justify-center items-center opacity-30 transition hover:opacity-100"
       :class="[
         props.variant === 'logo' ? 'w-full h-full px-1 rounded-lg' : '',
-        props.variant === 'cover' ? 'w-full h-full object-cover rounded-full' : '',
+        props.variant === 'cover' ? 'hover:w-60 hover:h-60 hover:object-cover hover:rounded-full' : '',
         props.variant === 'picture' ? 'w-20 h-20 rounded-full' : '',
         !props.readonly && !displayedPicture
           ? 'hover:outline hover:bg-gray-100 hover:text-gray-600'
           : '',
       ]"
     >
-      <span data-ui-only v-if="!props.readonly" class="text-center">{{ computedPlaceholder }}</span>
+      <span data-ui-only  v-if="!props.readonly" class="text-center">{{ computedPlaceholder }}</span>
     </div>
 
     <div
