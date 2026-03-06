@@ -9,7 +9,7 @@ const props = defineProps<{
   readonly?: boolean
   placeholder?: string
   class?: string
-  variant?: 'logo' | 'cover' | 'picture'
+  variant?: 'logo' | 'cover' | 'picture' | 'icon'
   cropWidth?: number
   cropHeight?: number
   aspectRatio?: number
@@ -26,6 +26,8 @@ const computedPlaceholder = computed(() => {
       return 'Upload Cover Logo'
     case 'picture':
       return 'Upload Picture'
+    case 'icon':
+      return 'Upload Icon'
     default:
       return 'Upload Image'
   }
@@ -142,6 +144,9 @@ const readFileAndOpenCropper = (file: File) => {
 const handleDropAndCrop = (event: DragEvent) => {
   if (props.readonly) return
 
+  // Reset drag state from composable first
+  handleDragLeave()
+
   const file = event.dataTransfer?.files?.[0]
   if (!file) return
 
@@ -149,10 +154,12 @@ const handleDropAndCrop = (event: DragEvent) => {
 }
 
 const uploadPictureAndCrop = (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
   if (!file) return
 
   readFileAndOpenCropper(file)
+  input.value = '' // clear so same file can be re-uploaded
 }
 
 /** Helpers for safe mouse/touch coords */
@@ -461,9 +468,9 @@ watch(
   >
     <div
       v-if="isDragging"
-      class="absolute inset-0 flex items-center justify-center bg-blue-100/70 text-blue-500 text-sm"
+      class="absolute inset-0 flex items-center justify-center bg-blue-100/70 text-blue-500 text-sm rounded-lg"
     >
-      Drop image here
+      Drop here
     </div>
 
     <div
@@ -481,6 +488,13 @@ watch(
         v-else-if="props.variant === 'cover'"
         :src="displayedPicture"
         class="w-60 h-60 object-cover rounded-full"
+        @error="onImageError"
+      />
+
+      <img
+        v-else-if="props.variant === 'icon'"
+        :src="displayedPicture"
+        class="w-6 h-6"
         @error="onImageError"
       />
 
@@ -502,6 +516,7 @@ watch(
           ? 'hover:w-60 hover:h-60 hover:object-cover hover:rounded-full'
           : '',
         props.variant === 'picture' ? 'w-20 h-20 rounded-full' : '',
+        props.variant === 'icon' ? 'shrink-0 text-xs rounded-lg px-1' : '',
         !props.readonly && !displayedPicture
           ? 'hover:outline hover:bg-gray-100 hover:text-gray-600'
           : '',
@@ -512,7 +527,7 @@ watch(
 
     <div
       v-if="displayedPicture && !props.readonly && props.variant !== 'picture'"
-      class="absolute -top-3 -right-3 opacity-100 group-hover:opacity-100 transition"
+      class="absolute -top-1.5 -right-3 opacity-100 group-hover:opacity-100 transition"
     >
       <button
         class="w-3.5 h-3.5 text-xs flex items-center justify-center z-10 text-red-500 rounded-full shadow hover:bg-blue-500 hover:text-white"

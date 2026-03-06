@@ -29,7 +29,7 @@ const iconMap = computed<Record<MenuOption, string>>(() => {
 
   for (const key in defaultIcons) {
     const option = key as MenuOption
-    merged[option] = userIcons.value[option] || defaultIcons[option]
+    merged[option] = userIcons.value[option] ?? defaultIcons[option]
   }
 
   return merged
@@ -40,23 +40,18 @@ function setUserIcon(option: MenuOption, base64: string) {
 }
 
 function resetIcon(option: MenuOption) {
-  delete userIcons.value[option]
+  userIcons.value = { ...userIcons.value, [option]: undefined }
 }
 
 watch(
   userIcons,
   (val) => {
-    localStorage.setItem('menu-user-icons', JSON.stringify(val))
+    const cleaned = Object.fromEntries(
+      Object.entries(val).filter(([, v]) => v !== undefined)
+    )
+    localStorage.setItem('menu-user-icons', JSON.stringify(cleaned))
   },
   { deep: true },
-)
-
-watch(
-  userIcons,
-  (val) => {
-    localStorage.setItem('menu-user-icons', JSON.stringify(val))
-  },
-  { deep: true }
 )
 
 export function useIcons() {

@@ -2,13 +2,11 @@
 import { reactive, onMounted } from 'vue'
 import type { MenuOption } from '@/types/types'
 import { useIcons } from '@/composables/useIcons.ts'
-import { useImageUpload } from '@/composables/useImageUpload.ts'
+import ImageCropper from '@/components/ImageCropper.vue'
 
-// Grab icons composable
 const icons = useIcons()
 const { setUserIcon, resetIcon, userIcons } = icons
 
-// Load saved icons on component mount
 onMounted(() => {
   const saved = localStorage.getItem('menu-user-icons')
   if (saved) {
@@ -17,35 +15,30 @@ onMounted(() => {
 })
 
 const options = Object.keys(icons.iconMap.value) as MenuOption[]
+// Store defaults BEFORE any user icons are applied
+const defaultIcons = { ...icons.iconMap.value } as Record<MenuOption, string>
+const resetCounters = reactive<Partial<Record<MenuOption, number>>>({})
 
-// Keep track of expanded state & active drag option
+
 interface IconState {
   isExpanded: boolean
-  draggingOption: MenuOption | null
 }
 
 const iconState = reactive<IconState>({
   isExpanded: false,
-  draggingOption: null,
-})
-
-// Initialize useImageUpload per MenuOption
-const uploads: Record<MenuOption, ReturnType<typeof useImageUpload>> = {} as Record<
-  MenuOption,
-  ReturnType<typeof useImageUpload>
->
-
-options.forEach((opt) => {
-  uploads[opt] = useImageUpload(
-    icons.iconMap.value[opt], // initial value
-    false, // readonly
-    (val) => setUserIcon(opt, val), // emit updates iconMap
-    (dragging) => (iconState.draggingOption = dragging ? opt : null) // update active dropzone
-  )
 })
 
 function toggleExpand() {
   iconState.isExpanded = !iconState.isExpanded
+}
+
+function handleIconChange(opt: MenuOption, val: string | null) {
+  if (val) setUserIcon(opt, val)
+}
+
+function handleReset(opt: MenuOption) {
+  resetIcon(opt)
+  resetCounters[opt] = (resetCounters[opt] ?? 0) + 1 
 }
 </script>
 
@@ -56,7 +49,7 @@ function toggleExpand() {
       <button
         @click="toggleExpand"
         class="flex items-center gap-1"
-        title="Click to upload the icon"
+        title="Click to customize icons"
       >
         <span>{{ iconState.isExpanded ? '▼' : '▶' }}</span>
         <span>Customize Icons</span>
@@ -66,47 +59,41 @@ function toggleExpand() {
     <!-- Icon Uploads -->
     <div
       v-if="iconState.isExpanded"
-      class="space-y-2 p-1 transition-all duration-200 border rounded bg-gray-50 overflow-y-scroll"
+      class="space-y-3 p-1 transition-all duration-200 border rounded bg-gray-50 overflow-y-scroll"
     >
       <div v-for="opt in options" :key="opt" class="flex items-center gap-3">
-        <!-- Dropzone -->
-        <div
-          class="flex items-center gap-4 p-1 flex-1 rounded border border-dashed transition-colors cursor-pointer group"
-          :class="{
-            'border-blue-500 bg-blue-50': iconState.draggingOption === opt,
-            'border-gray-300 hover:bg-blue-50 hover:border-blue-500':
-              iconState.draggingOption !== opt,
-          }"
-          @dragover.prevent="uploads[opt].handleDragOver"
-          @dragleave="uploads[opt].handleDragLeave"
-          @drop.prevent="uploads[opt].handleDrop"
-          @click="uploads[opt].triggerUpload"
-        >
-          <!-- Icon Image -->
-          <img :src="uploads[opt].displayedPicture.value" class="w-6 h-6" />
+        <!-- Label -->
+        <span class="text-xs w-20 shrink-0">{{ opt }}</span>
 
-          <!-- Instruction -->
-          <p class="text-sm text-center text-gray-600 flex-1 group-hover:text-blue-500">
-            Drag & drop or click to upload
-          </p>
+        <!-- Current icon preview -->
+        <!-- <img :src="icons.iconMap.value[opt]" class="w-6 h-6 shrink-0" /> -->
 
-          <!-- Hidden File Input -->
-          <input
-            type="file"
-            class="hidden"
-            accept="image/*"
-            :ref="el => (uploads[opt].fileInputRef.value = el as HTMLInputElement)"
-            @change="uploads[opt].uploadPicture"
+        <!-- Default icon (original) -->
+        <div class="shrink-0 flex flex-col items-center gap-0.5">
+          <img :src="defaultIcons[opt]" class="w-5 h-5 opacity-100" :title="`Default: ${opt}`" />
+          <!-- <span class="text-[9px] text-gray-400">default</span> -->
+        </div>
+
+        <!-- Arrow -->
+        <span class="text-xs shrink-0">→</span>
+
+        <!-- ImageCropper for this icon -->
+        <div class="h-6 flex items-center">
+          <ImageCropper
+            :key="`${opt}-${resetCounters[opt] ?? 0}`"
+            :model-value="icons.iconMap.value[opt]"
+            variant="icon"
+            :aspect-ratio="1"
+            :crop-width="24"
+            :crop-height="24"
+            @update:model-value="(val) => handleIconChange(opt, val)"
           />
         </div>
 
         <!-- Reset Button -->
         <button
-          class="p-1 bg-gray-200 rounded hover:bg-gray-300"
-          @click="
-            resetIcon(opt);
-            uploads[opt].setPicture(icons.iconMap.value[opt])
-          "
+          class="p-1 text-xs bg-gray-200 rounded hover:bg-gray-300 shrink-0 ml-auto"
+          @click="handleReset(opt)"
         >
           Reset
         </button>

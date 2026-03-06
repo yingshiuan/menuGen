@@ -11,6 +11,7 @@ It supports:
 - Auto category-aware item numbering with intelligent gap reuse
 - Logo upload and display in PDF
 - Generic image uploader component with variant-based placeholders
+- Image Cropper for Icons & Pictures & Logo
 - Unique item ID tracking (UUID-based, no conflicts)
 - Auto Layout (Tailwind CSS v4)
 - Support Google Fonts (paste font name to load dynamically)
