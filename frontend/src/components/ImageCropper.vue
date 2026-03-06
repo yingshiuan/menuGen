@@ -74,7 +74,7 @@ interface DragState {
   dragStart: { x: number; y: number }
   isResizing: boolean
   resizeStart: CropFrame
-  resizeDirection: 'se' | 'e' | 's'
+  resizeDirection: 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se'
   isCropDragging: boolean
 }
 
@@ -233,6 +233,8 @@ const startResize = (
     width: cropState.cropFrame.width,
     height: cropState.cropFrame.height,
   }
+  // save frame origin separately for w/n calculations
+  dragState.dragStart = { x: cropState.cropFrame.x, y: cropState.cropFrame.y }
 
   window.addEventListener('mousemove', onResize)
   window.addEventListener('mouseup', stopResize)
@@ -248,62 +250,141 @@ const onResize = (event: MouseEvent | TouchEvent) => {
   if (!bounds) return
 
   const { x: clientX, y: clientY } = getClientXY(event)
-
   const deltaX = clientX - dragState.resizeStart.x
   const deltaY = clientY - dragState.resizeStart.y
-
   const MIN_SIZE = 100
+  const dir = dragState.resizeDirection
+  const isCircle = props.variant === 'picture'
+  const isLogo = props.variant === 'logo'
 
-  // SE RESIZE (Logo main case)
-  if (dragState.resizeDirection === 'se') {
-    let newWidth = dragState.resizeStart.width + deltaX
-    newWidth = Math.max(MIN_SIZE, newWidth)
+  let x = cropState.cropFrame.x
+  let y = cropState.cropFrame.y
+  let width = cropState.cropFrame.width
+  let height = cropState.cropFrame.height
+  const startW = dragState.resizeStart.width
+  const startH = dragState.resizeStart.height
+  const startFrameX = dragState.dragStart.x
+  const startFrameY = dragState.dragStart.y
 
-    let newHeight = newWidth / aspectRatio.value
-
-    // Bottom limit
-    const maxHeight = bounds.bottom - cropState.cropFrame.y
-    if (newHeight > maxHeight) {
-      newHeight = maxHeight
-      newWidth = newHeight * aspectRatio.value
+  // ── EDGE HANDLES: single axis only, free resize ──
+  if (dir === 'e') {
+    let newW = Math.max(MIN_SIZE, startW + deltaX)
+    if (startFrameX + newW > bounds.right) newW = bounds.right - startFrameX
+    width = newW
+  } else if (dir === 'w') {
+    let newW = Math.max(MIN_SIZE, startW - deltaX)
+    let newX = startFrameX + (startW - newW)
+    if (newX < bounds.left) {
+      newX = bounds.left
+      newW = startFrameX + startW - bounds.left
     }
-
-    // Slide left if overflow right
-    const overflowRight = cropState.cropFrame.x + newWidth - bounds.right
-    if (overflowRight > 0) {
-      cropState.cropFrame.x -= overflowRight
+    x = newX
+    width = newW
+  } else if (dir === 's') {
+    let newH = Math.max(MIN_SIZE, startH + deltaY)
+    if (startFrameY + newH > bounds.bottom) newH = bounds.bottom - startFrameY
+    height = newH
+  } else if (dir === 'n') {
+    let newH = Math.max(MIN_SIZE, startH - deltaY)
+    let newY = startFrameY + (startH - newH)
+    if (newY < bounds.top) {
+      newY = bounds.top
+      newH = startFrameY + startH - bounds.top
     }
-
-    cropState.cropFrame.width = newWidth
-    cropState.cropFrame.height = newHeight
-
-    return
+    y = newY
+    height = newH
   }
 
-  // E resize
-  if (dragState.resizeDirection === 'e') {
-    let newWidth = Math.max(MIN_SIZE, dragState.resizeStart.width + deltaX)
-
-    if (cropState.cropFrame.x + newWidth > bounds.right) {
-      newWidth = bounds.right - cropState.cropFrame.x
+  // ── CORNER HANDLES: locked ratio ──
+  else if (dir === 'se') {
+    // Drive by whichever delta is larger
+    const size = Math.max(
+      MIN_SIZE,
+      isCircle ? Math.max(startW + deltaX, startH + deltaY) : startW + deltaX,
+    )
+    width = isLogo ? size : size
+    height = isCircle ? size : isLogo ? size / aspectRatio.value : size
+    // clamp right/bottom
+    if (startFrameX + width > bounds.right) {
+      width = bounds.right - startFrameX
+      height = isCircle ? width : isLogo ? width / aspectRatio.value : width
     }
-
-    cropState.cropFrame.width = newWidth
-    return
+    if (startFrameY + height > bounds.bottom) {
+      height = bounds.bottom - startFrameY
+      width = isCircle ? height : isLogo ? height * aspectRatio.value : height
+    }
+  } else if (dir === 'sw') {
+    const size = Math.max(
+      MIN_SIZE,
+      isCircle ? Math.max(startW - deltaX, startH + deltaY) : startW - deltaX,
+    )
+    width = size
+    height = isCircle ? size : isLogo ? size / aspectRatio.value : size
+    let newX = startFrameX + (startW - width)
+    if (newX < bounds.left) {
+      newX = bounds.left
+      width = startFrameX + startW - bounds.left
+      height = isCircle ? width : isLogo ? width / aspectRatio.value : width
+    }
+    if (startFrameY + height > bounds.bottom) {
+      height = bounds.bottom - startFrameY
+      width = isCircle ? height : isLogo ? height * aspectRatio.value : height
+      newX = startFrameX + (startW - width)
+    }
+    x = newX
+  } else if (dir === 'ne') {
+    const size = Math.max(
+      MIN_SIZE,
+      isCircle ? Math.max(startW + deltaX, startH - deltaY) : startW + deltaX,
+    )
+    width = size
+    height = isCircle ? size : isLogo ? size / aspectRatio.value : size
+    let newY = startFrameY + (startH - height)
+    if (startFrameX + width > bounds.right) {
+      width = bounds.right - startFrameX
+      height = isCircle ? width : isLogo ? width / aspectRatio.value : width
+      newY = startFrameY + (startH - height)
+    }
+    if (newY < bounds.top) {
+      newY = bounds.top
+      height = startFrameY + startH - bounds.top
+      width = isCircle ? height : isLogo ? height * aspectRatio.value : height
+    }
+    y = newY
+  } else if (dir === 'nw') {
+    const size = Math.max(
+      MIN_SIZE,
+      isCircle ? Math.max(startW - deltaX, startH - deltaY) : startW - deltaX,
+    )
+    width = size
+    height = isCircle ? size : isLogo ? size / aspectRatio.value : size
+    let newX = startFrameX + (startW - width)
+    let newY = startFrameY + (startH - height)
+    if (newX < bounds.left) {
+      newX = bounds.left
+      width = startFrameX + startW - bounds.left
+      height = isCircle ? width : isLogo ? width / aspectRatio.value : width
+      newY = startFrameY + (startH - height)
+    }
+    if (newY < bounds.top) {
+      newY = bounds.top
+      height = startFrameY + startH - bounds.top
+      width = isCircle ? height : isLogo ? height * aspectRatio.value : height
+      newX = startFrameX + (startW - width)
+    }
+    x = newX
+    y = newY
   }
 
-  // S resize
-  if (dragState.resizeDirection === 's') {
-    let newHeight = Math.max(MIN_SIZE, dragState.resizeStart.height + deltaY)
+  width = Math.max(MIN_SIZE, width)
+  height = Math.max(MIN_SIZE, height)
 
-    if (cropState.cropFrame.y + newHeight > bounds.bottom) {
-      newHeight = bounds.bottom - cropState.cropFrame.y
-    }
-
-    cropState.cropFrame.height = newHeight
-    return
-  }
+  cropState.cropFrame.x = x
+  cropState.cropFrame.y = y
+  cropState.cropFrame.width = width
+  cropState.cropFrame.height = height
 }
+
 const stopResize = () => {
   dragState.isResizing = false
   window.removeEventListener('mousemove', onResize)
@@ -417,14 +498,16 @@ watch(
       class="flex justify-center items-center opacity-30 transition hover:opacity-100"
       :class="[
         props.variant === 'logo' ? 'w-full h-full px-1 rounded-lg' : '',
-        props.variant === 'cover' ? 'hover:w-60 hover:h-60 hover:object-cover hover:rounded-full' : '',
+        props.variant === 'cover'
+          ? 'hover:w-60 hover:h-60 hover:object-cover hover:rounded-full'
+          : '',
         props.variant === 'picture' ? 'w-20 h-20 rounded-full' : '',
         !props.readonly && !displayedPicture
           ? 'hover:outline hover:bg-gray-100 hover:text-gray-600'
           : '',
       ]"
     >
-      <span data-ui-only  v-if="!props.readonly" class="text-center">{{ computedPlaceholder }}</span>
+      <span data-ui-only v-if="!props.readonly" class="text-center">{{ computedPlaceholder }}</span>
     </div>
 
     <div
@@ -472,21 +555,51 @@ watch(
             @mousedown="startDrag"
             @touchstart.prevent="startDrag"
           >
+            <!-- 4 corners (always shown) -->
+            <div
+              class="resize-handle nw"
+              @mousedown.stop.prevent="startResize('nw', $event)"
+              @touchstart.stop.prevent="startResize('nw', $event)"
+            ></div>
+            <div
+              class="resize-handle ne"
+              @mousedown.stop.prevent="startResize('ne', $event)"
+              @touchstart.stop.prevent="startResize('ne', $event)"
+            ></div>
+            <div
+              class="resize-handle sw"
+              @mousedown.stop.prevent="startResize('sw', $event)"
+              @touchstart.stop.prevent="startResize('sw', $event)"
+            ></div>
             <div
               class="resize-handle se"
               @mousedown.stop.prevent="startResize('se', $event)"
               @touchstart.stop.prevent="startResize('se', $event)"
             ></div>
-            <div
-              class="resize-handle e"
-              @mousedown.stop.prevent="startResize('e', $event)"
-              @touchstart.stop.prevent="startResize('e', $event)"
-            ></div>
-            <div
-              class="resize-handle s"
-              @mousedown.stop.prevent="startResize('s', $event)"
-              @touchstart.stop.prevent="startResize('s', $event)"
-            ></div>
+
+            <!-- 4 edges (logo/rectangle only) -->
+            <div v-if="props.variant == 'logo'">
+              <div
+                class="resize-handle n"
+                @mousedown.stop.prevent="startResize('n', $event)"
+                @touchstart.stop.prevent="startResize('n', $event)"
+              ></div>
+              <div
+                class="resize-handle s"
+                @mousedown.stop.prevent="startResize('s', $event)"
+                @touchstart.stop.prevent="startResize('s', $event)"
+              ></div>
+              <div
+                class="resize-handle e"
+                @mousedown.stop.prevent="startResize('e', $event)"
+                @touchstart.stop.prevent="startResize('e', $event)"
+              ></div>
+              <div
+                class="resize-handle w"
+                @mousedown.stop.prevent="startResize('w', $event)"
+                @touchstart.stop.prevent="startResize('w', $event)"
+              ></div>
+            </div>
           </div>
         </div>
         <div class="controls">
@@ -595,17 +708,35 @@ watch(
   border: 1px solid #fff;
   box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
 }
+.resize-handle.nw {
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%);
+  cursor: nw-resize;
+}
+.resize-handle.ne {
+  right: 0;
+  top: 0;
+  transform: translate(50%, -50%);
+  cursor: ne-resize;
+}
+.resize-handle.sw {
+  left: 0;
+  bottom: 0;
+  transform: translate(-50%, 50%);
+  cursor: sw-resize;
+}
 .resize-handle.se {
   right: 0;
   bottom: 0;
   transform: translate(50%, 50%);
   cursor: se-resize;
 }
-.resize-handle.e {
-  right: 0;
-  top: 50%;
-  transform: translate(50%, -50%);
-  cursor: e-resize;
+.resize-handle.n {
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  cursor: n-resize;
 }
 .resize-handle.s {
   bottom: 0;
@@ -613,6 +744,19 @@ watch(
   transform: translate(-50%, 50%);
   cursor: s-resize;
 }
+.resize-handle.e {
+  right: 0;
+  top: 50%;
+  transform: translate(50%, -50%);
+  cursor: e-resize;
+}
+.resize-handle.w {
+  left: 0;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  cursor: w-resize;
+}
+
 .resize-handle:hover {
   background: #007bff;
 }
