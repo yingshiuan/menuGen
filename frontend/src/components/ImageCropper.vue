@@ -511,7 +511,7 @@ watch(
     </div>
 
     <div
-      v-if="displayedPicture && !props.readonly"
+      v-if="displayedPicture && !props.readonly && props.variant !== 'picture'"
       class="absolute -top-3 -right-3 opacity-100 group-hover:opacity-100 transition"
     >
       <button
@@ -646,18 +646,18 @@ watch(
             </div>
           </div>
         </div>
-        <div class="controls">
-          <button
-            class="bg-blue-500 p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
-            @click="handleCrop"
-          >
-            Crop Image
-          </button>
+        <div class="controls flex justify-between">
           <button
             class="border border-red-500 rounded-lg text-red-500 p-1 hover:bg-red-500 hover:text-white transition"
             @click="closeModal"
           >
-            Close
+            Cancel
+          </button>
+          <button
+            class="bg-blue-500 p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
+            @click="handleCrop"
+          >
+            Done
           </button>
         </div>
         <!-- <div v-if="croppedImage" class="cropped-preview">
@@ -698,7 +698,7 @@ watch(
   position: relative;
   width: 100%;
   height: 25rem;
-  background: #f0f0f0;
+  background: #000;
   overflow: hidden;
 }
 .image-wrapper {

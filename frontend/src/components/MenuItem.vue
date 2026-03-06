@@ -535,7 +535,7 @@ async function updateDisplayedPicture() {
 
       <!-- Picture -->
       <!-- min-w and min-h need to change by the w-20 and h-20-->
-      <div class="shrink-0 w-20 h-20 relative rounded-full cursor-pointer overflow-hidden">
+      <div class="shrink-0 w-20 h-20 relative rounded-full cursor-pointer">
         <!-- Normal img -->
         <div
           v-if="displayedPicture && pictureState.visible"
@@ -554,9 +554,10 @@ async function updateDisplayedPicture() {
           viewBox="0 0 100 100"
           class="absolute inset-0 w-full h-full pointer-events-none"
         >
+          <!--d="M 50,50 m -40,0 a 40,40 0 1,1 80,0 a 40,40 0 1,1 -80,0"-->
           <path
             :id="`path-${props.item.id}`"
-            d="M 50,50 m -40,0 a 40,40 0 1,1 80,0 a 40,40 0 1,1 -80,0"
+            d="M 50,50 m -42,0 a 42,42 0 1,1 84,0 a 42,42 0 1,1 -84,0"
             fill="none"
             stroke="none"
           />
@@ -582,10 +583,10 @@ async function updateDisplayedPicture() {
         <div
           v-if="displayedPicture && pictureState.visible && !props.readonly"
           data-ui-only
-          class="absolute bottom-2.5 right-2.5"
+          class="absolute bottom-0 right-0"
         >
           <button
-            class="w-3.5 h-3.5 text-xs flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
+            class="w-6 h-6 text-xs flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white px-1 cursor-pointer"
             @click.stop="deletePicture"
             title="Delete picture"
           >

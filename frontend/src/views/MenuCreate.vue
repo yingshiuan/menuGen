@@ -431,7 +431,7 @@ watch(
             @click="uiState.showTwoPage = !uiState.showTwoPage"
             class="border-blue-500 px-3 py-1 rounded-lg hover:bg-blue-50 hover:text-blue-500 border-2 transition-colors duration-200 shadow-md disabled:opacity-50"
           >
-            {{ uiState.showTwoPage ? 'Single Page' : 'Two Page' }}
+            {{ uiState.showTwoPage ? 'Show Single Page' : 'Show Two Page' }}
           </button>
         </div>
       </div>
