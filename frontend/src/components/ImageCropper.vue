@@ -556,6 +556,28 @@ watch(
             @touchstart.prevent="startDrag"
           >
             <!-- 4 corners (always shown) -->
+            <!-- Corner hit areas (always shown) -->
+            <div
+              class="edge-hit nw-corner"
+              @mousedown.stop.prevent="startResize('nw', $event)"
+              @touchstart.stop.prevent="startResize('nw', $event)"
+            ></div>
+            <div
+              class="edge-hit ne-corner"
+              @mousedown.stop.prevent="startResize('ne', $event)"
+              @touchstart.stop.prevent="startResize('ne', $event)"
+            ></div>
+            <div
+              class="edge-hit sw-corner"
+              @mousedown.stop.prevent="startResize('sw', $event)"
+              @touchstart.stop.prevent="startResize('sw', $event)"
+            ></div>
+            <div
+              class="edge-hit se-corner"
+              @mousedown.stop.prevent="startResize('se', $event)"
+              @touchstart.stop.prevent="startResize('se', $event)"
+            ></div>
+            <!-- Circle handles on top -->
             <div
               class="resize-handle nw"
               @mousedown.stop.prevent="startResize('nw', $event)"
@@ -579,6 +601,28 @@ watch(
 
             <!-- 4 edges (logo/rectangle only) -->
             <div v-if="props.variant == 'logo'">
+              <!-- Edge hit areas (full-length invisible bars) -->
+              <div
+                class="edge-hit n"
+                @mousedown.stop.prevent="startResize('n', $event)"
+                @touchstart.stop.prevent="startResize('n', $event)"
+              ></div>
+              <div
+                class="edge-hit s"
+                @mousedown.stop.prevent="startResize('s', $event)"
+                @touchstart.stop.prevent="startResize('s', $event)"
+              ></div>
+              <div
+                class="edge-hit e"
+                @mousedown.stop.prevent="startResize('e', $event)"
+                @touchstart.stop.prevent="startResize('e', $event)"
+              ></div>
+              <div
+                class="edge-hit w"
+                @mousedown.stop.prevent="startResize('w', $event)"
+                @touchstart.stop.prevent="startResize('w', $event)"
+              ></div>
+              <!-- Circle handles on top -->
               <div
                 class="resize-handle n"
                 @mousedown.stop.prevent="startResize('n', $event)"
@@ -759,5 +803,74 @@ watch(
 
 .resize-handle:hover {
   background: #007bff;
+}
+
+/* Edge hit areas - invisible but wide/tall for easy grabbing */
+.edge-hit {
+  position: absolute;
+  z-index: 2;
+  background: transparent;
+}
+
+/* Horizontal edges - full width, 12px tall */
+.edge-hit.n {
+  top: -6px;
+  left: 1rem; /* avoid overlap with corner handles */
+  right: 1rem;
+  height: 12px;
+  cursor: n-resize;
+}
+.edge-hit.s {
+  bottom: -6px;
+  left: 1rem;
+  right: 1rem;
+  height: 12px;
+  cursor: s-resize;
+}
+
+/* Vertical edges - full height, 12px wide */
+.edge-hit.e {
+  right: -6px;
+  top: 1rem;
+  bottom: 1rem;
+  width: 12px;
+  cursor: e-resize;
+}
+.edge-hit.w {
+  left: -6px;
+  top: 1rem;
+  bottom: 1rem;
+  width: 12px;
+  cursor: w-resize;
+}
+
+/* Corner hit areas - larger square zones */
+.edge-hit.nw-corner {
+  top: -8px;
+  left: -8px;
+  width: 24px;
+  height: 24px;
+  cursor: nw-resize;
+}
+.edge-hit.ne-corner {
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  cursor: ne-resize;
+}
+.edge-hit.sw-corner {
+  bottom: -8px;
+  left: -8px;
+  width: 24px;
+  height: 24px;
+  cursor: sw-resize;
+}
+.edge-hit.se-corner {
+  bottom: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  cursor: se-resize;
 }
 </style>
