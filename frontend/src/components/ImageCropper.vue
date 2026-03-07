@@ -476,7 +476,7 @@ watch(
     <div
       v-if="displayedPicture"
       class="w-full h-full overflow-hidden flex items-center justify-center"
-      @click="openCropper"
+      @click.stop="props.variant === 'icon' ? triggerUpload() : openCropper()"
     >
       <img
         v-if="props.variant === 'logo'"
@@ -494,10 +494,9 @@ watch(
       <img
         v-else-if="props.variant === 'icon'"
         :src="displayedPicture"
-        class="w-6 h-6"
+        class="w-6 h-6 object-contain"
         @error="onImageError"
       />
-
       <!-- <img
         v-else-if="props.variant === 'picture'"
         data-ui-only

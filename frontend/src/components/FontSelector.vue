@@ -15,9 +15,9 @@ interface FontOption {
 }
 
 const fonts: FontOption[] = [
-  { label: 'Sans Serif', value: 'sans-serif' },
-  { label: 'Serif', value: 'serif' },
-  { label: 'Monospace', value: 'monospace' },
+  { label: 'Sans Serif', value: 'Sans-serif' },
+  { label: 'Serif', value: 'Serif' },
+  { label: 'Monospace', value: 'Monospace' },
   { label: 'Courier New', value: "'Courier New', monospace" },
   { label: 'Arial', value: "'Arial', sans-serif" },
   { label: 'Times New Roman', value: "'Times New Roman', serif" },
@@ -93,7 +93,7 @@ watch(selectedFont, (newFont) => {
     </div>
   </div>
   <div class="flex items-center gap-2 mt-2">
-    <label class="">Paste Font Name</label>
+    <label class="">Font Name</label>
     <input
       v-model="selectedFont"
       placeholder="Paste Google Font name (e.g., Roboto, Poppins)"
@@ -102,4 +102,16 @@ watch(selectedFont, (newFont) => {
       :style="{ fontFamily: selectedFont }"
     />
   </div>
+  <!-- Footer hint -->
+  <p class="text-[10px] text-gray-400 mt-1">
+    Find font names at
+    <a
+      href="https://fonts.google.com"
+      target="_blank"
+      class="text-blue-400 underline hover:text-blue-600"
+    >
+      fonts.google.com
+    </a>
+    — paste the name exactly as shown
+  </p>
 </template>

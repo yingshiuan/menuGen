@@ -6,19 +6,26 @@ MenuGen is a smart menu-building tool that transforms a CSV file into an editabl
 
 It supports:
 
-- CSV Parsing
-- Inline Editing (No, Name, ChineseName, Measure, Price, Description, Options, Pictures, Icons, Category)
-- Auto category-aware item numbering with intelligent gap reuse
-- Logo upload and display in PDF
-- Generic image uploader component with variant-based placeholders
-- Image Cropper for Icons & Pictures & Logo
-- Unique item ID tracking (UUID-based, no conflicts)
+**Content**
+- CSV import with full inline editing (No, Name, ChineseName, Measure, Price, Description, Options, Pictures, Icons, Category)
+- Auto-numbering per category with intelligent gap reuse
+- Unique UUID-based item tracking
+
+**Media**
+- Image upload with compression for pictures, icons, and logo
+- Image cropper for pictures, icons, and logo
+- Google Icons support — paste any icon name to load instantly
+- Per-icon color customization
+
+**Typography**
+- Google Fonts support — paste any font name to load dynamically
+
+**Layout & Export**
 - Auto Layout (Tailwind CSS v4)
-- Support Google Fonts (paste font name to load dynamically)
-- Icon & Image Upload with compression
-- Preview in Single or Two Page
-- Perfect PDF Export (exact same look as the on-screen preview)
-- Fully responsive UI (Desktop, Tablet, Mobile)
+- Single or two-page preview
+- Fully responsive — Desktop, Tablet, and Mobile
+- Pixel-perfect PDF export matching the on-screen preview exactly
+
 
 ---
 

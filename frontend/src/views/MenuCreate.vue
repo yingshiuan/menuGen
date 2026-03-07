@@ -59,7 +59,7 @@ const pageState = reactive<PageState>({
 const menuState = reactive<MenuState>({
   menuCsv: [],
   pdfReadonly: false,
-  selectedFont: 'sans-serif',
+  selectedFont: 'Sans-serif',
   bgColor: '#ffffff',
   textColor: '#000000',
   scalePage: 0.8,
