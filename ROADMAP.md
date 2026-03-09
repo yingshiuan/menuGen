@@ -74,13 +74,17 @@
 - [x] Compress + rasterize large SVGs  
 - [x] Built-in library of dietary icons (GF, Vegan, Spicy, etc.)  
 - [X] Allow uploading user’s own picture
-- [X] Allow uploading user’s own icon pack  
+- [X] Allow uploading user’s own icon pack
+- [ ] Image Validation, check aspect ratio
+- [ ] Image History / Replace
+- [ ] Menu Asset Manager
 
 ### Backend Enhancements
 - [ ] Cache processed images to speed up repeated exports  
 - [ ] Headless Chrome optimization flags  
 - [ ] Enable “Print-ready bleed & margins” mode  
 - [ ] CLI: `menugen generate menu.json` → PDF
+- [ ] Lazy loading / performance
 
 ### Deployment
 - [x] Docker support  

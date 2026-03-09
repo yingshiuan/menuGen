@@ -110,8 +110,8 @@ watch(selectedFont, (newFont) => {
       target="_blank"
       class="text-blue-400 underline hover:text-blue-600"
     >
-      fonts.google.com
-    </a>
-    — paste the name exactly as shown
+      fonts.google.com</a>
+    <!-- — paste the name exactly as shown -->
+    - e.g. Roboto
   </p>
 </template>
