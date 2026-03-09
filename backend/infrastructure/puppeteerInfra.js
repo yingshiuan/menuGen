@@ -3,7 +3,7 @@ import puppeteer from 'puppeteer'
 export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}) {
   const launchOptions = {
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--disable-web-security','--allow-running-insecure-content'   ],
     timeout: 60000,
     executablePath: puppeteer.executablePath(), // use Puppeteer's bundled Chromium
   }
@@ -14,8 +14,11 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
 
     // await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 })
 
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
+    page.setDefaultNavigationTimeout(60000)
+    page.setDefaultTimeout(60000)
 
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
+    
     // Wait for all images to load
     await page.evaluate(async () => {
       const images = Array.from(document.images)
@@ -33,7 +36,10 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
 
     // Wait for fonts to load
     await page.evaluate(async () => {
-      await document.fonts.ready
+      await Promise.race([
+        document.fonts.ready,
+        new Promise((resolve) => setTimeout(resolve, 5000)),
+      ])
     })
 
     // Generate PDF
