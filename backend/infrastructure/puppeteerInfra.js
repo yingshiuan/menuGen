@@ -1,4 +1,14 @@
 import puppeteer from 'puppeteer'
+import { readFileSync } from 'fs'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+function loadFont(filename) {
+  const fontPath = join(__dirname, '../fonts', filename)
+  return readFileSync(fontPath).toString('base64')
+}
 
 export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}) {
   const launchOptions = {
@@ -11,9 +21,39 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
   const browser = await puppeteer.launch(launchOptions)
   try {
     const page = await browser.newPage()
-    
-    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 })
 
+    await page.addStyleTag({
+      content: `
+        @font-face {
+          font-family: 'NotoSansTC';
+          font-weight: 200;
+          src: url('data:font/truetype;base64,${loadFont('NotoSansTC-ExtraLight.ttf')}') format('truetype');
+        }
+        @font-face {
+          font-family: 'NotoSansTC';
+          font-weight: 300;
+          src: url('data:font/truetype;base64,${loadFont('NotoSansTC-Light.ttf')}') format('truetype');
+        }
+        @font-face {
+          font-family: 'NotoSansTC';
+          font-weight: 400;
+          src: url('data:font/truetype;base64,${loadFont('NotoSansTC-Regular.ttf')}') format('truetype');
+        }
+        @font-face {
+          font-family: 'NotoSansTC';
+          font-weight: 500;
+          src: url('data:font/truetype;base64,${loadFont('NotoSansTC-Medium.ttf')}') format('truetype');
+        }
+        @font-face {
+          font-family: 'NotoSansTC';
+          font-weight: 700;
+          src: url('data:font/truetype;base64,${loadFont('NotoSansTC-Bold.ttf')}') format('truetype');
+        }
+        * { font-family: 'NotoSansTC', sans-serif; }
+      `,
+    })
+
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 })
     // await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
 
     // Wait for all images to load
