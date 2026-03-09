@@ -13,7 +13,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
 
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? ['https://menugen.insdash.ch', 'https://menu-gen-dusky.vercel.app/']
+  ? ['https://menu-gen-dusky.vercel.app', 'https://menugen.insdash.ch' ]
   : ['http://192.168.1.163:5173'];
 
 app.use(cors({
