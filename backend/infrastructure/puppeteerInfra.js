@@ -5,7 +5,7 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
     timeout: 30000,
-    executablePath: puppeteer.executablePath(), // use Puppeteer's bundled Chromium
+    // executablePath: puppeteer.executablePath(), // use Puppeteer's bundled Chromium
   }
 
   const browser = await puppeteer.launch(launchOptions)
