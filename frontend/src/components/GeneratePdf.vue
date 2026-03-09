@@ -20,6 +20,8 @@ const pdfState = reactive<PdfState>({
 
 // const htmlPreview = ref<string>("");
 
+const API = import.meta.env.VITE_API_URL
+
 async function generatePDF(): Promise<void> {
   const element = props.contentRef
   if (!element) {
@@ -41,7 +43,7 @@ async function generatePDF(): Promise<void> {
   //  htmlPreview.value = htmlContent;
 
   try {
-    const response: Response = await fetch('http://localhost:3000/generate-pdf', {
+    const response: Response = await fetch(`${API}/generate-pdf`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

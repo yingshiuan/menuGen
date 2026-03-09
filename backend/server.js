@@ -11,6 +11,16 @@ app.use(cors())
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
+const allowedOrigin =
+  process.env.NODE_ENV === 'production'
+    ? 'https://menugen.insdash.ch'           // production frontend domain
+    : 'http://192.168.1.163:5173';          // local dev frontend URL (local IP + Vite port)
+
+app.use(cors({
+  origin: allowedOrigin,
+  methods: ['GET', 'POST']
+}));
+
 // Ping
 app.get('/ping', (req, res) => {
   res.send('pong');
