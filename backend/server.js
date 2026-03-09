@@ -12,6 +12,21 @@ app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
 
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? ['https://menugen.insdash.ch', 'https://your-project.vercel.app']
+  : ['http://192.168.1.163:5173'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET','POST']
+}));
+
 // Ping
 app.get('/ping', (req, res) => {
   res.send('pong');

@@ -87,7 +87,7 @@ async function generatePDF(): Promise<void> {
     // URL.revokeObjectURL(url); // clean up
   } catch (err) {
     console.error('Error generating PDF:', err)
-    alert('An error occurred while generating PDF')
+    alert(`An error occurred while generating PDF: ${API}`)
   } finally {
     pdfState.readonly = false
     pdfState.uploading = false
