@@ -243,21 +243,22 @@ async function updateDisplayedPicture() {
     setDisplayedPicture(local.mainImageBase64)
     return
   }
+  
 
-  const candidates: string[] = []
-  if (local.Name) candidates.push(`/picture/${local.Name}.png?v=${Date.now()}`)
-  if (local.No && local.Name) {
-    const noPadded = local.No.toString().padStart(2, '0')
-    candidates.push(`/picture/${noPadded}_${local.Name}.png?v=${Date.now()}`)
-  }
+  // const candidates: string[] = []
+  // if (local.Name) candidates.push(`/picture/${local.Name}.png?v=${Date.now()}`)
+  // if (local.No && local.Name) {
+  //   const noPadded = local.No.toString().padStart(2, '0')
+  //   candidates.push(`/picture/${noPadded}_${local.Name}.png?v=${Date.now()}`)
+  // }
 
-  for (const url of candidates) {
-    const ok = await checkImage(url)
-    if (ok) {
-      setDisplayedPicture(url)
-      return
-    }
-  }
+  // for (const url of candidates) {
+  //   const ok = await checkImage(url)
+  //   if (ok) {
+  //     setDisplayedPicture(url)
+  //     return
+  //   }
+  // }
 
   setDisplayedPicture(null)
   // isEditingImage.value = true
