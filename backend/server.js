@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import uploadRoutes from './routes/uploadRoute.js' // use upload routes, but now didn't save in the backend
+// import uploadRoutes from './routes/uploadRoute.js' // use upload routes, but now didn't save in the backend
 import pdfRoutes from './routes/pdfRoute.js'
 
 const app = express()
