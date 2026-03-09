@@ -35,8 +35,6 @@ export async function generatePdfFromHtml({ html, width = '210mm', height = '297
       <head>
         ${fontLink}
         <style>${tailwindCSS}</style>
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@200;300;400;500;700&display=swap" rel="stylesheet">
-          <style>* { font-family: 'Noto Sans TC', sans-serif; }</style>
       </head>
       <body>${document.body.innerHTML}</body>
     </html>
