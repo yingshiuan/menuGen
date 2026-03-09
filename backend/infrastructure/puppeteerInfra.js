@@ -22,7 +22,11 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
       await Promise.all(
         images.map((img) => {
           if (img.complete) return Promise.resolve()
-          return new Promise((resolve) => (img.onload = img.onerror = resolve))
+          return new Promise((resolve) => {
+            img.onload = resolve
+            img.onerror = resolve
+            setTimeout(resolve, 3000) // wait 3 seconds
+          })
         }),
       )
     })
