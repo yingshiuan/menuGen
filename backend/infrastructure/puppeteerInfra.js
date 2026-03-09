@@ -29,27 +29,6 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
           font-weight: 200;
           src: url('data:font/truetype;base64,${loadFont('NotoSansTC-ExtraLight.ttf')}') format('truetype');
         }
-        @font-face {
-          font-family: 'NotoSansTC';
-          font-weight: 300;
-          src: url('data:font/truetype;base64,${loadFont('NotoSansTC-Light.ttf')}') format('truetype');
-        }
-        @font-face {
-          font-family: 'NotoSansTC';
-          font-weight: 400;
-          src: url('data:font/truetype;base64,${loadFont('NotoSansTC-Regular.ttf')}') format('truetype');
-        }
-        @font-face {
-          font-family: 'NotoSansTC';
-          font-weight: 500;
-          src: url('data:font/truetype;base64,${loadFont('NotoSansTC-Medium.ttf')}') format('truetype');
-        }
-        @font-face {
-          font-family: 'NotoSansTC';
-          font-weight: 700;
-          src: url('data:font/truetype;base64,${loadFont('NotoSansTC-Bold.ttf')}') format('truetype');
-        }
-        * { font-family: 'NotoSansTC', sans-serif; }
       `,
     })
 
