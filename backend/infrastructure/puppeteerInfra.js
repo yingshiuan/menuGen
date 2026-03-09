@@ -1,29 +1,11 @@
 import puppeteer from 'puppeteer'
-import fs from 'fs'
 
 export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}) {
   const launchOptions = {
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
     timeout: 30000,
-  }
-
-  // prefer environment path or common system paths
-  if (process.env.CHROMIUM_PATH && fs.existsSync(process.env.CHROMIUM_PATH)) {
-    launchOptions.executablePath = process.env.CHROMIUM_PATH
-  } else {
-    const candidates = [
-      '/usr/bin/chromium',
-      '/usr/bin/chromium-browser',
-      '/usr/bin/google-chrome-stable',
-      '/snap/bin/chromium',
-    ]
-    for (const p of candidates) {
-      if (fs.existsSync(p)) {
-        launchOptions.executablePath = p
-        break
-      }
-    }
+    executablePath: puppeteer.executablePath(), // use Puppeteer's bundled Chromium
   }
 
   const browser = await puppeteer.launch(launchOptions)
@@ -31,6 +13,7 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'networkidle0' })
 
+    // Wait for all images to load
     await page.evaluate(async () => {
       const images = Array.from(document.images)
       await Promise.all(
@@ -41,10 +24,12 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
       )
     })
 
+    // Wait for fonts to load
     await page.evaluate(async () => {
       await document.fonts.ready
     })
 
+    // Generate PDF
     const pdfBuffer = await page.pdf({
       width,
       height,
