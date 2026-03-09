@@ -4,14 +4,14 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
   const launchOptions = {
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    timeout: 30000,
+    timeout: 60000,
     executablePath: puppeteer.executablePath(), // use Puppeteer's bundled Chromium
   }
 
   const browser = await puppeteer.launch(launchOptions)
   try {
     const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'networkidle0' })
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000,  })
 
     // Wait for all images to load
     await page.evaluate(async () => {
