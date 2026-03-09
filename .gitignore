@@ -40,7 +40,7 @@ coverage/
 .eslintcache
 
 # Tailwind / CSS build
-public/css/tailwind.css
+
 
 # Cypress
 /cypress/videos/
@@ -54,3 +54,6 @@ __screenshots__/
 
 # Puppeteer temporary files (optional)
 *.local-chromium/
+
+# my-project/.gitignore
+backend/.cache/
