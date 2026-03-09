@@ -43,7 +43,7 @@ async function generatePDF(): Promise<void> {
   //  htmlPreview.value = htmlContent;
 
   try {
-    const response: Response = await fetch(`${API}/generate-pdf`, {
+    const response: Response = await fetch(`https://menugen-a7eq.onrender.com/generate-pdf`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
