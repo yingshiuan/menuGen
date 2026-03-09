@@ -11,7 +11,10 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
   const browser = await puppeteer.launch(launchOptions)
   try {
     const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000,  })
+    
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 })
+
+    // await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
 
     // Wait for all images to load
     await page.evaluate(async () => {
