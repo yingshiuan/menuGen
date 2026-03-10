@@ -11,30 +11,47 @@ const __dirname = path.dirname(__filename)
 const cssPath = path.resolve(__dirname, '../../frontend/public/css/tailwind.css')
 const tailwindCSS = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, 'utf-8') : ''
 
+const systemFonts = ['sans-serif', 'serif', 'monospace', 'arial', 'times new roman', 'courier new']
+
+function parseFontName(fontFamily) {
+  return (
+    fontFamily
+      .split(',')
+      .map((f) => f.trim().replace(/^['"]|['"]$/g, ''))
+      .filter(Boolean)[0] || ''
+  )
+}
+
 export async function generatePdfFromHtml({ html, width = '210mm', height = '297mm', font }) {
   if (!html) throw new Error('HTML content is required')
 
   const dom = new JSDOM(html)
   const document = dom.window.document
 
-  // Sanitize interactive controls (inputs, selects, textareas)
   sanitizeHtml(document)
-
-  // Remove icons that are not selected and strip helper attributes
-  await inlineLocalImages(document) // need to await this before PDF rendering to ensure all images are processed
-
-  // Hide UI-only elements
+  await inlineLocalImages(document)
   hideUiOnly(document)
 
-  const fontLink = font
-    ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}&display=swap" rel="stylesheet" />`
+  const fontName = parseFontName(font || '')                          // ← 加這行
+  const isSystemFont = systemFonts.includes(fontName.toLowerCase())  // ← 加這行
+
+  const fontLink = fontName && !isSystemFont
+    ? `<link href="https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, '+')}&display=swap" rel="stylesheet" />`
     : ''
+
+  const fontFamily = fontName && !isSystemFont
+    ? `'${fontName}', 'Noto Sans TC', sans-serif`
+    : `'Noto Sans TC', sans-serif`
 
   const optimizedHtml = `
     <html>
       <head>
         ${fontLink}
-        <style>${tailwindCSS}</style>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@200;300;400;500;700&display=swap" rel="stylesheet">
+        <style>
+          ${tailwindCSS}
+          body { font-family: ${fontFamily}; }
+        </style>
       </head>
       <body>${document.body.innerHTML}</body>
     </html>

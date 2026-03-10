@@ -205,7 +205,7 @@ function onDrop(e: DragEvent) {
 
 /* UI */
 const styleObject = computed(() => ({
-  fontFamily: props.fontFamily ?? 'sans-serif',
+  fontFamily: `${props.fontFamily ?? 'sans-serif'}, 'Noto Sans TC', sans-serif`,
   backgroundColor: props.bgColor ?? '#ffffff',
   color: props.textColor ?? '#000000',
 }))
