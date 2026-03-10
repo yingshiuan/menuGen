@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, nextTick} from 'vue'
+import { reactive, nextTick } from 'vue'
 
 const props = defineProps<{
   contentRef: HTMLElement | null
@@ -62,8 +62,8 @@ async function generatePDF(): Promise<void> {
 
     // window.open(url, '_blank') // Preview PDF in browser
 
-    const a: HTMLAnchorElement = document.createElement("a")
-    a.href = url 
+    const a: HTMLAnchorElement = document.createElement('a')
+    a.href = url
     if (isMobile()) {
       // Convert Blob to Base64 and use a data URL for immediate download
       const reader = new FileReader()
@@ -93,8 +93,10 @@ async function generatePDF(): Promise<void> {
 }
 
 function isMobile(): boolean {
-  return /iPhone|iPod|Android/i.test(navigator.userAgent)
-      || (navigator.maxTouchPoints > 1 && /MacIntel/i.test(navigator.platform)) // modern iPad
+  return (
+    /iPhone|iPod|Android/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && /MacIntel/i.test(navigator.platform))
+  ) // modern iPad
 }
 </script>
 
@@ -114,6 +116,15 @@ function isMobile(): boolean {
     </button>
   </div>
 
+  <Teleport to="body">
+    <div v-if="pdfState.uploading" class="loader-overlay">
+      <div class="loader-container">
+        <div class="loader"></div>
+        <p class="text-m">Exporting PDF, please wait...<br />First export may take up to 60s</p>
+      </div>
+    </div>
+  </Teleport>
+
   <!-- Preview of the generated HTML content -->
   <!-- <div v-if="htmlPreview" class="mt-4 p-4 border rounded-md shadow-md">
     <h3 class="text-lg font-bold mb-2">HTML Content Preview:</h3>
@@ -122,6 +133,26 @@ function isMobile(): boolean {
 </template>
 
 <style>
+/* Full-screen overlay */
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Centered loader container */
+.loader-container {
+  text-align: center;
+  color: white;
+}
+
 .loader {
   margin: auto;
   border: 0.25rem solid var(--primary-color);

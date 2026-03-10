@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 import { compressImage, compressSvg } from '../infrastructure/imageInfra.js'
 
@@ -23,6 +24,20 @@ export function sanitizeHtml(document) {
   })
 }
 
+async function compressBase64Image(base64, width = 300, height = 300) {
+  try {
+    const base64Data = base64.replace(/^data:image\/\w+;base64,/, '')
+    const buffer = Buffer.from(base64Data, 'base64')
+    const optimized = await sharp(buffer)
+      .resize(width, height, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 70 })
+      .toBuffer()
+    return `data:image/jpeg;base64,${optimized.toString('base64')}`
+  } catch {
+    return base64
+  }
+}
+
 export async function inlineLocalImages(document) {
   const images = Array.from(document.querySelectorAll('img'))
 
@@ -30,15 +45,21 @@ export async function inlineLocalImages(document) {
     const src = img.getAttribute('src')
     if (!src) continue
 
-//     // Skip remote URLs and existing data URIs
-//     if (src.startsWith('http')) {
-//       console.log('[PDF] skipping remote image:', src)
-//       continue
-//     }
-//     if (src.startsWith('data:')) {
-//       console.log('[PDF] keeping existing data URI:', src.substring(0, 50) + '...')
-//       continue
-//     }
+    if (src.startsWith('data:image')) {
+      const compressed = await compressBase64Image(src, 300, 300)
+      img.setAttribute('src', compressed)
+      continue
+    }
+
+    //     // Skip remote URLs and existing data URIs
+    //     if (src.startsWith('http')) {
+    //       console.log('[PDF] skipping remote image:', src)
+    //       continue
+    //     }
+    //     if (src.startsWith('data:')) {
+    //       console.log('[PDF] keeping existing data URI:', src.substring(0, 50) + '...')
+    //       continue
+    //     }
 
     // Strip query string and leading slash
     const cleanSrc = decodeURIComponent(src.split('?')[0].replace(/^\//, ''))
@@ -46,7 +67,6 @@ export async function inlineLocalImages(document) {
     // Candidate paths relative to THIS FILE (like old code)
     const fileDir = path.resolve(__dirname, '../../frontend/public') // adjust as needed
     const filePath = path.join(fileDir, cleanSrc)
-
 
     if (!fs.existsSync(filePath)) {
       // console.warn('[PDF] image not found for src:', src)

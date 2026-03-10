@@ -10,6 +10,9 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
       '--disable-gpu',
       '--disable-web-security',
       '--allow-running-insecure-content',
+      '--disable-extensions', 
+      '--disable-background-networking',
+      '--disable-default-apps',
     ],
     timeout: 60000,
     executablePath: puppeteer.executablePath(), // use Puppeteer's bundled Chromium

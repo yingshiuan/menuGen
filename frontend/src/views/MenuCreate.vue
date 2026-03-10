@@ -460,14 +460,12 @@ watch(
               :key="uiState.csvKey"
               @csvLoaded="handleCsvLoaded"
               :items="menuState.menuCsv"
-              class=""
             />
             <GeneratePdf
               :contentRef="pdfRenderRef"
               :page-width="pageState.width"
               :page-height="pageState.height"
               :font-family="menuState.selectedFont"
-              class=""
             />
           </div>
           <div class="py-2">
