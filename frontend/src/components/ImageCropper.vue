@@ -527,6 +527,7 @@ watch(
     <div
       v-if="displayedPicture && !props.readonly && props.variant !== 'picture'"
       class="absolute -top-1.5 -right-3 opacity-100 group-hover:opacity-100 transition"
+      data-ui-only
     >
       <button
         class="w-3.5 h-3.5 text-xs flex items-center justify-center z-10 text-red-500 rounded-full shadow hover:bg-blue-500 hover:text-white"
