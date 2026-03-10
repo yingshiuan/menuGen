@@ -713,7 +713,19 @@ watch(
   position: relative;
   width: 100%;
   height: 25rem;
-  background: #000;
+  /* background-image:
+    linear-gradient(45deg, #e5e5e5 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e5e5 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e5e5 75%),
+    linear-gradient(-45deg, transparent 75%, #e5e5e5 75%);
+  background-size: 16px 16px;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0px;
+  background-color: #fff; */
+  background: #e2e8f0;
   overflow: hidden;
 }
 .image-wrapper {
