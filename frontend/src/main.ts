@@ -11,3 +11,7 @@ app.use(createPinia())
 app.use(router)
 
 app.mount('#app')
+
+// awake Render
+const API = import.meta.env.VITE_API_URL
+fetch(`${API}/ping`).catch(() => {})

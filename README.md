@@ -4,34 +4,40 @@
 
 MenuGen is a smart menu-building tool that transforms a CSV file into an editable Vue interface and generates **pixel-perfect PDFs** using a Node.js backend powered by **Puppeteer**.
 
+Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
+
 ## Core Capabilities
 
 ### Content
+
 - CSV import with full inline editing (No, Name, ChineseName, Measure, Price, Description, Options, Pictures, Icons, Category)
 - Auto-numbering per category with intelligent gap reuse
 - Unique UUID-based item tracking
 
 ### Media
+
 - Image upload with compression for pictures, icons, and logo
 - Image cropper for pictures, icons, and logo
 - Google Icons support — paste any icon name to load instantly
 - Per-icon color customization
 
 ### Typography
+
 - Google Fonts support — paste any font name to load dynamically
 
 ### Layout & Export
+
 - Auto Layout (Tailwind CSS v4)
 - Single or two-page preview
 - Fully responsive — Desktop, Tablet, and Mobile
 - Pixel-perfect PDF export matching the on-screen preview exactly
 
 ### Engineering Highlights
+
 - Pixel-perfect HTML-to-PDF rendering with Puppeteer
 - End-to-end asset pipeline: upload → crop → compress → inline → render
 - SVG optimization strategy (inline vs rasterized)
 - Category-aware pagination algorithm
-
 
 ---
 
@@ -40,6 +46,8 @@ See the full roadmap in [ROADMAP.md](./ROADMAP.md)
 ---
 
 # Interactive Demo - See It In Action
+
+Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 
 <h3>CSV to PDF</h3>
 <img src="frontend/public/demo/gif/1_cvs.gif" alt="CSV to PDF" />
