@@ -5,8 +5,7 @@ import { useIcons } from '@/composables/useIcons.ts'
 import ImageCropper from '@/components/ImageCropper.vue'
 
 const icons = useIcons()
-const { setUserIcon, resetIcon, userColors, setUserColor, resetColor, defaultIcons } =
-  icons
+const { setUserIcon, resetIcon, userColors, setUserColor, resetColor, defaultIcons } = icons
 
 const options = Object.keys(icons.iconMap.value) as MenuOption[]
 const iconState = reactive({ isExpanded: false })
@@ -62,7 +61,11 @@ function confirmIcon(opt: MenuOption) {
       return res.text()
     })
     .then((svg) => {
-      const dataUri = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+      const color = userColors.value[opt]
+      const coloredSvg = color
+        ? svg.replace(/<svg/, `<svg fill="${color}"`)
+        : svg
+      const dataUri = `data:image/svg+xml;utf8,${encodeURIComponent(coloredSvg)}`
       setUserIcon(opt, dataUri)
       resetCounters[opt] = (resetCounters[opt] ?? 0) + 1
       typedNames[opt] = ''
@@ -73,6 +76,17 @@ function confirmIcon(opt: MenuOption) {
     .finally(() => {
       document.body.removeChild(span)
     })
+}
+
+function handleColorChange(opt: MenuOption, color: string) {
+  setUserColor(opt, color)
+
+  const currentIcon = icons.iconMap.value[opt]
+  if (currentIcon?.startsWith('data:image/svg+xml')) {
+    const decoded = decodeURIComponent(currentIcon.replace('data:image/svg+xml;utf8,', ''))
+    const coloredSvg = decoded.replace(/fill="[^"]*"/g, `fill="${color}"`)
+    setUserIcon(opt, `data:image/svg+xml;utf8,${encodeURIComponent(coloredSvg)}`)
+  }
 }
 
 // onMounted(() => {
@@ -168,7 +182,8 @@ function confirmIcon(opt: MenuOption) {
             <input
               type="color"
               :value="currentColors[opt] ?? '#000000'"
-              @input="(e) => setUserColor(opt, (e.target as HTMLInputElement).value)"
+                @input="(e) => handleColorChange(opt, (e.target as HTMLInputElement).value)"
+
               class="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
             />
           </label>

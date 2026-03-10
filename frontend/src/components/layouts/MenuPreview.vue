@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { computed, ref, reactive, watch } from 'vue'
 import type { MenuItem } from '@/types/types'
-import MenuItemComponent from '@/components/MenuItem.vue'
+import MenuItemComponent from '@/components/layouts/MenuItem.vue'
 import LogoUpload from '@/components/AddLogo.vue'
-import MeunInfo from '@/components/MeunInfo.vue'
-import type { ItemSpacing } from '@/components/ItemSpacingControl.vue'
+import MeunInfo from '@/components/layouts/MeunInfo.vue'
+import type { ItemSpacing } from '@/components/controls/ItemSpacingControl.vue'
 
 /* Props & Emits */
 const props = defineProps<{

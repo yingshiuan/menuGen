@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { MenuItem } from '@/types/types'
-import MenuPreview from './MenuPreview.vue'
-import type { ItemSpacing } from '@/components/ItemSpacingControl.vue'
+import MenuPreview from '@/components/layouts/MenuPreview.vue'
+import type { ItemSpacing } from '@/components/controls/ItemSpacingControl.vue'
 
 const props = defineProps<{
   items: MenuItem[]

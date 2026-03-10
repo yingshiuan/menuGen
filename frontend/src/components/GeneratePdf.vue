@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, nextTick, ref } from 'vue'
+import { reactive, nextTick} from 'vue'
 
 const props = defineProps<{
   contentRef: HTMLElement | null
@@ -17,8 +17,6 @@ const pdfState = reactive<PdfState>({
   uploading: false,
   readonly: false,
 })
-
-// const htmlPreview = ref<string>("");
 
 const API = import.meta.env.VITE_API_URL
 

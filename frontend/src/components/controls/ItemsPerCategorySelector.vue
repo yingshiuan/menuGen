@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
+
 const props = defineProps<{
   itemsPerPage: number
   keepCategoryTogether?: boolean
@@ -9,16 +11,25 @@ const emit = defineEmits<{
   (e: 'update:keepCategoryTogether', value: boolean): void
 }>()
 
-function handleChange(value: string) {
-  const num = parseInt(value, 10)
-  if (!isNaN(num) && num > 0) {
-    emit('update:itemsPerPage', num)
-  }
-}
+const itemsPerPageModel = computed({
+  get: () => props.itemsPerPage,
+  set: (value: number) => {
+    let num = value
 
-function handleCategoryToggle(value: boolean) {
-  emit('update:keepCategoryTogether', value)
-}
+    if (num < 1) num = 1
+    if (num > 11) num = 10
+
+    emit('update:itemsPerPage', num)
+  },
+})
+
+const keepCategoryModel = computed({
+  get: () => props.keepCategoryTogether,
+  set: (value: boolean) => {
+    emit('update:keepCategoryTogether', value)
+  },
+})
+
 </script>
 
 <template>
@@ -27,11 +38,10 @@ function handleCategoryToggle(value: boolean) {
       <label>Items Per Page</label>
       <input
         type="number"
-        :value="props.itemsPerPage"
+        v-model.number="itemsPerPageModel"
         min="1"
         max="11"
         class="border rounded p-1"
-        @change="(e) => handleChange((e.target as HTMLInputElement).value)"
       />
       <!-- <p class="text-xs text-gray-500">Current: {{ props.itemsPerPage }} items per page</p> -->
     </div>
@@ -39,10 +49,9 @@ function handleCategoryToggle(value: boolean) {
     <div class="flex items-center gap-2">
       <input
         type="checkbox"
+        v-model="keepCategoryModel"
         id="keepCategoryTogether"
-        :checked="props.keepCategoryTogether"
         class="w-4 h-4"
-        @change="(e) => handleCategoryToggle((e.target as HTMLInputElement).checked)"
       />
       <label for="keepCategoryTogether">Keep category together on page</label>
     </div>
