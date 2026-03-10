@@ -3,7 +3,14 @@ import puppeteer from 'puppeteer'
 export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}) {
   const launchOptions = {
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--disable-web-security','--allow-running-insecure-content'   ],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--disable-web-security',
+      '--allow-running-insecure-content',
+    ],
     timeout: 60000,
     executablePath: puppeteer.executablePath(), // use Puppeteer's bundled Chromium
   }
@@ -12,13 +19,23 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
   try {
     const page = await browser.newPage()
 
-    // await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 })
-
     page.setDefaultNavigationTimeout(60000)
     page.setDefaultTimeout(60000)
 
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
-    
+    //  await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    // await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
+
+    const fontPreload = html.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? ''
+    await page.setContent(`<html><head>${fontPreload}</head><body></body></html>`, {
+      waitUntil: 'networkidle0',
+      timeout: 60000,
+    })
+
+    await page.setContent(html, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60000,
+    })
+
     // Wait for all images to load
     await page.evaluate(async () => {
       const images = Array.from(document.images)
