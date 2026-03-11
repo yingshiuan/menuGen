@@ -11,7 +11,10 @@ services:
       - FRONTEND_ROOT=/usr/src/frontend
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:3000 
     ports:
       - '8080:80'
     depends_on:
@@ -29,6 +32,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
+      - CHROMIUM_PATH=/usr/bin/chromium
     ports:
       - '3000:3000'
 
@@ -39,10 +43,13 @@ services:
     volumes:
       - ./frontend:/app:cached
       - /app/node_modules
+    env_file:
+      - .env.local
     environment:
       - NODE_ENV=development
       - PORT=5173
       - HOST=0.0.0.0
+      - VITE_API_URL=http://localhost:3000
     ports:
       - '5173:5173'
     depends_on:
