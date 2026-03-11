@@ -17,6 +17,7 @@ import MenuCover from '@/components/layouts/MenuCover.vue'
 import AddIcon from '@/components/AddIcon.vue'
 import TwoPage from '@/components/controls/TwoPage.vue'
 
+
 /* Type & Interface */
 type FontValue = string
 
@@ -91,6 +92,7 @@ const demoMenu: MenuItem[] = [
     Description: 'Sample description 1',
     Options: ['Recommend', 'Spicy', 'Vegetarian'],
     Category: 'Sample Category',
+    mainImageBase64:'../public/data/2_Sample 2.png'
   },
   {
     id: '1',
@@ -468,6 +470,7 @@ watch(
               :font-family="menuState.selectedFont"
             />
           </div>
+
           <div class="py-2">
             <button
               @click="loadSampleMenu"
@@ -508,7 +511,7 @@ watch(
       </div>
 
       <!-- Right side: preview -->
-      <div class="w-full lg:w-3/4 flex pt-2 overflow-x-auto">
+      <div class="w-full lg:w-3/4 flex p-2 overflow-x-auto">
         <!-- Single-page menu preview -->
         <div
           class="menu-preview-wrapper"
