@@ -39,8 +39,8 @@ try {
   // Listen on all interfaces (LAN / mobile)
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend server running on port ${PORT}`);
-    console.log(`Backend server running on http://192.168.1.163:${PORT}`)
-    console.log(`Backend server running on http://localhost:${PORT}`);
+    // console.log(`Backend server running on http://192.168.1.163:${PORT}`)
+    // console.log(`Backend server running on http://localhost:${PORT}`);
   })
   // For local development, you can also listen on localhost:
   // app.listen(PORT, () => {
