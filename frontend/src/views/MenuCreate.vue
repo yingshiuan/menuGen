@@ -92,7 +92,7 @@ const demoMenu: MenuItem[] = [
     Description: 'Sample description 1',
     Options: ['Recommend', 'Spicy', 'Vegetarian'],
     Category: 'Sample Category',
-    mainImageBase64:'../public/data/2_Sample 2.png'
+    mainImageBase64:'/data/2_Sample 2.png'
   },
   {
     id: '1',
