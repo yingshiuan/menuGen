@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, nextTick } from 'vue'
 import Papa from 'papaparse'
 import type { MenuItem, MenuOption } from '@/types/types'
 import { useMenuStore } from '@/stores/menu'
+import { useIcons, UndefinedIcon } from '@/composables/useIcons'
 
 const props = defineProps<{
   items: MenuItem[]
@@ -24,23 +25,20 @@ const fileInput = ref<HTMLInputElement | null>(null) // DOM uses ref
 const fileName = ref<string | null>(null)
 const menuStore = useMenuStore()
 
+const { iconMap, renamedLabels } = useIcons()
+const allOptions = computed(() => Object.keys(iconMap.value))
+
+const DATA_COLUMNS = new Set(['No.', 'Price', 'Name', 'Measure', 'Chinese Name', 'Description'])
+
 /* Helpers */
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
 
 function getOptionsFromRow(row: Record<string, string>): MenuOption[] {
-  const map: Record<string, MenuOption> = {
-    Recommend: 'Recommend',
-    Spicy: 'Spicy',
-    Vegan: 'Vegan',
-    Vegetarian: 'Vegetarian',
-    'Gluten Free': 'Gluten Free',
-  }
-
-  return Object.entries(map)
-    .filter(([key]) => row[key]?.trim())
-    .map(([, value]) => value)
+  return Object.entries(row)
+    .filter(([key, val]) => !DATA_COLUMNS.has(key) && val?.trim() !== '')
+    .map(([key]) => key)
 }
 
 /* CSV Handling */
@@ -65,10 +63,22 @@ function handleDragLeave() {
 }
 
 function parseCsvFile(file: File) {
+  const { addCustomOption } = useIcons()
   Papa.parse<Record<string, string>>(file, {
     header: true,
     skipEmptyLines: true,
-    complete: (result) => {
+    complete: async (result) => {
+      // Register any unknown option columns from CSV into iconMap
+      const knownOptions = Object.keys(iconMap.value)
+      const csvOptionColumns = (
+        (result as Papa.ParseResult<Record<string, string>>).meta?.fields ?? []
+      ).filter((f) => !DATA_COLUMNS.has(f) && f.trim() !== '' && !knownOptions.includes(f))
+      for (const opt of csvOptionColumns) {
+        addCustomOption(opt, UndefinedIcon['Undefined']!)
+      }
+
+      await nextTick()
+
       let currentCategory = ''
       const processed: MenuItem[] = []
 
@@ -77,7 +87,7 @@ function parseCsvFile(file: File) {
           currentCategory = row['Name']?.trim() ?? ''
         } else {
           processed.push({
-            id: generateId(), // Generate unique ID for each item
+            id: generateId(),
             No: row['No.'] ?? '',
             Price: row['Price'] ?? '',
             Name: row['Name'] ?? '',
@@ -90,7 +100,7 @@ function parseCsvFile(file: File) {
         }
       })
 
-      emit('csvLoaded', processed) // send data to parent
+      emit('csvLoaded', processed)
       menuStore.items = processed
     },
   })
@@ -105,63 +115,20 @@ function handleFileChange(e: Event) {
   if (fileInput.value) fileInput.value.value = ''
 }
 
-function escapeCSVField(value: string) {
-  // wrap in quotes if it contains a comma or quote
-  if (value.includes(',') || value.includes('"')) {
-    return `"${value.replace(/"/g, '""')}"`
-  }
-  return value
-}
+// function escapeCSVField(value: string) {
+//   // wrap in quotes if it contains a comma or quote
+//   if (value.includes(',') || value.includes('"')) {
+//     return `"${value.replace(/"/g, '""')}"`
+//   }
+//   return value
+// }
 
 function downloadCSV() {
   if (!props.items?.length) return alert('No data to export')
 
-  const header = [
-    'No.',
-    'Price',
-    'Name',
-    'Measure',
-    'Chinese Name',
-    'Description',
-    'Recommend',
-    'Spicy',
-    'Vegan',
-    'Vegetarian',
-    'Gluten Free',
-  ].join('\t') // tab-separated
+  const csv = menuStore.exportToCSV(props.items, allOptions.value, renamedLabels.value)
 
-  const lines: string[] = []
-  let currentCategory = ''
-
-  props.items.forEach((item) => {
-    // Insert category row if it's new
-    if (item.Category && item.Category !== currentCategory) {
-      currentCategory = item.Category
-      lines.push(['', '', currentCategory, '', '', '', '', '', '', ''].join('\t'))
-    }
-
-    const optionCols = [
-      item.Options!.includes('Recommend') ? 'X' : '',
-      item.Options!.includes('Spicy') ? 'X' : '',
-      item.Options!.includes('Vegan') ? 'X' : '',
-      item.Options!.includes('Vegetarian') ? 'X' : '',
-      item.Options!.includes('Gluten Free') ? 'X' : '',
-    ]
-
-    lines.push(
-      [
-        escapeCSVField(item.No ?? ''),
-        escapeCSVField(item.Price ?? ''),
-        escapeCSVField(item.Name ?? ''),
-        escapeCSVField(item.Measure ?? ''),
-        escapeCSVField(item.ChineseName ?? ''),
-        escapeCSVField(item.Description ?? ''),
-        ...optionCols,
-      ].join('\t'),
-    )
-  })
-
-  const blob = new Blob([header + '\n' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url

@@ -216,7 +216,9 @@ function deletePicture() {
 watch(
   () => props.item,
   (newItem) => {
+    const currentOptions = [...local.Options] // ← save current options
     Object.assign(local, newItem)
+    local.Options = currentOptions // ← restore, don't let parent overwrite
     updateDisplayedPicture()
   },
   { deep: true, immediate: true },
@@ -243,7 +245,6 @@ async function updateDisplayedPicture() {
     setDisplayedPicture(local.mainImageBase64)
     return
   }
-  
 
   // const candidates: string[] = []
   // if (local.Name) candidates.push(`/picture/${local.Name}.png?v=${Date.now()}`)
@@ -274,6 +275,18 @@ async function updateDisplayedPicture() {
 //   },
 //   { deep: true },
 // )
+
+watch(allOptions, (newOptions, oldOptions) => {
+  const added = newOptions.filter((opt) => !oldOptions.includes(opt))
+  if (!added.length) return
+  for (const opt of added) {
+    if (!local.Options.includes(opt)) {
+      local.Options.push(opt)
+    }
+  }
+  // Emit to update parent BEFORE it can sync back and wipe us
+  emit('update:item', { ...local })
+})
 </script>
 
 <template>

@@ -103,7 +103,7 @@ watch(selectedFont, (newFont) => {
     />
   </div>
   <!-- Footer hint -->
-  <p class="text-[10px] text-gray-400 mt-1">
+  <p class="text-[0.8rem] text-gray-400 mt-1">
     Find font names at
     <a
       href="https://fonts.google.com"

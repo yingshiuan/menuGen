@@ -15,13 +15,13 @@ const emit = defineEmits<{
   (e: 'update:footerText', value: string): void
 }>()
 
-const { iconMap } = useIcons()
+const { iconMap, getDisplayLabel } = useIcons()
 
-const allOptions = computed(() =>
-  Object.keys(iconMap.value) as MenuOption[]
+const allOptions = computed(() => Object.keys(iconMap.value) as MenuOption[])
+
+const selected = ref<MenuOption[]>(
+  props.modelValue?.length ? props.modelValue : [...allOptions.value],
 )
-
-const selected = ref<MenuOption[]>(props.modelValue?.length ? props.modelValue : [...allOptions.value])
 
 const infoText = ref(props.footerText)
 const editingInfo = ref(false)
@@ -64,6 +64,15 @@ function startEditingInfo() {
 function stopEditingInfo() {
   editingInfo.value = false
 }
+
+watch(allOptions, (newOptions, oldOptions) => {
+  const added = newOptions.filter((opt) => !oldOptions.includes(opt))
+  for (const opt of added) {
+    if (!selected.value.includes(opt)) {
+      selected.value.push(opt)
+    }
+  }
+})
 </script>
 
 <template>
@@ -84,7 +93,7 @@ function stopEditingInfo() {
             @click="toggle(opt)"
             :title="opt"
           />
-          <span>{{ opt }}</span>
+          <span>{{ getDisplayLabel(opt) }}</span>
         </div>
       </div>
 

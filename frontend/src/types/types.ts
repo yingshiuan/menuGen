@@ -1,4 +1,5 @@
-export type MenuOption = 'Recommend' | 'Spicy' | 'Vegan' | 'Vegetarian' | 'Gluten Free'
+export type MenuOption = string
+export const PRESET_OPTIONS = ['Recommend', 'Spicy', 'Vegan', 'Vegetarian', 'Gluten Free'] as const
 
 export interface MenuItem {
   id: string // Unique identifier (generated when created or loaded from CSV)

@@ -37,7 +37,8 @@ export const useMenuStore = defineStore('menu', {
       })
     },
 
-    exportToCSV() {
+    exportToCSV(items: MenuItem[], allOptions: string[], renamedLabels?: Record<string, string>) {
+      const getLabel = (key: string) => renamedLabels?.[key] ?? key
       const header = [
         'No.',
         'Price',
@@ -45,50 +46,28 @@ export const useMenuStore = defineStore('menu', {
         'Measure',
         'Chinese Name',
         'Description',
-        'Recommend',
-        'Spicy',
-        'Vegan',
-        'Vegetarian',
-        'Gluten Free',
+        ...allOptions.map(getLabel),
       ].join('\t')
 
       const lines: string[] = []
       let currentCategory = ''
 
-      this.items.forEach((item) => {
-        // Insert category row if it's new
+      items.forEach((item) => {
         if (item.Category && item.Category !== currentCategory) {
           currentCategory = item.Category
-          lines.push(
-            [
-              '', // No.
-              '', // Price
-              currentCategory, // Name = category
-              '', // Measure
-              '', // Chinese Name
-              '', // Description
-              '',
-              '',
-              '',
-              '',
-              '', // Options columns
-            ].join('\t'),
-          )
+          const emptyCols = new Array(6 + allOptions.length).fill('')
+          emptyCols[2] = currentCategory
+          lines.push(emptyCols.join('\t'))
         }
 
-        const optionCols = [
-          item.Options!.includes('Recommend') ? 'X' : '',
-          item.Options!.includes('Spicy') ? 'X' : '',
-          item.Options!.includes('Vegan') ? 'X' : '',
-          item.Options!.includes('Vegetarian') ? 'X' : '',
-          item.Options!.includes('Gluten Free') ? 'X' : '',
-        ]
+        const optionCols = allOptions.map((opt) => (item.Options?.includes(opt) ? 'X' : ''))
 
         lines.push(
           [
             item.No,
             item.Price,
             item.Name,
+            item.Measure,
             item.ChineseName,
             item.Description ?? '',
             ...optionCols,

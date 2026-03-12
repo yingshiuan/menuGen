@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { reactive, ref, watch, onMounted, computed } from 'vue'
 import type { MenuItem } from '@/types/types'
+import { useIcons } from '@/composables/useIcons'
 import MenuPreview from '@/components/layouts/MenuPreview.vue'
 import GeneratePdf from '@/components/GeneratePdf.vue'
 import CsvUpload from '@/components/CsvUpload.vue'
@@ -16,7 +17,6 @@ import type { ItemSpacing } from '@/components/controls/ItemSpacingControl.vue'
 import MenuCover from '@/components/layouts/MenuCover.vue'
 import AddIcon from '@/components/AddIcon.vue'
 import TwoPage from '@/components/controls/TwoPage.vue'
-
 
 /* Type & Interface */
 type FontValue = string
@@ -92,7 +92,7 @@ const demoMenu: MenuItem[] = [
     Description: 'Sample description 1',
     Options: ['Recommend', 'Spicy', 'Vegetarian'],
     Category: 'Sample Category',
-    mainImageBase64:'/data/2_Sample2.png'
+    mainImageBase64: '/data/2_Sample2.png',
   },
   {
     id: '1',
@@ -128,6 +128,12 @@ const demoMenu: MenuItem[] = [
     Category: 'Sample Category 2',
   },
 ]
+
+const { iconMap } = useIcons()
+const customOptionKeys = computed(() => {
+  const presets = new Set(['Recommend', 'Spicy', 'Vegan', 'Vegetarian', 'Gluten Free'])
+  return Object.keys(iconMap.value).filter((k) => !presets.has(k))
+})
 
 // const itemSpacing = ref<ItemSpacing>('fill')
 const menuPreviewRef = ref<HTMLElement | null>(null)
@@ -167,7 +173,13 @@ onMounted(() => {
 
 /* Application Action */
 function handleCsvLoaded(items: MenuItem[]) {
-  menuState.menuCsv = items
+  menuState.menuCsv = items.map((item) => ({
+    ...item,
+    Options: [
+      ...item.Options,
+      ...customOptionKeys.value.filter((opt) => !item.Options.includes(opt)),
+    ],
+  }))
   pageState.currentPage = 1
 }
 
@@ -261,19 +273,23 @@ function onItemUpdated(updated: MenuItem) {
   if (updated.id) {
     idx = menuState.menuCsv.findIndex((it) => it.id === updated.id)
   }
-
-  // Fallback to Name if no ID
   if (idx === -1) {
     idx = menuState.menuCsv.findIndex((it) => it.Name === updated.Name)
   }
-
-  // Final fallback to No
   if (idx === -1 && updated.No != null) {
     idx = menuState.menuCsv.findIndex((it) => it.No === updated.No)
   }
 
   if (idx >= 0) {
-    menuState.menuCsv.splice(idx, 1, { ...updated })
+    // Preserve any custom options the item already has
+    const existingOptions = menuState.menuCsv[idx]?.Options ?? []
+    const mergedOptions = [
+      ...updated.Options,
+      ...existingOptions.filter(
+        (opt) => customOptionKeys.value.includes(opt) && !updated.Options.includes(opt),
+      ),
+    ]
+    menuState.menuCsv.splice(idx, 1, { ...updated, Options: mergedOptions })
   } else {
     menuState.menuCsv.push({ ...updated })
   }
@@ -313,6 +329,13 @@ function reorderItems(fromNo: string, toNo: string) {
   const targetIndex = from < to ? to - 1 : to
   const clamped = Math.max(0, Math.min(menuState.menuCsv.length, targetIndex))
   menuState.menuCsv.splice(clamped, 0, item)
+}
+
+function handleRenameOption(oldLabel: string, newLabel: string) {
+  menuState.menuCsv = menuState.menuCsv.map(item => ({
+    ...item,
+    Options: item.Options.map(opt => opt === oldLabel ? newLabel : opt)
+  }))
 }
 
 /* Infrastructure / Side Effect */
@@ -391,6 +414,15 @@ watch(
     }
   },
 )
+
+watch(customOptionKeys, (newKeys, oldKeys) => {
+  const added = newKeys.filter((k) => !oldKeys.includes(k))
+  if (!added.length) return
+  menuState.menuCsv = menuState.menuCsv.map((item) => ({
+    ...item,
+    Options: [...item.Options, ...added.filter((opt) => !item.Options.includes(opt))],
+  }))
+})
 </script>
 
 <template>
@@ -497,7 +529,7 @@ watch(
             />
           </div>
           <div class="py-2">
-            <AddIcon />
+            <AddIcon @rename-option="handleRenameOption" />
           </div>
 
           <div class="py-2">
@@ -653,6 +685,7 @@ watch(
       </div>
     </div>
   </div>
+  
 </template>
 
 <style>

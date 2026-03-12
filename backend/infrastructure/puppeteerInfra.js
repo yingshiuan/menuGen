@@ -15,7 +15,7 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
       '--disable-default-apps',
     ],
     timeout: 60000,
-    executablePath: process.env.CHROMIUM_PATH || null, // use Puppeteer's bundled Chromium '/usr/bin/chromium'
+    executablePath: process.env.CHROMIUM_PATH || null, // use Puppeteer's bundled Chromium '/usr/bin/chromium' for local docker
   }
 
   const browser = await puppeteer.launch(launchOptions)
