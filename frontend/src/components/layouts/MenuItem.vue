@@ -38,7 +38,7 @@ const pictureState = reactive<PictureState>({
 const displayedPicture = ref<string | null>(null)
 
 // Icon mapping
-const { iconMap } = useIcons()
+const { iconMap, getDisplayLabel } = useIcons()
 
 const allOptions = computed(() => Object.keys(iconMap.value) as MenuOption[])
 const otherOptions = computed(() => allOptions.value.filter((o) => o !== 'Recommend'))
@@ -304,7 +304,7 @@ watch(allOptions, (newOptions, oldOptions) => {
             'pointer-events-none': props.readonly,
           }"
           @click="toggleRecommend"
-          title="Recommend"
+          :title="getDisplayLabel('Recommend')"
           :data-selected="local.Options.includes('Recommend')"
         />
       </div>
@@ -513,7 +513,7 @@ watch(allOptions, (newOptions, oldOptions) => {
             'pointer-events-none': props.readonly,
           }"
           @click="toggleOption(opt as MenuOption)"
-          :title="opt"
+          :title="getDisplayLabel(opt)"
           :data-selected="local.Options.includes(opt)"
         />
       </div>

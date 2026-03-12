@@ -33,7 +33,6 @@ const renameState = reactive<{
   value: '',
 })
 
-
 const options = computed(() => Object.keys(icons.iconMap.value) as MenuOption[])
 const PRESET_KEYS = new Set(['Recommend', 'Spicy', 'Vegan', 'Vegetarian', 'Gluten Free'])
 const newOption = reactive({ label: '', icon: null as string | null, typedName: '' })
@@ -201,15 +200,15 @@ function cancelRename() {
             <span
               v-else
               class="cursor-pointer hover:text-blue-500 flex items-center gap-0.5"
-              title="Click to rename"
+              title="Click to rename..."
               @click="startRename(opt)"
             >
               <!-- show renamed label if set, else internal key -->
               {{ getDisplayLabel(opt) }}
-              <span class="text-gray-300 text-[0.6rem]">✎</span>
-              <!-- show original key hint if renamed -->
-              <span v-if="renamedLabels[opt]" class="text-gray-300 text-[0.6rem]">({{ opt }})</span>
+              <span class="text-[0.6rem]">✎</span>
             </span>
+            <!-- show original key hint if renamed -->
+            <div v-if="renamedLabels[opt]" class="text-gray-400 text-[0.6rem]">({{ opt }})</div>
           </div>
 
           <!-- Default icon preview (presets only) -->
