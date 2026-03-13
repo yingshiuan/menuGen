@@ -30,7 +30,7 @@ Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 - Auto Layout (Tailwind CSS v4)
 - Single or two-page preview
 - Fully responsive — Desktop, Tablet, and Mobile
-- Pixel-perfect PDF export matching the on-screen preview exactly
+- Pixel-perfect PDF export identical to the on-screen preview
 
 ### Engineering Highlights
 
@@ -76,7 +76,7 @@ See the full roadmap in [ROADMAP.md](./ROADMAP.md)
 Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 
 <h3>CSV to PDF</h3>
-<img src="frontend/public/demo/gif/1_cvs.gif" alt="CSV to PDF" />
+<img src="frontend/public/demo/gif/1_csv.gif" alt="CSV to PDF" />
 
 ---
 
@@ -93,7 +93,7 @@ Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
   </tr>
   <tr>
     <td align="center">
-      <img src="frontend/public/demo/gif/4_uplaodPicutres.gif" alt="Upload Multi Pictures" style="max-width: 100%; height: auto;" />
+      <img src="frontend/public/demo/gif/4_uploadPictures.gif" alt="Upload Multi Pictures" style="max-width: 100%; height: auto;" />
       <p>Upload Multi Pictures</p>
     </td>
     <td align="center">
