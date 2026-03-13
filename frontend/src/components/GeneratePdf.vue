@@ -81,33 +81,23 @@ async function waitForPdf(jobId: string) {
       const a: HTMLAnchorElement = document.createElement('a')
       a.href = url
 
-      if (import.meta.env.DEV) {
-        window.open(url, '_blank') // Preview PDF in browser
-      } else {
-        const a = document.createElement('a')
-        a.href = url
-
-        if (isMobile()) {
-          a.download = `${jobId}_menu.pdf`
-          a.click()
-        } else {
-          a.target = '_blank'
-        }
-      }
-
-      // if (isMobile()) {
-      //   // Convert Blob to Base64 and use a data URL for immediate download
-      //   const reader = new FileReader()
-      //   reader.onloadend = () => {
-      //     const a = document.createElement('a')
-      //     a.href = reader.result as string // data URL
-      //     a.download = 'menu.pdf'
-      //   }
-      //   reader.readAsDataURL(blob)
+      // if (import.meta.env.DEV) {
+      //   window.open(url, '_blank') // Preview PDF in browser
       // } else {
-      //   // Desktop: open in new tab
-      //   a.target = '_blank'
-      //   // a.download = 'menu.pdf'
+        if (isMobile()) {
+          // Convert Blob to Base64 and use a data URL for immediate download
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            const a = document.createElement('a')
+            a.href = reader.result as string // data URL
+            a.download = 'menu.pdf'
+          }
+          reader.readAsDataURL(blob)
+        } else {
+          // Desktop: open in new tab
+          a.target = '_blank'
+          // a.download = 'menu.pdf'
+        }
       // }
 
       document.body.appendChild(a)
