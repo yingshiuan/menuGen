@@ -86,8 +86,13 @@ async function waitForPdf(jobId: string) {
       } else {
         const a = document.createElement('a')
         a.href = url
-        a.download = `${jobId}_menu.pdf` // production download
-        a.click()
+
+        if (isMobile()) {
+          a.download = `${jobId}_menu.pdf`
+          a.click()
+        } else {
+          window.open(url, '_blank')
+        }
       }
 
       // if (isMobile()) {
@@ -109,7 +114,6 @@ async function waitForPdf(jobId: string) {
       a.click()
       document.body.removeChild(a)
 
-      
       break
     }
 
