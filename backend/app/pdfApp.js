@@ -32,8 +32,8 @@ export async function generatePdfFromHtml({ html, width = '210mm', height = '297
   await inlineLocalImages(document)
   hideUiOnly(document)
 
-  const fontName = parseFontName(font || '')                          // ← 加這行
-  const isSystemFont = systemFonts.includes(fontName.toLowerCase())  // ← 加這行
+  const fontName = parseFontName(font || '')                         
+  const isSystemFont = systemFonts.includes(fontName.toLowerCase())
 
   const fontLink = fontName && !isSystemFont
     ? `<link href="https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, '+')}&display=swap" rel="stylesheet" />`

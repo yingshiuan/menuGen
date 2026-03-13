@@ -30,7 +30,6 @@ async function generatePDF(): Promise<void> {
   pdfState.readonly = true
   pdfState.uploading = true
   await nextTick()
-
   await new Promise((resolve) => setTimeout(resolve, 50))
 
   // only html content without <head>
@@ -38,10 +37,9 @@ async function generatePDF(): Promise<void> {
         ${element.innerHTML}
   `
 
-  //  htmlPreview.value = htmlContent;
-
   try {
-    const response: Response = await fetch(`${API}/generate-pdf`, {
+    // send PDF Job
+    const res: Response = await fetch(`${API}/generate-pdf`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -52,43 +50,78 @@ async function generatePDF(): Promise<void> {
       }),
     })
 
-    if (!response.ok) {
-      alert('Failed to generate PDF')
+    if (!res.ok) {
+      alert('Failed to enqueue PDF')
       return
     }
 
-    const blob: Blob = await response.blob()
-    const url: string = URL.createObjectURL(blob)
+    const { jobId } = await res.json()
+    console.log('PDF job queued:', jobId)
 
-    // window.open(url, '_blank') // Preview PDF in browser
-
-    const a: HTMLAnchorElement = document.createElement('a')
-    a.href = url
-    if (isMobile()) {
-      // Convert Blob to Base64 and use a data URL for immediate download
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const a = document.createElement('a')
-        a.href = reader.result as string // data URL
-        a.download = 'menu.pdf'
-      }
-      reader.readAsDataURL(blob)
-    } else {
-      // Desktop: open in new tab
-      a.target = '_blank'
-    }
-
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-
-    // URL.revokeObjectURL(url); // clean up
+    // require pdf status
+    await waitForPdf(jobId)
   } catch (err) {
     console.error('Error generating PDF:', err)
-    alert(`An error occurred while generating PDF: ${API}`)
+    alert('An error occurred while generating PDF')
   } finally {
     pdfState.readonly = false
     pdfState.uploading = false
+  }
+}
+
+// require pdf status
+async function waitForPdf(jobId: string) {
+  while (true) {
+    const res = await fetch(`${API}/job/${jobId}`)
+
+    if (res.headers.get('content-type') === 'application/pdf') {
+      const blob: Blob = await res.blob()
+      const url: string = URL.createObjectURL(blob)
+
+      const a: HTMLAnchorElement = document.createElement('a')
+      a.href = url
+
+      if (import.meta.env.DEV) {
+        window.open(url, '_blank') // Preview PDF in browser
+      } else {
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${jobId}_menu.pdf` // production download
+        a.click()
+      }
+
+      // if (isMobile()) {
+      //   // Convert Blob to Base64 and use a data URL for immediate download
+      //   const reader = new FileReader()
+      //   reader.onloadend = () => {
+      //     const a = document.createElement('a')
+      //     a.href = reader.result as string // data URL
+      //     a.download = 'menu.pdf'
+      //   }
+      //   reader.readAsDataURL(blob)
+      // } else {
+      //   // Desktop: open in new tab
+      //   a.target = '_blank'
+      //   // a.download = 'menu.pdf'
+      // }
+
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+
+      
+      break
+    }
+
+    const status = await res.json()
+    console.log('PDF status:', status.status)
+
+    if (status.status === 'error') {
+      alert('PDF generation failed')
+      break
+    }
+
+    await new Promise((r) => setTimeout(r, 2000)) // every 2 second check it
   }
 }
 
