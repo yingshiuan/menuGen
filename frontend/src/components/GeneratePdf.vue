@@ -91,7 +91,7 @@ async function waitForPdf(jobId: string) {
           a.download = `${jobId}_menu.pdf`
           a.click()
         } else {
-          window.open(url, '_blank')
+          a.target = '_blank'
         }
       }
 
