@@ -84,25 +84,23 @@ async function waitForPdf(jobId: string) {
       // if (import.meta.env.DEV) {
       //   window.open(url, '_blank') // Preview PDF in browser
       // } else {
-        if (isMobile()) {
-          // Convert Blob to Base64 and use a data URL for immediate download
-          const reader = new FileReader()
-          reader.onloadend = () => {
-            const a = document.createElement('a')
-            a.href = reader.result as string // data URL
-            a.download = 'menu.pdf'
-          }
-          reader.readAsDataURL(blob)
-        } else {
-          // Desktop: open in new tab
-          a.target = '_blank'
-          // a.download = 'menu.pdf'
-        }
-      // }
+      if (isIOS()) {
+        window.location.href = url // Convert Blob to Base64 and use a data URL for immediate download
+      } else {
+        window.open(url, '_blank', 'noopener') // Desktop: open in new tab
 
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+        const a = document.createElement('a')  // And trigger download
+        a.href = url
+        a.download = `${jobId}-menu.pdf`
+
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      }
+      // }
+      setTimeout(() => {
+        URL.revokeObjectURL(url)
+      }, 10000)
 
       break
     }
@@ -119,11 +117,12 @@ async function waitForPdf(jobId: string) {
   }
 }
 
-function isMobile(): boolean {
-  return (
-    /iPhone|iPod|Android/i.test(navigator.userAgent) ||
-    (navigator.maxTouchPoints > 1 && /MacIntel/i.test(navigator.platform))
-  ) // modern iPad
+function isIOS(): boolean {
+  // Detect iPhone / iPad / iPod reliably
+  const ua = navigator.userAgent || navigator.vendor || ''
+  const isIPhone = /iPhone|iPod/i.test(ua)
+  const isIPad = /iPad/i.test(ua) || (navigator.maxTouchPoints > 1 && /MacIntel/i.test(ua))
+  return isIPhone || isIPad
 }
 </script>
 
