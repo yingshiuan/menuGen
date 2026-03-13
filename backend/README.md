@@ -1,6 +1,6 @@
 # Backend
 
-Node.js + Express server for PDF generation using Puppeteer.
+Node.js + Express server for PDF generation using Puppeteer, now with job queue support for asynchronous PDF rendering.
 
 ## Architecture
 
@@ -17,6 +17,8 @@ Services (services/htmlService.js) — HTML logic
     ↓
 Infrastructure (infrastructure/) — Puppeteer, Sharp, fs
     ↓
+PDF Queue (pdfQueue.js) — manages async job processing
+    ↓
 PDF Response
 ```
 
@@ -25,6 +27,7 @@ PDF Response
 1. **Controller** (`routes/pdfRoute.js`)
    - Handles HTTP request/response
    - Basic validation
+   - Can enqueue jobs or return PDF results
    - Calls application layer
 
 2. **Application** (`app/pdfApp.js`)
@@ -41,12 +44,39 @@ PDF Response
    - `infrastructure/imageInfra.js` — wraps Sharp for image compression
    - `infrastructure/puppeteerInfra.js` — wraps Puppeteer for PDF rendering
 
+5. **PDF Queue (pdfQueue.js)**
+   - Manages a queue of PDF jobs for async generation
+   - Each job has a unique ID, status (queued, processing, done, error), and result
+   - Processes jobs sequentially to avoid Puppeteer overload
+   - Supports polling from frontend: GET /job/:id
+
 ## Image Inlining
 
 - Images are **not** fetched from HTTP URLs; instead, local filesystem paths are resolved relative to the frontend folder.
 - All images are compressed and converted to base64 data URIs before Puppeteer renders the PDF.
 - This ensures images are embedded in the PDF and don't require external file access.
 - **Important:** `inlineLocalImages()` is async and must be awaited to complete before rendering.
+
+
+## PDF Queue / Async Generation
+- PDFs can now be queued to prevent Puppeteer overload or timeout on free-tier hosting.
+
+### Workflow
+
+Frontend POST /generate-pdf
+    ↓
+PDF Job Enqueued (pdfQueue.js)
+    ↓
+Job Status: queued → processing → done/error
+    ↓
+Frontend polls GET /job/:id
+    ↓
+PDF Blob returned once ready
+
+- Each job has a jobId returned immediately for polling.
+- iPad / iOS users can safely open PDF once job is done (no data: top-frame navigation issues).
+
+---
 
 ## Running Locally
 
@@ -65,6 +95,7 @@ Server runs on http://localhost:3000
 - **Flexible image path resolution** with `FRONTEND_ROOT` env (Docker-ready)
 - **Font loading** support (Google Fonts + system fonts)
 - **High-quality A4 PDF** output (full color, print-background)
+- Async queue ensures Puppeteer stability under load
 
 ---
 
@@ -84,6 +115,9 @@ Server runs on http://localhost:3000
 
 - Outputs a high-quality **A4 PDF** (with ackground colors and margins)
 - Returns the PDF inline for preview or as a downloadable file.
+- Async job queue for large PDFs or slow connections
+- Job polling via `GET /job/:id`
+-	Safe PDF preview on iOS/iPadOS using blob URLs in <iframe>
 
 ---
 
@@ -121,6 +155,10 @@ npx @tailwindcss/cli -i ./src/asset/styles/style.css -o ./public/css/tailwind.cs
 ```
 project/
 ├─ backend/
+|  ├─ app/  
+|  ├─ infrastructure/  
+|  ├─ routes/  
+|  ├─ services/ 
 │  └─ server.js
 ├─ frontend/
 │  ├─ src/
@@ -148,35 +186,47 @@ cd backend/
 node server.js
 ```
 
-2. Send a POST request from your frontend with HTML content:
+2. POST HTML to enqueue PDF:
 
 ```ts
 const htmlContent = `<div class="p-4 bg-gray-100 border border-gray-400">Hello PDF!</div>`
 
-const response = await fetch('http://localhost:3000/generate-pdf', {
+const response = await fetch(`${API}/generate-pdf`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ html: htmlContent }),
 })
 
-const blob = await response.blob()
-const url = URL.createObjectURL(blob)
-window.open(url, '_blank') // Preview PDF in browser
+const { jobId } = await response.json()
+```
+
+3. Poll job status:
+
+``` ts
+let pdfReady = false
+while (!pdfReady) {
+  const res = await fetch(`${API}/job/${jobId}`)
+  if (res.headers.get('content-type') === 'application/pdf') {
+    const blob = await res.blob()
+    pdfReady = true
+    // Open or download PDF
+  } else {
+    const status = await res.json()
+    console.log('PDF status:', status.status)
+    await new Promise(r => setTimeout(r, 2000))
+  }
+}
 ```
 
 ---
 
 ## **Notes / Tips**
 
-- Make sure **Tailwind CSS includes all classes used in your backend HTML**, or the PDF will not be styled.
-- Puppeteer requires inline CSS (`<style>`). Linking local CSS files (`<link>`) will **not work**.
-
-- Puppeteer cannot load local files directly—so the backend automatically:
-  - finds images
-  - compresses them
-  - inlines them as Base64
-
-- This guarantees **100% reliable rendering** inside the PDF.
+- Tailwind CSS must include all classes used in backend HTML, or the PDF will not be styled.
+- Puppeteer requires inline CSS (`<style>`) or injected `<style>` tags, Linking local CSS files (`<link>`) will **not work**.
+- Images must be inlined (PNG/JPG) or rasterized (SVG) for PDF reliability
+- Async queue prevents Puppeteer crashes under load
+- Blob URLs inside <iframe> are used for iOS/iPad preview
 
 ---
 
@@ -184,8 +234,8 @@ window.open(url, '_blank') // Preview PDF in browser
 
 This backend is designed for REAL production PDFs:
 
-- Beautiful Tailwind-styled layouts
-- Guaranteed image loading
-- No broken icons
-- No missing SVGs
-- Smaller PDF size thanks to compression
+- Fully production-ready backend for MenuGen PDF generation
+-	Async job queue for large PDFs or free-tier hosts
+- Tailwind-styled layouts with embedded images
+- Pixel-perfect PDF output
+- Cross-platform safe, including iOS/iPadOS

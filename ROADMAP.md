@@ -4,7 +4,7 @@
 - [x] Preview two pages side-by-side
 - [x] Fully responsive UI (Desktop, Tablet, Mobile)
 - [x] Add image cropper for picture uploads
-- [ ] Add common page size presets (A4, Letter, etc.)
+- [X] Add common page size presets (A4, Letter, etc.)
 - [ ] Offer multiple cover layout templates
 - [ ] Auto-fit long descriptions
 - [ ] Dark / Light theme toggle
@@ -22,15 +22,16 @@
 
 ## Phase 4 – Deployment & Scaling
 - [x] Docker support
-- [ ] Production deployment guide (Railway / Render)
-- [ ] Vercel-compatible Puppeteer build
+- [x] Production deployment guide (Railway / Render)
+- [x] Vercel-compatible Puppeteer build
+- [X] Job Queue / Async PDF generation
 
 
 ## AI Features
 - [ ] One-click menu translation (multi-language support)
 - [ ] Bilingual layout mode
 - [ ] AI description enhancement
-- [ ] Bulk translate entire m
+- [ ] Bulk translate entire menu
 
 ---
 

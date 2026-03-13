@@ -39,6 +39,32 @@ Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 - SVG optimization strategy (inline vs rasterized)
 - Category-aware pagination algorithm
 
+## Rendering Pipeline
+
+MenuGen implements a deterministic HTML-to-PDF rendering pipeline:
+
+User HTML
+↓
+Asset scanning
+↓
+Image optimization (Sharp)
+↓
+SVG handling (inline or rasterized)
+↓
+Base64 inlining
+↓
+Puppeteer rendering
+↓
+PDF Queue
+↓
+Pixel-perfect PDF output
+
+This pipeline ensures:
+- No missing images in the final PDF
+- Consistent SVG rendering
+- Optimized asset sizes
+- Reliable, reproducible output
+
 ---
 
 See the full roadmap in [ROADMAP.md](./ROADMAP.md)
@@ -101,7 +127,7 @@ Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 * Live Tailwind-styled preview
 * Sends HTML directly to backend for PDF generation
 
-### **Backend (Node.js + Puppeteer)**
+### **Backend (Node.js + Puppeteer + Async PDF Queue)**
 
 - Wraps incoming HTML with Tailwind CSS
 - Inlines & compresses:
@@ -112,6 +138,21 @@ Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 - Exports **A4, full-color, print-background PDF**
 - Returns PDF inline or downloadable
 - Fully CORS enabled
+
+
+
+-	Wraps incoming HTML with Tailwind CSS
+-	Inlines & compresses images before rendering:
+-	PNG / JPG → resized and converted to Base64
+-	SVG → either inlined or rasterized to PNG (96–200px)
+- Waits for all images and fonts to fully load before rendering
+-	Enqueues PDF generation jobs to avoid Puppeteer overload
+-	Each request returns a jobId immediately
+-	Clients can poll /job/:id to check status (queued, processing, done, error)
+-	Once complete, the PDF is returned:
+-	Desktop: inline or downloadable via blob
+-	iOS/iPad: safe preview using blob in hidden <iframe>
+- Fully CORS enabled for frontend communication
 
 ---
 
