@@ -11,16 +11,19 @@ const props = defineProps<{
 interface PdfState {
   uploading: boolean
   readonly: boolean
+  errorMessage: null | string
 }
 
 const pdfState = reactive<PdfState>({
   uploading: false,
   readonly: false,
+  errorMessage: null,
 })
 
 const API = import.meta.env.VITE_API_URL
 
 async function generatePDF(): Promise<void> {
+  pdfState.errorMessage = null
   const element = props.contentRef
   if (!element) {
     alert('No content to export')
@@ -62,7 +65,9 @@ async function generatePDF(): Promise<void> {
     await waitForPdf(jobId)
   } catch (err) {
     console.error('Error generating PDF:', err)
-    alert('An error occurred while generating PDF')
+    pdfState.errorMessage =
+      'An error occurred while generating PDF. Don’t worry — you can try again by clicking the button.'
+    // alert('An error occurred while generating PDF')
   } finally {
     pdfState.readonly = false
     pdfState.uploading = false
@@ -89,7 +94,7 @@ async function waitForPdf(jobId: string) {
       } else {
         window.open(url, '_blank', 'noopener') // Desktop: open in new tab
 
-        const a = document.createElement('a')  // And trigger download
+        const a = document.createElement('a') // And trigger download
         a.href = url
         a.download = `${jobId}-menu.pdf`
 
@@ -110,6 +115,9 @@ async function waitForPdf(jobId: string) {
 
     if (status.status === 'error') {
       alert('PDF generation failed')
+      pdfState.errorMessage =
+        'PDF generation failed. Don’t worry — you can try again by clicking the button.'
+      //If it doesn’t work the first time, don’t be afraid to try again — it’s normal!
       break
     }
 
@@ -123,6 +131,12 @@ function isIOS(): boolean {
   const isIPhone = /iPhone|iPod/i.test(ua)
   const isIPad = /iPad/i.test(ua) || (navigator.maxTouchPoints > 1 && /MacIntel/i.test(ua))
   return isIPhone || isIPad
+}
+
+function retryPDF() {
+  if (pdfState.uploading) return
+  pdfState.errorMessage = null
+  generatePDF()
 }
 </script>
 
@@ -143,10 +157,38 @@ function isIOS(): boolean {
   </div>
 
   <Teleport to="body">
+    <!-- Uploading overlay -->
     <div v-if="pdfState.uploading" class="loader-overlay">
       <div class="loader-container">
         <div class="loader"></div>
-        <p class="text-m">Exporting PDF, please wait...<br />First export may take up to 60s</p>
+        <p class="text-m">
+          Exporting PDF, please wait...<br />
+          The first export may take up to 60 seconds while the server starts. Thanks for your
+          patience!<br />
+        </p>
+      </div>
+    </div>
+
+    <!-- Error overlay -->
+    <div v-else-if="pdfState.errorMessage" class="loader-overlay">
+      <div class="loader-container">
+        <p class="text-m">
+          {{ pdfState.errorMessage }}
+        </p>
+        <div class="flex gap-2 justify-center mt-4">
+          <!-- Retry PDF Export -->
+          <button @click="retryPDF" class="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-700">
+            Retry Export PDF
+          </button>
+
+          <!-- Back to Edit -->
+          <button
+            @click="pdfState.errorMessage = null"
+            class="p-2 rounded-lg bg-white text-black hover:bg-gray-200"
+          >
+            Back to Edit
+          </button>
+        </div>
       </div>
     </div>
   </Teleport>

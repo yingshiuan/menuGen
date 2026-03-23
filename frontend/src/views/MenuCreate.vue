@@ -17,6 +17,7 @@ import type { ItemSpacing } from '@/components/controls/ItemSpacingControl.vue'
 import MenuCover from '@/components/layouts/MenuCover.vue'
 import AddIcon from '@/components/AddIcon.vue'
 import TwoPage from '@/components/controls/TwoPage.vue'
+import TopBanner from '@/components/TopBanner.vue'
 
 /* Type & Interface */
 type FontValue = string
@@ -427,6 +428,7 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
 
 <template>
   <div class="">
+    <TopBanner />
     <div class="flex flex-col lg:flex-row lg:gap-2 p-2 items-center border-b border-gray-300">
       <h1 class="w-full lg:w-1/4 text-xl font-bold p-1">Menu Gen (CSV to PDF)</h1>
       <div class="w-full flex lg:contents flex-col lg:flex-row">
