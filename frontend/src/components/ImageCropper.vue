@@ -669,7 +669,7 @@ watch(
             Cancel
           </button>
           <button
-            class="bg-blue-500 p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
+            class="bg-blue-500 p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border border-blue-500 transition-colors duration-200 shadow-md"
             @click="handleCrop"
           >
             Done

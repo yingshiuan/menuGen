@@ -118,7 +118,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2 text-sm">
     <!-- Paper size selector -->
     <div class="flex items-center gap-2">
       <label>Paper Size</label>
@@ -137,53 +137,45 @@ onMounted(() => {
 
     <div class="flex gap-2 items-center">
       <input type="checkbox" class="w-4 h-4" v-model="pageState.isCustom" />
-      <label>Custom</label>
+      <label>Custom sizes</label>
       <!-- Width -->
       <label class="flex items-center select-none gap-1">
-        <span
-          class="cursor-ew-resize"
-          v-if="pageState.isCustom"
-          @pointerdown.prevent="(e) => startDrag(e, 'width')"
-        >
+        <span class="cursor-ew-resize"  @pointerdown.prevent="(e) => pageState.isCustom && startDrag(e, 'width')">
           W
+          <input
+            type="number"
+            v-model.number="widthNumber"
+            @blur="clampWidth"
+            @keyup.enter="clampWidth"
+            :min="pageState.minWidth"
+            :max="pageState.maxWidth"
+            :readonly="!pageState.isCustom"
+            :disabled="!pageState.isCustom"
+            class="border p-1 rounded disabled:opacity-50"
+          />
+
+          <span>mm</span>
         </span>
-
-        <input
-          type="number"
-          v-model.number="widthNumber"
-          @blur="clampWidth"
-          @keyup.enter="clampWidth"
-          :min="pageState.minWidth"
-          :max="pageState.maxWidth"
-          :readonly="!pageState.isCustom"
-          class="border p-1 rounded"
-        />
-
-        <span>mm</span>
       </label>
 
       <!-- Height -->
       <label class="flex items-center select-none gap-1">
-        <span
-          class="cursor-ew-resize"
-          v-if="pageState.isCustom"
-          @pointerdown.prevent="(e) => startDrag(e, 'height')"
-        >
+        <span class="cursor-ew-resize"  @pointerdown.prevent="(e) => pageState.isCustom && startDrag(e, 'height')">
           H
+          <input
+            type="number"
+            v-model.number="heightNumber"
+            @blur="clampHeight"
+            @keyup.enter="clampHeight"
+            :min="pageState.minHeight"
+            :max="pageState.maxHeight"
+            :readonly="!pageState.isCustom"
+            :disabled="!pageState.isCustom"
+            class="border p-1 rounded disabled:opacity-50"
+          />
+
+          <span>mm</span>
         </span>
-
-        <input
-          type="number"
-          v-model.number="heightNumber"
-          @blur="clampHeight"
-          @keyup.enter="clampHeight"
-          :min="pageState.minHeight"
-          :max="pageState.maxHeight"
-          :readonly="!pageState.isCustom"
-          class="border p-1 rounded"
-        />
-
-        <span>mm</span>
       </label>
     </div>
   </div>

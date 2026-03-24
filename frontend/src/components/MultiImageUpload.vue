@@ -37,14 +37,14 @@ const {
 
     <!-- Upload area -->
     <div
-      class="p-4 border-2 border-dashed rounded-lg cursor-pointer flex flex-col items-center justify-center gap-4 hover:bg-blue-500 transition-colors group"
+      class="p-3 border-2 border-dashed rounded-lg cursor-pointer flex flex-col items-center justify-center gap-4 hover:bg-blue-500 transition-colors group"
       :class="imageState.isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
       @click="triggerUpload"
       @dragover="onDragOver"
       @dragleave="onDragLeave"
       @drop="onDrop"
     >
-      <div class="text-gray-600 text-center group-hover:text-white transition-colors">
+      <div class="text-gray-600 text-center group-hover:text-white transition-colors text-sm">
         <p v-if="!imageState.isUploading">Click or drag images here to upload</p>
         <div v-else class="loader w-6 h-6"></div>
       </div>

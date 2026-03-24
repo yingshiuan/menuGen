@@ -333,9 +333,9 @@ function reorderItems(fromNo: string, toNo: string) {
 }
 
 function handleRenameOption(oldLabel: string, newLabel: string) {
-  menuState.menuCsv = menuState.menuCsv.map(item => ({
+  menuState.menuCsv = menuState.menuCsv.map((item) => ({
     ...item,
-    Options: item.Options.map(opt => opt === oldLabel ? newLabel : opt)
+    Options: item.Options.map((opt) => (opt === oldLabel ? newLabel : opt)),
   }))
 }
 
@@ -444,7 +444,7 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
           <div class="w-1/2">
             <button
               @click="uiState.showMobileControls = true"
-              class="w-full border-gray-500 border-2 px-2 py-1 rounded-lg font-medium"
+              class="w-full border-gray-500 border px-2 py-1 rounded-lg font-medium"
             >
               ☰ Controls
             </button>
@@ -454,7 +454,7 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
           <div class="w-1/2">
             <button
               @click="uiState.showTwoPage = !uiState.showTwoPage"
-              class="w-full border-blue-500 px-2 py-1 rounded-lg hover:bg-blue-50 hover:text-blue-500 border-2 transition-colors duration-200 shadow-md disabled:opacity-50"
+              class="w-full border-blue-500 px-2 py-1 rounded-lg hover:bg-blue-700 hover:text-white border transition-colors duration-200 shadow-md disabled:opacity-50"
             >
               {{ uiState.showTwoPage ? 'Show Single Page' : 'Show Two Page' }}
             </button>
@@ -465,7 +465,7 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
         <div class="hidden lg:flex lg:w-1/4 lg:justify-start justify-center">
           <button
             @click="uiState.showTwoPage = !uiState.showTwoPage"
-            class="border-blue-500 px-3 py-1 rounded-lg hover:bg-blue-50 hover:text-blue-500 border-2 transition-colors duration-200 shadow-md disabled:opacity-50"
+            class="border-blue-500 px-3 py-1 rounded-lg hover:bg-blue-700 hover:text-white border transition-colors duration-200 shadow-md disabled:opacity-50"
           >
             {{ uiState.showTwoPage ? 'Show Single Page' : 'Show Two Page' }}
           </button>
@@ -508,23 +508,29 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
           <div class="py-2">
             <button
               @click="loadSampleMenu"
-              class="bg-blue-500 w-full p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
+              class="border-blue-500 w-full p-1 rounded-lg hover:bg-blue-700 hover:text-white border transition-colors duration-200 shadow-md"
             >
               Load Sample Menu
             </button>
           </div>
           <!-- Font selector and color pickers stacked below -->
-          <div class="py-2"><FontSelector v-model:font="menuState.selectedFont" /></div>
-          <div class="py-2"><ColorPicker type="bg" v-model:color="menuState.bgColor" /></div>
-          <div class="py-2"><ColorPicker type="text" v-model:color="menuState.textColor" /></div>
           <div class="py-2">
+            <div>Typography</div>
+            <FontSelector v-model:font="menuState.selectedFont" />
+          </div>
+          <div class="py-2">
+            <div>Color</div>
+            <ColorPicker type="bg" v-model:color="menuState.bgColor" />
+            <ColorPicker type="text" v-model:color="menuState.textColor" />
+          </div>
+          <div class="py-2">
+            <div>Layout</div>
             <PageSizeSelector v-model:width="pageState.width" v-model:height="pageState.height" />
           </div>
           <div class="py-2"><ScaleControl v-model="menuState.scalePage" label="Scale" /></div>
           <div class="py-2">
+            <div>Items</div>
             <ItemSpacingControl v-model="menuState.itemSpacing" />
-          </div>
-          <div class="py-2">
             <ItemsPerCategorySelector
               v-model:itemsPerPage="pageState.itemsPerPage"
               v-model:keepCategoryTogether="pageState.keepCategoryTogether"
@@ -687,7 +693,6 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
       </div>
     </div>
   </div>
-  
 </template>
 
 <style>

@@ -36,10 +36,10 @@ function resetColor() {
 </script>
 
 <template>
-  <div class="flex items-center gap-2">
-    <label>{{ props.type === 'bg' ? 'Background' : 'Text' }} Color</label>
+  <div class="flex items-center gap-2 text-sm">
+    <label>{{ props.type === 'bg' ? 'Background' : 'Text' }}</label>
     <!-- Color wheel picker -->
-    <input type="color" v-model="colorState.localColor" class="w-10 h-10 p-0 border-none cursor-pointer"/>
+    <input type="color" v-model="colorState.localColor" class="w-8 h-8 border-none cursor-pointer"/>
     <!-- Text input for hex, rgb(), etc. -->
     <input 
       type="text" 

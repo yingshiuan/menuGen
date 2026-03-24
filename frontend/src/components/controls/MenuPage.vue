@@ -22,7 +22,7 @@ function nextPage() {
     <button
       @click="prevPage"
       :disabled="currentPage === 0"
-      class="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-700 border-2 border-blue-500 transition-colors duration-200 shadow-md disabled:opacity-50"
+      class="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-700 border border-blue-500 transition-colors duration-200 shadow-md disabled:opacity-50"
     >
       ‹ Previous
     </button>
@@ -30,7 +30,7 @@ function nextPage() {
     <button
       @click="nextPage"
       :disabled="currentPage === totalPages - 1"
-      class="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-700 border-2 border-blue-500 transition-colors duration-200 shadow-md disabled:opacity-50"
+      class="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-700 border border-blue-500 transition-colors duration-200 shadow-md disabled:opacity-50"
     >
       Next ›
     </button>

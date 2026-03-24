@@ -31,7 +31,7 @@ function onInput(e: Event) {
 </script>
 
 <template>
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-2 text-sm">
     <label class="flex items-center justify-between">
       <span>{{ props.label }}</span>
     </label>

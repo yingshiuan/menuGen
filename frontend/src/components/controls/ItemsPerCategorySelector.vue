@@ -33,7 +33,7 @@ const keepCategoryModel = computed({
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2 text-sm mt-1">
     <div class="flex items-center gap-2">
       <label>Items Per Page</label>
       <input
@@ -53,7 +53,7 @@ const keepCategoryModel = computed({
         id="keepCategoryTogether"
         class="w-4 h-4"
       />
-      <label for="keepCategoryTogether">Keep category together on page</label>
+      <label for="keepCategoryTogether text-xs">Keep items together on the same page</label>
     </div>
   </div>
 </template>

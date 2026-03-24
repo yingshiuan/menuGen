@@ -182,7 +182,7 @@ function downloadCSV() {
     <div class="max-w-xl mx-auto flex justify-center">
       <button
         @click="downloadCSV"
-        class="bg-blue-500 p-1 text-white rounded-lg hover:bg-blue-700 hover:text-white border-2 border-blue-500 transition-colors duration-200 shadow-md"
+        class="border-blue-500 p-1 rounded-lg hover:bg-blue-700 hover:text-white border transition-colors duration-200 shadow-md"
       >
         Export CSV
       </button>
