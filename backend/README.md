@@ -57,20 +57,20 @@ PDF Response
 - This ensures images are embedded in the PDF and don't require external file access.
 - **Important:** `inlineLocalImages()` is async and must be awaited to complete before rendering.
 
-
 ## PDF Queue / Async Generation
+
 - PDFs can now be queued to prevent Puppeteer overload or timeout on free-tier hosting.
 
 ### Workflow
 
 Frontend POST /generate-pdf
-    ↓
+↓
 PDF Job Enqueued (pdfQueue.js)
-    ↓
+↓
 Job Status: queued → processing → done/error
-    ↓
+↓
 Frontend polls GET /job/:id
-    ↓
+↓
 PDF Blob returned once ready
 
 - Each job has a jobId returned immediately for polling.
@@ -117,7 +117,7 @@ Server runs on http://localhost:3000
 - Returns the PDF inline for preview or as a downloadable file.
 - Async job queue for large PDFs or slow connections
 - Job polling via `GET /job/:id`
--	Safe PDF preview on iOS/iPadOS using blob URLs in <iframe>
+- Safe PDF preview on iOS/iPadOS using blob URLs in <iframe>
 
 ---
 
@@ -150,30 +150,26 @@ npx @tailwindcss/cli -i ./src/asset/styles/style.css -o ./public/css/tailwind.cs
 
 - Adjust the `input.css` and output path as needed.
 
-3. **Project structure example**
+3. **Project structure**
 
 ```
-project/
-├─ backend/
-|  ├─ app/  
-|  ├─ infrastructure/  
-|  ├─ routes/  
-|  ├─ services/ 
-│  └─ server.js
-├─ frontend/
-│  ├─ src/
-│  │  └─ asset
-│  │    └─ styles
-│  │     │   └─ style.css
-│  │     └── svg/
-│  └─ public/
-│     ├── picture/
-│     └─ css/
-│        └─ tailwind.css
-└─ package.json
+backend/
+├── app/
+│   └── pdfApp.js              # Application layer orchestrator
+├── infrastructure/
+│   ├── imageInfra.js          # Sharp image compression wrapper
+│   ├── pdfQueue.js            # Async job queue manager
+│   └── puppeteerInfra.js      # Puppeteer PDF rendering wrapper
+├── routes/
+│   ├── oldpdf.js              # Legacy PDF route
+│   ├── pdfRoute.js            # Main PDF generation route
+│   └── uploadRoute.js         # File upload route (unused)
+├── services/
+│   └── htmlService.js         # HTML sanitization and image inlining
+├── server.js                  # Express server entry point
+├── package.json
+└── README.md
 ```
-
-Both `src/assets/...` and `public/...` images are supported.
 
 ---
 
@@ -202,7 +198,7 @@ const { jobId } = await response.json()
 
 3. Poll job status:
 
-``` ts
+```ts
 let pdfReady = false
 while (!pdfReady) {
   const res = await fetch(`${API}/job/${jobId}`)
@@ -213,7 +209,7 @@ while (!pdfReady) {
   } else {
     const status = await res.json()
     console.log('PDF status:', status.status)
-    await new Promise(r => setTimeout(r, 2000))
+    await new Promise((r) => setTimeout(r, 2000))
   }
 }
 ```
@@ -235,7 +231,7 @@ while (!pdfReady) {
 This backend is designed for REAL production PDFs:
 
 - Fully production-ready backend for MenuGen PDF generation
--	Async job queue for large PDFs or free-tier hosts
+- Async job queue for large PDFs or free-tier hosts
 - Tailwind-styled layouts with embedded images
 - Pixel-perfect PDF output
 - Cross-platform safe, including iOS/iPadOS

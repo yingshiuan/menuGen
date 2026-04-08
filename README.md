@@ -6,6 +6,25 @@ MenuGen is a smart menu-building tool that transforms a CSV file into an editabl
 
 Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 
+## Technologies
+
+### Frontend
+
+- **Vue 3** + TypeScript
+- **Vite** for build tooling
+- **Tailwind CSS v4** for responsive layouts
+- **Pinia** for state management
+- **PapaParse** for CSV parsing
+- **Vitest** for unit testing
+
+### Backend
+
+- **Node.js** + Express server
+- **Puppeteer** for HTML-to-PDF rendering
+- **Sharp** for image compression
+- **JSDOM** for HTML processing
+- Async job queue for PDF generation
+
 ## Core Capabilities
 
 ### Content
@@ -60,6 +79,7 @@ PDF Queue
 Pixel-perfect PDF output
 
 This pipeline ensures:
+
 - No missing images in the final PDF
 - Consistent SVG rendering
 - Optimized asset sizes
@@ -139,19 +159,17 @@ Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 - Returns PDF inline or downloadable
 - Fully CORS enabled
 
-
-
--	Wraps incoming HTML with Tailwind CSS
--	Inlines & compresses images before rendering:
--	PNG / JPG → resized and converted to Base64
--	SVG → either inlined or rasterized to PNG (96–200px)
+- Wraps incoming HTML with Tailwind CSS
+- Inlines & compresses images before rendering:
+- PNG / JPG → resized and converted to Base64
+- SVG → either inlined or rasterized to PNG (96–200px)
 - Waits for all images and fonts to fully load before rendering
--	Enqueues PDF generation jobs to avoid Puppeteer overload
--	Each request returns a jobId immediately
--	Clients can poll /job/:id to check status (queued, processing, done, error)
--	Once complete, the PDF is returned:
--	Desktop: inline or downloadable via blob
--	iOS/iPad: safe preview using blob in hidden <iframe>
+- Enqueues PDF generation jobs to avoid Puppeteer overload
+- Each request returns a jobId immediately
+- Clients can poll /job/:id to check status (queued, processing, done, error)
+- Once complete, the PDF is returned:
+- Desktop: inline or downloadable via blob
+- iOS/iPad: safe preview using blob in hidden <iframe>
 - Fully CORS enabled for frontend communication
 
 ---
@@ -164,26 +182,50 @@ menu-gen/
 ├─ frontend/
 │  ├─ src/
 │  │  ├─ components/
+│  │  │  ├─ controls/
+│  │  │  ├─ layouts/
+│  │  │  └─ archive/
+│  │  ├─ composables/
+│  │  ├─ stores/
+│  │  ├─ types/
+│  │  ├─ router/
 │  │  ├─ views/
 │  │  ├─ asset/
-│  │  │  ├─ svg/
-│  │  │  ├─ pictures/
-│  │  │  └─ styles/
-│  │  │     └── style.css
+│  │  │  ├─ png/
+│  │  │  ├─ styles/
+│  │  │  │   └── style.css
+│  │  │  └─ svg/
+│  │  └─ __tests__/
 │  ├─ public/
-│  │  ├── picture/
-│  │  ├── data/
-│  │  └─ css/
-│  │     └─ tailwind.css
-│  └─ README.md (Frontend)
+│  │  ├─ css/
+│  │  │   └─ tailwind.css
+│  │  ├─ data/
+│  │  ├─ demo/
+│  │  └─ picture/
+│  ├─ package.json
+│  └─ README.md
 │
 ├─ backend/
+│  ├─ app/
+│  │   └─ pdfApp.js
+│  ├─ infrastructure/
+│  │   ├─ imageInfra.js
+│  │   ├─ pdfQueue.js
+│  │   └─ puppeteerInfra.js
+│  ├─ routes/
+│  │   ├─ pdfRoute.js
+│  │   └─ uploadRoute.js
+│  ├─ services/
+│  │   └─ htmlService.js
 │  ├─ server.js
 │  ├─ package.json
-│  ├─ svg/ (optional shared folder)
-│  └─ README.md (Backend)
+│  └─ README.md
 │
-└─ README.md  ← (This combined documentation)
+├─ docker-compose.yml
+├─ docker-compose.dev.yml
+├─ Docker.md
+├─ ROADMAP.md
+└─ README.md
 ```
 
 ---
