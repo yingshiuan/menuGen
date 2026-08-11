@@ -1,10 +1,14 @@
 # MenuGen
 
-### CSV → Editable UI → Live Preview → Pixel-Perfect PDF Generator
+### CSV → Editable UI → Live Preview → Print-Ready PDF
 
-MenuGen is a smart menu-building tool that transforms a CSV file into an editable Vue interface and generates **pixel-perfect PDFs** using a Node.js backend powered by **Puppeteer**.
+MenuGen helps restaurants create and maintain professional menus without requiring design or technical skills. It converts CSV data into an intuitive editing interface and generates professionally formatted PDFs automatically.
 
 Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
+
+## Why MenuGen?
+
+Updating restaurant menus is often repetitive and time-consuming, especially when changes need to be reflected across different formats. MenuGen streamlines the workflow by allowing staff to manage menu content from structured data and export ready-to-print menus in seconds.
 
 ## Technologies
 
