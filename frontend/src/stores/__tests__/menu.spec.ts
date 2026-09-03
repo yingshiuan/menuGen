@@ -8,49 +8,6 @@ beforeEach(() => {
   setActivePinia(createPinia())
 })
 
-describe('loadFromCSV', () => {
-  const csv = [
-    'No,Name,Measure,ChineseName,Description,Price,Options,Category',
-    '1,Kung Pao Chicken,plate,宫保鸡丁,With peanuts,12.50,Spicy|Recommend,Mains',
-    '2,Steamed Rice,bowl,米饭,,3.00,,Sides',
-  ].join('\n')
-
-  it('maps every data row to a MenuItem', () => {
-    const store = useMenuStore()
-    store.loadFromCSV(csv)
-
-    expect(store.items).toHaveLength(2)
-    expect(store.items[0]).toMatchObject({
-      No: '1',
-      Name: 'Kung Pao Chicken',
-      Price: '12.50',
-      Options: ['Spicy', 'Recommend'],
-      Category: 'Mains',
-    })
-  })
-
-  it('gives every item a non-empty id', () => {
-    const store = useMenuStore()
-    store.loadFromCSV(csv)
-
-    expect(store.items.every((i) => i.id.length > 0)).toBe(true)
-  })
-
-  it('defaults a missing category to Uncategorized', () => {
-    const store = useMenuStore()
-    store.loadFromCSV('No,Name\n1,Tea')
-
-    expect(store.items[0]!.Category).toBe('Uncategorized')
-  })
-
-  it('ignores blank lines and leaves items untouched on empty input', () => {
-    const store = useMenuStore()
-    store.loadFromCSV('')
-
-    expect(store.items).toEqual([])
-  })
-})
-
 describe('exportToCSV', () => {
   const items: MenuItem[] = [
     {

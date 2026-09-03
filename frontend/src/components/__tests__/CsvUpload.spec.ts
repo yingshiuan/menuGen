@@ -99,6 +99,28 @@ describe('upload', () => {
     expect(items.every((i) => i.id.length > 0)).toBe(true)
   })
 
+  it('defaults the category when a dish appears before any category row', async () => {
+    const wrapper = mountCsv()
+    await selectFile(wrapper, csvFile([HEADER, '1,8.00,Spring Roll,,春卷,,,'].join('\n')))
+
+    const items = await emittedItems(wrapper)
+
+    expect(items[0]!.Category).toBe('Uncategorized')
+  })
+
+  it('keeps a quoted comma inside a description in one field', async () => {
+    const wrapper = mountCsv()
+    const row = '1,12.50,Kung Pao Chicken,plate,宫保鸡丁,"With peanuts, chilli and rice",X,'
+    await selectFile(wrapper, csvFile([HEADER, row].join('\n')))
+
+    const items = await emittedItems(wrapper)
+
+    // a naive split(',') would spill the description across Spicy/House Special
+    expect(items).toHaveLength(1)
+    expect(items[0]!.Description).toBe('With peanuts, chilli and rice')
+    expect(items[0]!.Options).toEqual(['Spicy'])
+  })
+
   it('treats a name-only row as a category header for the rows beneath it', async () => {
     const wrapper = mountCsv()
     await selectFile(wrapper, csvFile())
