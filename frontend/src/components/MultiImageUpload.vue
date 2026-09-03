@@ -17,6 +17,9 @@ const emit = defineEmits<{
 const {
   inputRef,
   uploadingFiles,
+  skippedFiles,
+  lastBatchSize,
+  dismissSkipped,
   imageState,
   allPictures,
   triggerUpload,
@@ -48,6 +51,37 @@ const {
         <p v-if="!imageState.isUploading">Click or drag images here to upload</p>
         <div v-else class="loader w-6 h-6"></div>
       </div>
+    </div>
+
+    <!-- Files the last drop could not place -->
+    <div
+      v-if="skippedFiles.length"
+      class="mt-2 rounded border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900"
+      role="status"
+    >
+      <div class="flex items-start justify-between gap-2">
+        <p class="font-medium">
+          {{ skippedFiles.length }} of {{ lastBatchSize }}
+          {{ lastBatchSize === 1 ? 'file was' : 'files were' }} not added
+        </p>
+        <button
+          @click.stop="dismissSkipped"
+          class="cursor-pointer px-1 leading-none"
+          aria-label="Dismiss"
+        >
+          ✕
+        </button>
+      </div>
+      <ul class="mt-1 list-disc pl-4">
+        <li v-for="file in skippedFiles" :key="file.name">
+          <span class="font-mono">{{ file.name }}</span>
+          <span>
+            —
+            {{ file.reason === 'no-match' ? 'no dish matches this filename' : 'not an image file' }}
+          </span>
+        </li>
+      </ul>
+      <p class="mt-1">Rename to <strong>No_Name</strong> and drop it again.</p>
     </div>
 
     <div>
