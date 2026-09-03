@@ -7,6 +7,11 @@ export interface ImageState {
   isUploading: boolean
 }
 
+export interface SkippedFile {
+  name: string
+  reason: 'no-match' | 'not-an-image' | 'not-readable'
+}
+
 export interface ImageFile {
   name: string
   base64: string
@@ -23,6 +28,9 @@ export function useMultiImageUpload(
 ) {
   const inputRef = ref<HTMLInputElement | null>(null)
   const uploadingFiles = ref<Set<string>>(new Set())
+  // Files the last drop threw away, so the interface can say so
+  const skippedFiles = ref<SkippedFile[]>([])
+  const lastBatchSize = ref(0)
   const imageState = reactive<ImageState>({
     isDragging: false,
     isExpanded: false,
@@ -84,16 +92,23 @@ export function useMultiImageUpload(
         resolve(base64)
       }
 
-      reader.onerror = reject
+      img.onerror = () => reject(new Error(`Could not decode ${file.name}`))
+
+      reader.onerror = () => reject(new Error(`Could not read ${file.name}`))
       reader.readAsDataURL(file)
     })
   }
 
   async function handleFiles(files: FileList | File[]) {
     imageState.isUploading = true
+    skippedFiles.value = []
+    lastBatchSize.value = Array.from(files).length
 
     const promises = Array.from(files).map(async (file) => {
-      if (!file.type.startsWith('image/')) return
+      if (!file.type.startsWith('image/')) {
+        skippedFiles.value.push({ name: file.name, reason: 'not-an-image' })
+        return
+      }
 
       uploadingFiles.value.add(file.name)
 
@@ -110,7 +125,10 @@ export function useMultiImageUpload(
           )
         })
 
-        if (!matched) return
+        if (!matched) {
+          skippedFiles.value.push({ name: file.name, reason: 'no-match' })
+          return
+        }
 
         const pictures = matched.images ?? []
 
@@ -132,15 +150,19 @@ export function useMultiImageUpload(
         }
 
         emit('update:item', updatedItem)
+      } catch {
+        skippedFiles.value.push({ name: file.name, reason: 'not-readable' })
       } finally {
         uploadingFiles.value.delete(file.name)
       }
     })
 
-    await Promise.all(promises)
-
-    if (inputRef.value) inputRef.value.value = ''
-    imageState.isUploading = false
+    try {
+      await Promise.all(promises)
+    } finally {
+      if (inputRef.value) inputRef.value.value = ''
+      imageState.isUploading = false
+    }
   }
 
   function deleteImage(item: MenuItem, imageName: string) {
@@ -181,6 +203,10 @@ export function useMultiImageUpload(
     handleFiles(e.dataTransfer.files)
   }
 
+  function dismissSkipped() {
+    skippedFiles.value = []
+  }
+
   function toggleExpand() {
     imageState.isExpanded = !imageState.isExpanded
   }
@@ -188,6 +214,9 @@ export function useMultiImageUpload(
   return {
     inputRef,
     uploadingFiles,
+    skippedFiles,
+    lastBatchSize,
+    dismissSkipped,
     imageState,
     allPictures,
     triggerUpload,
