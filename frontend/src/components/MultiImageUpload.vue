@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import type { MenuItem } from '@/types/types'
-import { useMultiImageUpload } from '@/composables/useMultiImageUpload'
+import { useMultiImageUpload, type SkippedFile } from '@/composables/useMultiImageUpload'
+
+const reasonText: Record<SkippedFile['reason'], string> = {
+  'no-match': 'no dish matches this filename',
+  'not-an-image': 'not an image file',
+  'not-readable': 'could not be read as an image',
+}
 
 // Props
 const props = defineProps<{
@@ -74,11 +80,7 @@ const {
       </div>
       <ul class="mt-1 list-disc pl-4">
         <li v-for="file in skippedFiles" :key="file.name">
-          <span class="font-mono">{{ file.name }}</span>
-          <span>
-            —
-            {{ file.reason === 'no-match' ? 'no dish matches this filename' : 'not an image file' }}
-          </span>
+          <span class="font-mono">{{ file.name }}</span>{{ ' — ' + reasonText[file.reason] }}
         </li>
       </ul>
       <p class="mt-1">Rename to <strong>No_Name</strong> and drop it again.</p>
