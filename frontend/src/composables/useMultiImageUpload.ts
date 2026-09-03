@@ -7,6 +7,11 @@ export interface ImageState {
   isUploading: boolean
 }
 
+export interface SkippedFile {
+  name: string
+  reason: 'no-match' | 'not-an-image'
+}
+
 export interface ImageFile {
   name: string
   base64: string
@@ -23,6 +28,9 @@ export function useMultiImageUpload(
 ) {
   const inputRef = ref<HTMLInputElement | null>(null)
   const uploadingFiles = ref<Set<string>>(new Set())
+  // Files the last drop threw away, so the interface can say so
+  const skippedFiles = ref<SkippedFile[]>([])
+  const lastBatchSize = ref(0)
   const imageState = reactive<ImageState>({
     isDragging: false,
     isExpanded: false,
@@ -91,9 +99,14 @@ export function useMultiImageUpload(
 
   async function handleFiles(files: FileList | File[]) {
     imageState.isUploading = true
+    skippedFiles.value = []
+    lastBatchSize.value = Array.from(files).length
 
     const promises = Array.from(files).map(async (file) => {
-      if (!file.type.startsWith('image/')) return
+      if (!file.type.startsWith('image/')) {
+        skippedFiles.value.push({ name: file.name, reason: 'not-an-image' })
+        return
+      }
 
       uploadingFiles.value.add(file.name)
 
@@ -110,7 +123,10 @@ export function useMultiImageUpload(
           )
         })
 
-        if (!matched) return
+        if (!matched) {
+          skippedFiles.value.push({ name: file.name, reason: 'no-match' })
+          return
+        }
 
         const pictures = matched.images ?? []
 
@@ -181,6 +197,10 @@ export function useMultiImageUpload(
     handleFiles(e.dataTransfer.files)
   }
 
+  function dismissSkipped() {
+    skippedFiles.value = []
+  }
+
   function toggleExpand() {
     imageState.isExpanded = !imageState.isExpanded
   }
@@ -188,6 +208,9 @@ export function useMultiImageUpload(
   return {
     inputRef,
     uploadingFiles,
+    skippedFiles,
+    lastBatchSize,
+    dismissSkipped,
     imageState,
     allPictures,
     triggerUpload,
