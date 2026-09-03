@@ -9,7 +9,7 @@ export interface ImageState {
 
 export interface SkippedFile {
   name: string
-  reason: 'no-match' | 'not-an-image'
+  reason: 'no-match' | 'not-an-image' | 'not-readable'
 }
 
 export interface ImageFile {
@@ -92,7 +92,9 @@ export function useMultiImageUpload(
         resolve(base64)
       }
 
-      reader.onerror = reject
+      img.onerror = () => reject(new Error(`Could not decode ${file.name}`))
+
+      reader.onerror = () => reject(new Error(`Could not read ${file.name}`))
       reader.readAsDataURL(file)
     })
   }
@@ -148,15 +150,19 @@ export function useMultiImageUpload(
         }
 
         emit('update:item', updatedItem)
+      } catch {
+        skippedFiles.value.push({ name: file.name, reason: 'not-readable' })
       } finally {
         uploadingFiles.value.delete(file.name)
       }
     })
 
-    await Promise.all(promises)
-
-    if (inputRef.value) inputRef.value.value = ''
-    imageState.isUploading = false
+    try {
+      await Promise.all(promises)
+    } finally {
+      if (inputRef.value) inputRef.value.value = ''
+      imageState.isUploading = false
+    }
   }
 
   function deleteImage(item: MenuItem, imageName: string) {

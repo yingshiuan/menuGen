@@ -8,8 +8,9 @@ class MockImage {
   onerror: (() => void) | null = null
   width = 400
   height = 300
-  set src(_value: string) {
-    queueMicrotask(() => this.onload?.())
+  set src(value: string) {
+    // a file whose bytes are 'corrupt' decodes to nothing, like a renamed .txt
+    queueMicrotask(() => (value.includes(btoa('corrupt')) ? this.onerror?.() : this.onload?.()))
   }
 }
 
@@ -78,6 +79,30 @@ describe('useMultiImageUpload', () => {
 
     expect(skippedFiles.value).toEqual([])
     expect(emit).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports an undecodable image instead of hanging the batch forever', async () => {
+    // the filename matches a dish, so only the decode can fail here
+    const { handleFiles, skippedFiles, imageState, emit } = setup()
+
+    await handleFiles([new File(['corrupt'], '1_Spring Roll.png', { type: 'image/png' })])
+
+    expect(emit).not.toHaveBeenCalled()
+    expect(skippedFiles.value).toEqual([{ name: '1_Spring Roll.png', reason: 'not-readable' }])
+    expect(imageState.isUploading).toBe(false)
+  })
+
+  it('lets the good files through when one file in the batch is undecodable', async () => {
+    const { handleFiles, skippedFiles, imageState, emit } = setup()
+
+    await handleFiles([
+      new File(['corrupt'], 'broken.png', { type: 'image/png' }),
+      imageFile('1_Spring Roll.png'),
+    ])
+
+    expect(emit).toHaveBeenCalledTimes(1)
+    expect(skippedFiles.value.map((f) => f.reason)).toEqual(['not-readable'])
+    expect(imageState.isUploading).toBe(false)
   })
 
   it('clears the previous report on the next batch and on dismiss', async () => {
