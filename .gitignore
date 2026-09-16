@@ -57,3 +57,7 @@ __screenshots__/
 
 # my-project/.gitignore
 backend/.cache/
+
+# Core dumps (Chromium crashes in the backend container)
+core
+core.*

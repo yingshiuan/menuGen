@@ -1,4 +1,4 @@
-FROM node:20-bullseye-slim
+FROM node:20-bookworm-slim
 WORKDIR /usr/src/app
 
 # Install OS deps required by Puppeteer's Chromium
@@ -27,13 +27,22 @@ RUN apt-get update && apt-get install -y \
 	chromium \
 	--no-install-recommends && rm -rf /var/lib/apt/lists/*
 
-# Install production dependencies
+# The apt chromium above is the browser that actually runs, so Puppeteer's
+# bundled Chrome is dead weight -- and on arm64 it is worse than that: Chrome
+# for Testing ships no linux-arm64 build, so the download is an x86-64 binary
+# that cannot execute here at all. Skipping it drops ~1GB from the image.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV CHROMIUM_PATH=/usr/bin/chromium
+
+# Install production dependencies. --ignore-scripts is what actually suppresses
+# the download, since the postinstall calls `puppeteer browsers install`
+# explicitly and that command ignores PUPPETEER_SKIP_DOWNLOAD.
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --only=production --ignore-scripts
 
 # Copy source
 COPY . .
 
 EXPOSE 3000
 ENV NODE_ENV=production
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
