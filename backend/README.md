@@ -9,18 +9,23 @@ The backend uses a **layered architecture** for maintainability:
 ```
 HTTP Request
     ↓
-Controller (routes/pdfRoute.js)
+Controller (routes/pdfRoute.js) — enqueues, returns a jobId immediately
+    ↓
+PDF Queue (infrastructure/pdfQueue.js) — one job at a time
     ↓
 Application (app/pdfApp.js) — orchestrates workflow
     ↓
-Services (services/htmlService.js) — HTML logic
+  ① shrinkInlineImages(html) — resize photos while the page is still a string
     ↓
-Infrastructure (infrastructure/) — Puppeteer, Sharp, fs
+  ② Services (services/htmlService.js) — DOM work, now on a small payload
     ↓
-PDF Queue (pdfQueue.js) — manages async job processing
+  ③ Infrastructure (infrastructure/) — Puppeteer, Sharp, fs
     ↓
-PDF Response
+PDF collected by the frontend from GET /job/:id
 ```
+
+Stage ① exists for memory reasons and must stay ahead of ②. See
+[Resource Budget](#resource-budget-512mb--01-cpu) below.
 
 ### Layer Responsibilities
 
@@ -36,6 +41,7 @@ PDF Response
    - Loads and injects Tailwind CSS
 
 3. **Services** (`services/htmlService.js`)
+   - `shrinkInlineImages()` — resizes every base64 photo **before** the DOM is built
    - `sanitizeHtml()` — converts form inputs to plain text
    - `inlineLocalImages()` — finds, compresses, and base64-encodes images from filesystem
    - `hideUiOnly()` — hides UI-only elements marked with `data-ui-only`
@@ -49,6 +55,93 @@ PDF Response
    - Each job has a unique ID, status (queued, processing, done, error), and result
    - Processes jobs sequentially to avoid Puppeteer overload
    - Supports polling from frontend: GET /job/:id
+
+## Resource Budget (512MB / 0.1 CPU)
+
+The service runs on a Render free instance: **512MB of RAM and 0.1 CPU, shared
+between Node and a Chromium process**, sleeping after 15 minutes of inactivity.
+Export failed there in two different ways before the pipeline was shaped around
+that budget. Both are worth understanding before changing this code, because the
+obvious way to write each step is the one that breaks.
+
+### What the pipeline actually costs
+
+Measured on a 20-photo menu, rendering the same PDF either way:
+
+| stage                          | before  | after     |
+| ------------------------------ | ------- | --------- |
+| incoming payload               | 11.4MB  | 11.4MB    |
+| `new JSDOM(html)`              | +344MB  | **+26MB** |
+| peak heap (Node)               | 468MB   | **90MB**  |
+| peak RSS (Node, Chromium extra)| 726MB   | **275MB** |
+| serialized output              | 0.5MB   | 0.5MB     |
+
+Nothing about the output changed. The 344MB was spent parsing photos into a DOM
+that then threw them away, because the resize happened a few lines later.
+
+### The rule this turns into
+
+**Shrink a payload while it is still a string.** The same bytes cost about 1x as
+a string and about **30x** as a DOM. Any transformation that makes the page
+smaller has to run before parsing, not during traversal — which is why
+`shrinkInlineImages()` is a regex pass over the raw HTML rather than another
+`querySelectorAll('img')` loop. It is not a micro-optimization; it is the
+difference between fitting in the instance and not.
+
+Three consequences worth keeping in mind:
+
+- **Compress at the earliest point you control, which is the browser.** Uploads
+  are capped at 600px in `frontend/src/composables/imageCompression.ts` — between
+  10x and 50x smaller than a raw phone photo, depending on the source. That work
+  costs the visitor's CPU instead of the 0.1 CPU you are paying for, and it
+  shrinks the request as well as the render.
+- **`process.memoryUsage()` is not your budget.** It reports Node only and never
+  sees the Chromium child process. The 512MB covers Node's heap, Node's
+  overhead, and Chrome's whole process tree together.
+- **Give every wait on something external its own budget.** `networkidle0` waits
+  for total network silence; pointed at a CDN it is effectively unbounded, and
+  it is what produced the 60s navigation timeouts. `STYLESHEET_BUDGET_MS` in
+  `puppeteerInfra.js` bounds the one remaining outbound wait, and a timeout
+  there degrades to the fallback font instead of failing the export. **An
+  optional resource must never be able to fail a required output.**
+
+### Where each limit lives
+
+| limit                   | value  | where                                     | raise it when                              |
+| ----------------------- | ------ | ----------------------------------------- | ------------------------------------------ |
+| request body            | 50mb   | `server.js` — `express.json`              | menus legitimately exceed it               |
+| Node heap               | 256MB  | `package.json` — `start` script           | you move off the free instance             |
+| upload dimension        | 600px  | frontend `imageCompression.ts`            | you want larger photos in the PDF          |
+| server-side resize      | 300px  | `htmlService.js` / `imageInfra.js`        | printed photos look soft                   |
+| stylesheet wait         | 20s    | `puppeteerInfra.js`                       | webfonts routinely miss the budget         |
+| page / navigation       | 60s    | `puppeteerInfra.js`                       | large menus time out                       |
+| job retention           | 5 min  | `pdfQueue.js` — `JOB_TTL`                 | clients poll slower than that              |
+
+`npm start` is what applies the heap cap, and it is what Render runs. Starting
+the server with `node server.js` skips it.
+
+### Reading a crash
+
+The three failure modes look different in the logs and have different fixes:
+
+| log                                                        | meaning                                            |
+| ---------------------------------------------------------- | -------------------------------------------------- |
+| `Reached heap limit ... JavaScript heap out of memory` + a native stack trace | **Node's V8 heap.** Too much data held in-process — parse less, or parse later |
+| process dies with no JS error at all                        | **The container's OOM killer.** Total RSS, Chromium included, exceeded 512MB |
+| `Navigation timeout of N ms exceeded` inside `setContent`   | **A lifecycle wait that never completed**, almost always an external resource |
+| `Stylesheets did not load in time`                          | Not a failure. The webfont missed its budget; the PDF still rendered |
+
+### Deliberately not done
+
+- **Reusing one browser across requests.** It would save the launch cost on every
+  export, but a resident Chromium holds 150-250MB permanently out of 512MB.
+  Launching per request gives that memory back between renders, which matters
+  more here than the CPU saved. On a paid instance, reverse this.
+- **Anything about the ~50s cold start.** The instance sleeps after 15 minutes
+  and wakes slowly; that is the plan, not the code. An external keepalive
+  pinging `/ping` every 10 minutes is what removes it.
+
+---
 
 ## Image Inlining
 
@@ -83,10 +176,14 @@ PDF Blob returned once ready
 ```bash
 cd backend
 npm install
-node server.js
+npm start
 ```
 
 Server runs on http://localhost:3000
+
+Use `npm start`, not `node server.js`: the start script sets the Node heap cap
+that keeps the process inside a 512MB instance. See
+[Resource Budget](#resource-budget-512mb--01-cpu).
 
 - **Auto-injects Tailwind CSS v4** (compiled from frontend)
 - **Automatic image compression**:
@@ -179,7 +276,7 @@ backend/
 
 ```bash
 cd backend/
-node server.js
+npm start
 ```
 
 2. POST HTML to enqueue PDF:
@@ -199,27 +296,51 @@ const { jobId } = await response.json()
 3. Poll job status:
 
 ```ts
-let pdfReady = false
-while (!pdfReady) {
+const giveUpAt = Date.now() + 3 * 60 * 1000
+
+while (Date.now() < giveUpAt) {
   const res = await fetch(`${API}/job/${jobId}`)
-  if (res.headers.get('content-type') === 'application/pdf') {
+
+  // done
+  if (res.headers.get('content-type')?.includes('application/pdf')) {
     const blob = await res.blob()
-    pdfReady = true
-    // Open or download PDF
-  } else {
-    const status = await res.json()
-    console.log('PDF status:', status.status)
-    await new Promise((r) => setTimeout(r, 2000))
+    // open or download the PDF
+    break
   }
+
+  // a failed render answers 500 with { status: 'error', error }, and a job
+  // past its TTL answers 404 with plain text — neither carries a pollable
+  // status, so both have to end the loop
+  if (!res.ok) {
+    showRetry(res.status === 404 ? 'That export expired.' : 'PDF generation failed.')
+    break
+  }
+
+  const status = await res.json()
+  if (status.status === 'error') {
+    showRetry('PDF generation failed.')
+    break
+  }
+
+  await new Promise((r) => setTimeout(r, 2000))
 }
 ```
+
+Every outcome has to end the loop, including the deadline. Polling only for
+`status === 'error'` leaves a failed export spinning indefinitely, because the
+failure arrives as an HTTP status rather than in the body.
 
 ---
 
 ## **Notes / Tips**
 
 - Tailwind CSS must include all classes used in backend HTML, or the PDF will not be styled.
-- Puppeteer requires inline CSS (`<style>`) or injected `<style>` tags, Linking local CSS files (`<link>`) will **not work**.
+- **Local** CSS files linked with `<link>` will not work — Tailwind is injected as an inline `<style>` block for that reason.
+- **Remote** stylesheets (Google Fonts) do work, but only if the render waits for
+  them. `setContent` with `waitUntil: 'domcontentloaded'` returns before any
+  stylesheet is fetched, which silently produced fallback-font PDFs for a long
+  time: 0 registered `@font-face` rules, against 525 once the sheet loads.
+  `waitUntil: 'load'` is what fetches it.
 - Images must be inlined (PNG/JPG) or rasterized (SVG) for PDF reliability
 - Async queue prevents Puppeteer crashes under load
 - Blob URLs inside <iframe> are used for iOS/iPad preview

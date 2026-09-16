@@ -28,6 +28,8 @@ Updating restaurant menus is often repetitive and time-consuming, especially whe
 - **Sharp** for image compression
 - **JSDOM** for HTML processing
 - Async job queue for PDF generation
+- Tuned to run within a 512MB / 0.1 CPU instance — see
+  [Resource Budget](./backend/README.md#resource-budget-512mb--01-cpu)
 
 ## Core Capabilities
 
@@ -298,8 +300,11 @@ Default:
 
 ```bash
 cd backend
-node server.js
+npm start
 ```
+
+`npm start` applies the Node heap cap that keeps the server inside a 512MB
+instance; `node server.js` skips it.
 
 Default:
 👉 [http://localhost:3000/](http://localhost:3000/)
@@ -379,10 +384,16 @@ See [backend/README.md](./backend/README.md) for full backend architecture and i
 
 ### Backend server flow:
 
-#### **1. Parse incoming HTML**
+#### **1. Shrink inline photos, then parse**
+
+Resizing happens on the raw string, before any DOM exists. JSDOM costs roughly
+30x the size of what it parses, so parsing full-resolution photos first is what
+used to exhaust a 512MB instance — 11.4MB of HTML needed 344MB of DOM to produce
+0.5MB of output.
 
 ```js
-const dom = new JSDOM(html)
+const shrunkHtml = await shrinkInlineImages(html) // photos → 300px, still a string
+const dom = new JSDOM(shrunkHtml) // now cheap to parse
 const document = dom.window.document
 ```
 
@@ -406,14 +417,23 @@ Handles:
 
 #### **4. Puppeteer loads optimized HTML**
 
+`waitUntil: 'load'` — it waits for the Google Fonts stylesheet, which
+`'domcontentloaded'` does not. `'networkidle0'` waits for total network silence
+and, pointed at a CDN, is what produced 60-second timeouts on a cold instance.
+
 ```js
-await page.setContent(optimizedHtml, { waitUntil: 'networkidle0' })
+try {
+  await page.setContent(optimizedHtml, { waitUntil: 'load', timeout: 20000 })
+} catch (err) {
+  if (err.name !== 'TimeoutError') throw err
+  // markup is already in place — export in the fallback face rather than fail
+}
 ```
 
 #### **5. Ensure all images and fonts load**
 
 ```js
-await page.evaluate(() => document.fonts.ready)
+await page.evaluate(() => document.fonts.ready) // capped, fonts never block the export
 ```
 
 #### **6. Generate PDF**
@@ -518,6 +538,32 @@ npx @tailwindcss/cli ...
 ### **SVG not rendering**
 
 Ensure icon name matches file in `public/svg/`.
+
+### **PDF uses the wrong font**
+
+The browser preview and the PDF load fonts by different routes: the preview
+appends a `<link>` to the live document, the export fetches it inside Puppeteer.
+If the render does not wait for that stylesheet the PDF falls back silently, so
+the preview looks right and the PDF does not. The export waits for
+`waitUntil: 'load'`; a `Stylesheets did not load in time` line in the backend log
+means the webfont missed its budget and the menu was exported in the fallback
+face.
+
+### **Export fails on a free-tier host**
+
+Three different failures, told apart by the log:
+
+- `JavaScript heap out of memory` with a native stack — Node held too much at
+  once. Almost always something large being parsed rather than streamed.
+- The process dies with no JS error — the container's OOM killer. Total RSS
+  including Chromium exceeded the instance.
+- `Navigation timeout of 60000 ms exceeded` — a wait that never completed,
+  usually on an external resource.
+
+The first export after ~15 minutes of inactivity also pays a ~50s cold start
+while the instance wakes. See
+[backend/README.md → Resource Budget](./backend/README.md#resource-budget-512mb--01-cpu)
+for the measurements, every tunable limit, and why each is set where it is.
 
 ---
 
