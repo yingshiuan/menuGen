@@ -74,12 +74,28 @@ export async function inlineLocalImages(document) {
     //       continue
     //     }
 
-    // Strip query string and leading slash
-    const cleanSrc = decodeURIComponent(src.split('?')[0].replace(/^\//, ''))
+    // Strip query string and leading slash. A malformed percent sequence makes
+    // decodeURIComponent throw, and nothing up the stack catches it, so one bad
+    // filename would fail the whole export instead of dropping one image.
+    let cleanSrc
+    try {
+      cleanSrc = decodeURIComponent(src.split('?')[0].replace(/^\//, ''))
+    } catch {
+      img.setAttribute('data-missing', 'true')
+      continue
+    }
 
     // Candidate paths relative to THIS FILE (like old code)
     const fileDir = path.resolve(__dirname, '../../frontend/public') // adjust as needed
     const filePath = path.join(fileDir, cleanSrc)
+
+    // path.join walks straight out of fileDir on a '../' src, and this HTML
+    // arrives in the request body, so the src is attacker-controlled. Anything
+    // resolving outside the asset root is treated as missing rather than read.
+    if (!filePath.startsWith(fileDir + path.sep)) {
+      img.setAttribute('data-missing', 'true')
+      continue
+    }
 
     if (!fs.existsSync(filePath)) {
       // console.warn('[PDF] image not found for src:', src)
