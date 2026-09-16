@@ -25,7 +25,7 @@ export const useMenuStore = defineStore('menu', {
       items.forEach((item) => {
         if (item.Category && item.Category !== currentCategory) {
           currentCategory = item.Category
-          const emptyCols = new Array(6 + allOptions.length).fill('')
+          const emptyCols = Array.from({ length: 6 + allOptions.length }, () => '')
           emptyCols[2] = currentCategory
           lines.push(emptyCols.join('\t'))
         }

@@ -36,7 +36,7 @@ watch(
     local.subtitle = subtitle ?? ''
     local.coverLogo = coverLogo ?? ''
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 function startEditing(field: 'title' | 'subtitle') {
@@ -55,9 +55,18 @@ function stopEditing(field: 'title' | 'subtitle') {
 }
 
 // Emit when local state changes
-watch(() => local.title, (val) => emit('update:title', val))
-watch(() => local.subtitle, (val) => emit('update:subtitle', val))
-watch(() => local.coverLogo, (val) => emit('update:coverLogo', val))
+watch(
+  () => local.title,
+  (val) => emit('update:title', val),
+)
+watch(
+  () => local.subtitle,
+  (val) => emit('update:subtitle', val),
+)
+watch(
+  () => local.coverLogo,
+  (val) => emit('update:coverLogo', val),
+)
 </script>
 
 <template>
@@ -71,10 +80,7 @@ watch(() => local.coverLogo, (val) => emit('update:coverLogo', val))
   >
     <!-- COVER LOGO -->
     <div class="mb-8">
-      <CoverLogo
-        v-model="local.coverLogo"
-        :readonly="props.readonly"
-      />
+      <CoverLogo v-model="local.coverLogo" :readonly="props.readonly" />
     </div>
 
     <!-- TITLE -->
@@ -116,7 +122,7 @@ watch(() => local.coverLogo, (val) => emit('update:coverLogo', val))
         :title="`Click to edit the subtitle...`"
         class="cursor-pointer opacity-80"
       >
-        {{ local.subtitle}}
+        {{ local.subtitle }}
       </span>
 
       <span

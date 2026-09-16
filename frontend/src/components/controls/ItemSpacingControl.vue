@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-
 export type ItemSpacing = 'compact' | 'normal' | 'spacious' | 'fill'
 
 const props = defineProps<{
@@ -13,8 +12,8 @@ const emit = defineEmits<{
 // Options for item spacing, matching MenuPreview.vue
 const options: { label: string; value: ItemSpacing }[] = [
   { label: 'Compact', value: 'compact' },
-//   { label: 'Normal', value: 'normal' },
-//   { label: 'Spacious', value: 'spacious' },
+  //   { label: 'Normal', value: 'normal' },
+  //   { label: 'Spacious', value: 'spacious' },
   { label: 'Fill page', value: 'fill' },
 ]
 </script>
@@ -28,11 +27,7 @@ const options: { label: string; value: ItemSpacing }[] = [
       :value="props.modelValue"
       @change="emit('update:modelValue', ($event.target as HTMLSelectElement).value as ItemSpacing)"
     >
-      <option
-        v-for="opt in options"
-        :key="opt.value"
-        :value="opt.value"
-      >
+      <option v-for="opt in options" :key="opt.value" :value="opt.value">
         {{ opt.label }}
       </option>
     </select>

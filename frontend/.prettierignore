@@ -1,0 +1,7 @@
+# Scratch copies, archived components and note drafts: not part of the app, and
+# untracked, so a fresh CI checkout never sees them. Listing them here makes
+# `npm run check:format` report the same result locally as it does in CI.
+# Mirrors the coverage exclusions in vitest.config.ts.
+src/components/archive/
+*copy.vue
+src/components/note.md

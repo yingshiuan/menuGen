@@ -3,11 +3,12 @@ import Menu from '@/views/MenuCreate.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [{
-			path: '/',
-			name: 'Menu',
-			component: Menu,
-		},
+  routes: [
+    {
+      path: '/',
+      name: 'Menu',
+      component: Menu,
+    },
   ],
 })
 

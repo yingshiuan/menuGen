@@ -1,5 +1,4 @@
 import { ref, computed } from 'vue'
-import type { MenuOption } from '@/types/types'
 
 import RecommendedIconSvg from '@/asset/svg/recommend.svg?raw'
 import SpicyIconSvg from '@/asset/svg/spicy.svg?raw'
@@ -85,13 +84,25 @@ function renameCustomOption(oldLabel: string, newLabel: string) {
   customOptions.value = updated
 
   if (userIcons.value[oldLabel]) {
-    userIcons.value = { ...userIcons.value, [newLabel]: userIcons.value[oldLabel], [oldLabel]: undefined }
+    userIcons.value = {
+      ...userIcons.value,
+      [newLabel]: userIcons.value[oldLabel],
+      [oldLabel]: undefined,
+    }
   }
   if (userColors.value[oldLabel]) {
-    userColors.value = { ...userColors.value, [newLabel]: userColors.value[oldLabel], [oldLabel]: undefined }
+    userColors.value = {
+      ...userColors.value,
+      [newLabel]: userColors.value[oldLabel],
+      [oldLabel]: undefined,
+    }
   }
   if (coloredIcons.value[oldLabel]) {
-    coloredIcons.value = { ...coloredIcons.value, [newLabel]: coloredIcons.value[oldLabel], [oldLabel]: undefined }
+    coloredIcons.value = {
+      ...coloredIcons.value,
+      [newLabel]: coloredIcons.value[oldLabel],
+      [oldLabel]: undefined,
+    }
   }
   // move rename label too
   if (renamedLabels.value[oldLabel]) {
@@ -133,7 +144,10 @@ function applyColorOverlayCanvas(dataUri: string, color: string): Promise<string
       canvas.width = img.width || 24
       canvas.height = img.height || 24
       const ctx = canvas.getContext('2d')
-      if (!ctx) { resolve(dataUri); return }
+      if (!ctx) {
+        resolve(dataUri)
+        return
+      }
       ctx.drawImage(img, 0, 0)
       ctx.globalCompositeOperation = 'source-in'
       ctx.fillStyle = color

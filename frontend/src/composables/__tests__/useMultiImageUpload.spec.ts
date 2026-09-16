@@ -73,7 +73,10 @@ describe('useMultiImageUpload', () => {
   })
 
   it('matches the zero-padded and bare filename forms', async () => {
-    const { handleFiles, skippedFiles, emit } = setup([dish(), dish({ id: 'b', No: '2', Name: 'Laksa' })])
+    const { handleFiles, skippedFiles, emit } = setup([
+      dish(),
+      dish({ id: 'b', No: '2', Name: 'Laksa' }),
+    ])
 
     await handleFiles([imageFile('01_Spring Roll.png'), imageFile('Laksa.png')])
 

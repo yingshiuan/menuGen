@@ -56,7 +56,11 @@ function toggleOption(option: MenuOption) {
   const list = local.Options
   const i = list.indexOf(option)
 
-  i >= 0 ? list.splice(i, 1) : list.push(option)
+  if (i >= 0) {
+    list.splice(i, 1)
+  } else {
+    list.push(option)
+  }
 }
 
 function toggleRecommend() {
@@ -115,19 +119,6 @@ function lightenColor(hex: string, percent: number) {
 }
 
 /* Image Logic */
-
-// Determine which picture URL actually exists. Some files in `/public/picture` are
-// prefixed with a number like `01_Name.png`, others are plain `Name.png`.
-// We probe candidate URLs and pick the first that loads successfully.
-
-function checkImage(url: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.onload = () => resolve(true)
-    img.onerror = () => resolve(false)
-    img.src = url
-  })
-}
 
 // Run initially and whenever name/no/base64/version change
 watch(
@@ -246,6 +237,10 @@ async function updateDisplayedPicture() {
     return
   }
 
+  // Disabled URL probing. Some files in `/public/picture` are prefixed with a
+  // number like `01_Name.png`, others are plain `Name.png`, so this tried each
+  // candidate and kept the first that loaded. Restoring it needs the checkImage
+  // helper back -- it was deleted here because nothing called it.
   // const candidates: string[] = []
   // if (local.Name) candidates.push(`/picture/${local.Name}.png?v=${Date.now()}`)
   // if (local.No && local.Name) {

@@ -80,7 +80,9 @@ describe('GeneratePdf', () => {
   })
 
   it('posts the element innerHTML and the page settings to /generate-pdf', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' })).mockResolvedValueOnce(pdfResponse())
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' }))
+      .mockResolvedValueOnce(pdfResponse())
     const wrapper = mountPdf()
 
     await wrapper.get('button').trigger('click')
@@ -98,7 +100,9 @@ describe('GeneratePdf', () => {
   })
 
   it('shows the exporting overlay while the job runs and clears it afterwards', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' })).mockResolvedValueOnce(pdfResponse())
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' }))
+      .mockResolvedValueOnce(pdfResponse())
     const wrapper = mountPdf()
 
     await wrapper.get('button').trigger('click')

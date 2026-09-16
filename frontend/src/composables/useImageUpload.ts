@@ -4,7 +4,7 @@ export function useImageUpload(
   initialValue: string | null,
   readonly: boolean | null,
   emit: (value: string) => void,
-  onDragStateChange?: (dragging: boolean) => void // optional callback to notify parent
+  onDragStateChange?: (dragging: boolean) => void, // optional callback to notify parent
 ) {
   const pictureBase64 = ref<string>(initialValue ?? '')
   const pictureVisible = ref<boolean>(!!initialValue)

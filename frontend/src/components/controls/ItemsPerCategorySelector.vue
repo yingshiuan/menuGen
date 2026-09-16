@@ -29,7 +29,6 @@ const keepCategoryModel = computed({
     emit('update:keepCategoryTogether', value)
   },
 })
-
 </script>
 
 <template>

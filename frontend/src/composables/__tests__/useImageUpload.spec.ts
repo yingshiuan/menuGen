@@ -22,7 +22,11 @@ function dropEvent(file?: File) {
 
 describe('useImageUpload', () => {
   it('seeds state from the initial value', () => {
-    const { pictureBase64, pictureVisible } = useImageUpload('data:image/png;base64,AAA', false, vi.fn())
+    const { pictureBase64, pictureVisible } = useImageUpload(
+      'data:image/png;base64,AAA',
+      false,
+      vi.fn(),
+    )
 
     expect(pictureBase64.value).toBe('data:image/png;base64,AAA')
     expect(pictureVisible.value).toBe(true)
