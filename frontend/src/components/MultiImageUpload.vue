@@ -80,7 +80,8 @@ const {
       </div>
       <ul class="mt-1 list-disc pl-4">
         <li v-for="file in skippedFiles" :key="file.name">
-          <span class="font-mono">{{ file.name }}</span>{{ ' — ' + reasonText[file.reason] }}
+          <span class="font-mono">{{ file.name }}</span
+          >{{ ' — ' + reasonText[file.reason] }}
         </li>
       </ul>
       <p class="mt-1">Rename to <strong>No_Name</strong> and drop it again.</p>

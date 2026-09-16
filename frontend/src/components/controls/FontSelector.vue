@@ -73,7 +73,7 @@ watch(selectedFont, (newFont) => {
 
 <template>
   <div class="flex flex-col lg:flex-row gap-2 mt-1">
-    <div class="flex flex-col lg:flex-row gap-2 text-sm ">
+    <div class="flex flex-col lg:flex-row gap-2 text-sm">
       <!-- <label for="fontSelect" class="">Select Font</label> -->
       <select
         id="fontSelect"

@@ -140,7 +140,10 @@ onMounted(() => {
       <label>Custom sizes</label>
       <!-- Width -->
       <label class="flex items-center select-none gap-1">
-        <span class="cursor-ew-resize"  @pointerdown.prevent="(e) => pageState.isCustom && startDrag(e, 'width')">
+        <span
+          class="cursor-ew-resize"
+          @pointerdown.prevent="(e) => pageState.isCustom && startDrag(e, 'width')"
+        >
           W
           <input
             type="number"
@@ -160,7 +163,10 @@ onMounted(() => {
 
       <!-- Height -->
       <label class="flex items-center select-none gap-1">
-        <span class="cursor-ew-resize"  @pointerdown.prevent="(e) => pageState.isCustom && startDrag(e, 'height')">
+        <span
+          class="cursor-ew-resize"
+          @pointerdown.prevent="(e) => pageState.isCustom && startDrag(e, 'height')"
+        >
           H
           <input
             type="number"

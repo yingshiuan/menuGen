@@ -51,10 +51,6 @@ jobs:
   lint:
     name: lint & format
     runs-on: ubuntu-latest
-    # Both checks fail on main today: 5 lint errors across 4 files, and 20
-    # unformatted files under src/. Until those are cleaned up this job reports
-    # without blocking a merge -- drop this line to make it a real gate.
-    continue-on-error: true
     defaults:
       run:
         working-directory: frontend

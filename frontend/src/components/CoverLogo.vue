@@ -21,7 +21,6 @@ watch(
   },
 )
 
-
 function handleUpdate(val: string | null) {
   if (val !== null) {
     local.value = val
@@ -42,9 +41,9 @@ function handleUpdate(val: string | null) {
   /> -->
   <ImageCropper
     v-model="local"
-    variant="cover"          
-    :aspectRatio="1" 
-    :cropWidth="240"    
+    variant="cover"
+    :aspectRatio="1"
+    :cropWidth="240"
     :cropHeight="240"
     :readonly="props.readonly"
     @update:modelValue="handleUpdate"

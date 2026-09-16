@@ -1,10 +1,9 @@
-
 export function useImageCropper() {
   const cropImage = (
     imageSrc: string,
     container: HTMLElement,
     image: HTMLImageElement,
-    cropFrame: { x: number; y: number; width: number; height: number }
+    cropFrame: { x: number; y: number; width: number; height: number },
   ): string | null => {
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
@@ -42,17 +41,7 @@ export function useImageCropper() {
     canvas.width = cropFrame.width
     canvas.height = cropFrame.height
 
-    ctx.drawImage(
-      image,
-      cropX,
-      cropY,
-      cropWidth,
-      cropHeight,
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    )
+    ctx.drawImage(image, cropX, cropY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height)
 
     return canvas.toDataURL()
   }

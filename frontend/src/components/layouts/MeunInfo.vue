@@ -37,7 +37,12 @@ watch(
 function toggle(option: MenuOption) {
   if (props.readonly) return
   const idx = selected.value.indexOf(option)
-  idx >= 0 ? selected.value.splice(idx, 1) : selected.value.push(option)
+
+  if (idx >= 0) {
+    selected.value.splice(idx, 1)
+  } else {
+    selected.value.push(option)
+  }
 }
 
 watch(
