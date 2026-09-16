@@ -5,6 +5,36 @@ import puppeteer from 'puppeteer'
 // the whole page is allowed.
 const STYLESHEET_BUDGET_MS = 20000
 
+/* The only origins a menu has any reason to reach: the stylesheet, and the font
+   files that stylesheet points at. Everything else in the page is already
+   inline by the time it gets here. */
+const ALLOWED_HOSTS = new Set(['fonts.googleapis.com', 'fonts.gstatic.com'])
+
+/* Schemes that never leave the process. `about:` covers the blank document
+   setContent starts from; blocking that would abort the render itself. */
+const INERT_SCHEMES = ['data:', 'about:', 'blob:']
+
+/**
+ * Decide whether a request the page made may leave the container.
+ *
+ * Dropping --disable-web-security stopped a script reading a cross-origin
+ * response, but the same-origin policy never stopped the request being sent: an
+ * <img src> or a no-cors fetch pointed at an internal address still reaches it,
+ * verified against a running container. Since the page is built from a request
+ * body, every such request is one this server makes on a caller's behalf --
+ * enough to reach internal services, to map what answers, or to make this
+ * instance generate traffic against a third party.
+ */
+export function isRequestAllowed(url) {
+  if (INERT_SCHEMES.some((scheme) => url.startsWith(scheme))) return true
+
+  try {
+    return ALLOWED_HOSTS.has(new URL(url).hostname)
+  } catch {
+    return false // an unparseable url is not one worth making
+  }
+}
+
 export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}) {
   const launchOptions = {
     headless: true,
@@ -34,6 +64,16 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
 
     page.setDefaultNavigationTimeout(60000)
     page.setDefaultTimeout(60000)
+
+    // Has to be in place before setContent, or the first requests the page makes
+    // are already gone. An aborted image fires onerror, which the image wait
+    // below already treats as settled, so a blocked request costs that one
+    // element rather than the export.
+    await page.setRequestInterception(true)
+    page.on('request', (request) => {
+      if (isRequestAllowed(request.url())) return request.continue()
+      return request.abort()
+    })
 
     // A throwaway page used to be loaded first, holding just this page's <head>,
     // meant to warm the webfonts. It could not do that -- its body was empty, and
