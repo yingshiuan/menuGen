@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderPdf } from '../puppeteerInfra.js'
+import { isRequestAllowed, renderPdf } from '../puppeteerInfra.js'
 
 /**
  * The launch flags and the timeout budgets in this module are the settings that
@@ -32,6 +32,8 @@ beforeEach(() => {
     setContent: vi.fn().mockResolvedValue(undefined),
     setDefaultNavigationTimeout: vi.fn(),
     setDefaultTimeout: vi.fn(),
+    setRequestInterception: vi.fn().mockResolvedValue(undefined),
+    on: vi.fn(),
     evaluate: vi.fn().mockResolvedValue(undefined),
     pdf: vi.fn().mockResolvedValue(Buffer.from('%PDF-1.4')),
   }
@@ -152,6 +154,34 @@ describe('renderPdf', () => {
     )
   })
 
+  it('installs the egress filter before any content can request anything', async () => {
+    await renderPdf('<p>menu</p>')
+
+    expect(page.setRequestInterception).toHaveBeenCalledWith(true)
+    expect(page.on).toHaveBeenCalledWith('request', expect.any(Function))
+
+    // ordering is the whole point: content loaded first would already have asked
+    const interceptionCall = page.setRequestInterception.mock.invocationCallOrder[0]
+    const setContentCall = page.setContent.mock.invocationCallOrder[0]
+    expect(interceptionCall).toBeLessThan(setContentCall)
+  })
+
+  it('aborts a request the allow-list rejects and continues one it accepts', async () => {
+    await renderPdf('<p>menu</p>')
+    const onRequest = page.on.mock.calls.find(([event]) => event === 'request')[1]
+
+    const blocked = { url: () => 'http://169.254.169.254/latest/meta-data/', continue: vi.fn(), abort: vi.fn() }
+    const allowed = { url: () => 'https://fonts.gstatic.com/s/inter/v1/font.woff2', continue: vi.fn(), abort: vi.fn() }
+
+    onRequest(blocked)
+    onRequest(allowed)
+
+    expect(blocked.abort).toHaveBeenCalledOnce()
+    expect(blocked.continue).not.toHaveBeenCalled()
+    expect(allowed.continue).toHaveBeenCalledOnce()
+    expect(allowed.abort).not.toHaveBeenCalled()
+  })
+
   it('closes the browser even when the render throws', async () => {
     page.pdf.mockRejectedValueOnce(new Error('Protocol error'))
 
@@ -159,5 +189,49 @@ describe('renderPdf', () => {
 
     // a leaked Chromium holds 150-250MB of a 512MB instance
     expect(browser.close).toHaveBeenCalledOnce()
+  })
+})
+
+/**
+ * The same-origin policy governs whether a script may READ a response. It says
+ * nothing about whether the request is sent, so this is the rule that actually
+ * keeps the render from reaching things -- worth testing directly rather than
+ * only through a mocked page.
+ */
+describe('isRequestAllowed', () => {
+  it('lets the webfont stylesheet and its font files through', () => {
+    expect(isRequestAllowed('https://fonts.googleapis.com/css2?family=Inter')).toBe(true)
+    expect(isRequestAllowed('https://fonts.gstatic.com/s/inter/v19/font.woff2')).toBe(true)
+  })
+
+  it('lets inline and in-process schemes through', () => {
+    // photos arrive as data URIs, and setContent starts from a blank document
+    expect(isRequestAllowed('data:image/png;base64,iVBORw0KGgo=')).toBe(true)
+    expect(isRequestAllowed('about:blank')).toBe(true)
+    expect(isRequestAllowed('blob:null/abc-123')).toBe(true)
+  })
+
+  it('refuses the private addresses an SSRF actually aims at', () => {
+    expect(isRequestAllowed('http://169.254.169.254/latest/meta-data/')).toBe(false)
+    expect(isRequestAllowed('http://127.0.0.1:3000/ping')).toBe(false)
+    expect(isRequestAllowed('http://localhost:3000/ping')).toBe(false)
+    expect(isRequestAllowed('http://10.0.0.5/admin')).toBe(false)
+    expect(isRequestAllowed('http://[::1]:3000/')).toBe(false)
+  })
+
+  it('refuses the open internet, so the instance cannot be used to generate traffic', () => {
+    expect(isRequestAllowed('https://example.com/beacon.png')).toBe(false)
+    expect(isRequestAllowed('http://evil.test/exfil?q=secret')).toBe(false)
+  })
+
+  // A host that merely ends with an allowed name is a different host
+  it('matches the host exactly rather than by suffix', () => {
+    expect(isRequestAllowed('https://fonts.googleapis.com.evil.test/x')).toBe(false)
+    expect(isRequestAllowed('https://notfonts.gstatic.com/x')).toBe(false)
+  })
+
+  it('refuses anything it cannot parse as a url', () => {
+    expect(isRequestAllowed('not a url')).toBe(false)
+    expect(isRequestAllowed('')).toBe(false)
   })
 })
