@@ -53,7 +53,7 @@ afterEach(() => {
 })
 
 describe('renderPdf', () => {
-  it('launches headless with the sandbox and shared-memory flags a container needs', async () => {
+  it('launches headless with the shared-memory and sandbox flags a container needs', async () => {
     await renderPdf('<p>menu</p>')
 
     const options = launch.mock.calls[0][0]
@@ -64,12 +64,22 @@ describe('renderPdf', () => {
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
-      '--disable-web-security',
-      '--allow-running-insecure-content',
       '--disable-extensions',
       '--disable-background-networking',
       '--disable-default-apps',
     ])
+  })
+
+  // The html comes from a request body, so its scripts run for real. With the
+  // same-origin policy off they could read the response from anything this
+  // container can reach and return it inside the PDF -- verified against a
+  // running container before this was removed.
+  it('keeps the same-origin policy on, so a rendered page cannot read the network', async () => {
+    await renderPdf('<p>menu</p>')
+
+    const { args } = launch.mock.calls[0][0]
+    expect(args).not.toContain('--disable-web-security')
+    expect(args).not.toContain('--allow-running-insecure-content')
   })
 
   it('uses CHROMIUM_PATH when set, so the image can skip the bundled download', async () => {
