@@ -31,8 +31,10 @@ router.get('/job/:id', (req, res) => {
     return res.send(job.result)
   }
 
-  if (job.status === 'error') { 
-    return res.status(500).json({ error: job.error })
+  if (job.status === 'error') {
+    // Carries `status` like the in-progress reply below, so a client can read
+    // one field for every outcome instead of special-casing this body shape.
+    return res.status(500).json({ status: 'error', error: job.error })
   }
 
   res.json({

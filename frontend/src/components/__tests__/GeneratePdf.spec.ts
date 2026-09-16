@@ -37,12 +37,30 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-/** Minimal stand-ins for the two Response shapes the component branches on. */
+/** Minimal stand-ins for the Response shapes the component branches on. */
 function jsonResponse(body: unknown, ok = true) {
   return {
     ok,
+    status: 200,
     headers: { get: () => 'application/json' },
     json: async () => body,
+  } as unknown as Response
+}
+
+/**
+ * An HTTP failure from the job endpoint. The backend answers a failed render
+ * with 500 and an expired record with 404 and a plain-text body, so passing no
+ * body here makes json() reject the way a text body really does.
+ */
+function errorResponse(status: number, body?: unknown) {
+  return {
+    ok: false,
+    status,
+    headers: { get: () => (body === undefined ? 'text/html' : 'application/json') },
+    json: async () => {
+      if (body === undefined) throw new SyntaxError('Unexpected token J in JSON')
+      return body
+    },
   } as unknown as Response
 }
 
@@ -68,6 +86,11 @@ async function flush(ms = 100) {
   await nextTick()
 }
 
+/** How many times the job endpoint has been polled. */
+function pollCount() {
+  return fetchMock.mock.calls.filter((call) => String(call[0]).includes('/job/')).length
+}
+
 describe('GeneratePdf', () => {
   it('refuses to export when there is no content element', async () => {
     const wrapper = mountPdf(null)
@@ -80,7 +103,9 @@ describe('GeneratePdf', () => {
   })
 
   it('posts the element innerHTML and the page settings to /generate-pdf', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' })).mockResolvedValueOnce(pdfResponse())
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' }))
+      .mockResolvedValueOnce(pdfResponse())
     const wrapper = mountPdf()
 
     await wrapper.get('button').trigger('click')
@@ -98,7 +123,9 @@ describe('GeneratePdf', () => {
   })
 
   it('shows the exporting overlay while the job runs and clears it afterwards', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' })).mockResolvedValueOnce(pdfResponse())
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' }))
+      .mockResolvedValueOnce(pdfResponse())
     const wrapper = mountPdf()
 
     await wrapper.get('button').trigger('click')
@@ -150,6 +177,73 @@ describe('GeneratePdf', () => {
     expect(alertMock).toHaveBeenCalledWith('PDF generation failed')
     expect(fetchMock).toHaveBeenCalledTimes(2) // no further polls
     expect(document.body.textContent).toContain('PDF generation failed')
+    expect(document.body.textContent).toContain('Retry Export PDF')
+  })
+
+  it('stops polling when a failed render answers 500 with no status field', async () => {
+    // The shape the deployed backend actually returns for a timed-out render.
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' }))
+      .mockResolvedValueOnce(
+        errorResponse(500, { error: 'Navigation timeout of 60000 ms exceeded' }),
+      )
+    const wrapper = mountPdf()
+
+    await wrapper.get('button').trigger('click')
+    await flush(10_000) // well past several poll intervals
+
+    expect(fetchMock).toHaveBeenCalledTimes(2) // no further polls
+    expect(document.body.textContent).toContain('PDF generation failed')
+    expect(document.body.textContent).toContain('Retry Export PDF')
+    expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
+  })
+
+  it('stops polling when the job record has already expired', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' }))
+      .mockResolvedValueOnce(errorResponse(404)) // 'Job not found', as plain text
+    const wrapper = mountPdf()
+
+    await wrapper.get('button').trigger('click')
+    await flush(10_000)
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(document.body.textContent).toContain('expired')
+    expect(document.body.textContent).toContain('Retry Export PDF')
+  })
+
+  it('gives up once the poll deadline passes instead of polling forever', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' }))
+      .mockResolvedValue(jsonResponse({ status: 'processing' })) // never settles
+    const wrapper = mountPdf()
+
+    await wrapper.get('button').trigger('click')
+    await flush(60_000)
+
+    expect(document.body.textContent).toContain('Exporting PDF, please wait') // still going
+    expect(pollCount()).toBeGreaterThan(20)
+
+    await flush(3 * 60 * 1000) // past the 3 minute deadline
+
+    expect(document.body.textContent).toContain('taking longer than expected')
+    expect(document.body.querySelector('.loader-overlay')).not.toBeNull() // the retry overlay
+    expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
+
+    const settled = pollCount()
+    await flush(30_000)
+    expect(pollCount()).toBe(settled) // and it really stopped
+  })
+
+  it('offers a retry when the server refuses to start the job', async () => {
+    fetchMock.mockResolvedValueOnce(errorResponse(503, { error: 'no instance' }))
+    const wrapper = mountPdf()
+
+    await wrapper.get('button').trigger('click')
+    await flush()
+
+    expect(fetchMock).toHaveBeenCalledOnce() // never began polling
+    expect(document.body.textContent).toContain('could not start the export')
     expect(document.body.textContent).toContain('Retry Export PDF')
   })
 

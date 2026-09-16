@@ -22,6 +22,12 @@ const pdfState = reactive<PdfState>({
 
 const API = import.meta.env.VITE_API_URL
 
+const POLL_INTERVAL_MS = 2000
+// The backend gives a render 60s before it times out, and a sleeping free-tier
+// instance can spend ~40s waking up first. Three minutes is comfortably past
+// both, so reaching it means nothing is coming.
+const POLL_TIMEOUT_MS = 3 * 60 * 1000
+
 async function generatePDF(): Promise<void> {
   pdfState.errorMessage = null
   const element = props.contentRef
@@ -54,11 +60,17 @@ async function generatePDF(): Promise<void> {
     })
 
     if (!res.ok) {
-      alert('Failed to enqueue PDF')
+      reportFailure('The server could not start the export. Please try again.')
       return
     }
 
-    const { jobId } = await res.json()
+    const { jobId } = await res.json().catch(() => ({ jobId: null }))
+
+    if (!jobId) {
+      reportFailure('The server did not return an export job. Please try again.')
+      return
+    }
+
     console.log('PDF job queued:', jobId)
 
     // require pdf status
@@ -74,55 +86,82 @@ async function generatePDF(): Promise<void> {
   }
 }
 
-// require pdf status
+/**
+ * Poll the job until the PDF arrives, treating every other outcome as an end
+ * state. A failed render answers 500 with {error} and an expired record answers
+ * 404 with plain text, so neither carries the status field this used to look
+ * for: an unrecognized reply kept the loop polling and the overlay up until a
+ * later response happened to throw.
+ */
 async function waitForPdf(jobId: string) {
-  while (true) {
+  const giveUpAt = Date.now() + POLL_TIMEOUT_MS
+
+  while (Date.now() < giveUpAt) {
     const res = await fetch(`${API}/job/${jobId}`)
 
-    if (res.headers.get('content-type') === 'application/pdf') {
-      const blob: Blob = await res.blob()
-      const url: string = URL.createObjectURL(blob)
-
-      const a: HTMLAnchorElement = document.createElement('a')
-      a.href = url
-
-      // if (import.meta.env.DEV) {
-      //   window.open(url, '_blank') // Preview PDF in browser
-      // } else {
-      if (isIOS()) {
-        window.location.href = url // Convert Blob to Base64 and use a data URL for immediate download
-      } else {
-        window.open(url, '_blank', 'noopener') // Desktop: open in new tab
-
-        const a = document.createElement('a') // And trigger download
-        a.href = url
-        a.download = `${jobId}-menu.pdf`
-
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-      }
-      // }
-      setTimeout(() => {
-        URL.revokeObjectURL(url)
-      }, 10000)
-
-      break
+    if (res.headers.get('content-type')?.includes('application/pdf')) {
+      downloadPdf(await res.blob(), jobId)
+      return
     }
 
-    const status = await res.json()
-    console.log('PDF status:', status.status)
-
-    if (status.status === 'error') {
-      alert('PDF generation failed')
-      pdfState.errorMessage =
-        'PDF generation failed. Don’t worry — you can try again by clicking the button.'
-      //If it doesn’t work the first time, don’t be afraid to try again — it’s normal!
-      break
+    if (res.status === 404) {
+      reportFailure('The export expired before it could be downloaded. Please try again.')
+      return
     }
 
-    await new Promise((r) => setTimeout(r, 2000)) // every 2 second check it
+    if (!res.ok) {
+      reportFailure(
+        'PDF generation failed. Don’t worry — you can try again by clicking the button.',
+      )
+      return
+    }
+
+    // A body that will not parse tells us as little as a failed one, so stop
+    // rather than poll on in the hope that the next reply makes sense.
+    const status = await res.json().catch(() => null)
+    console.log('PDF status:', status?.status)
+
+    if (!status || status.status === 'error') {
+      reportFailure(
+        'PDF generation failed. Don’t worry — you can try again by clicking the button.',
+      )
+      return
+    }
+
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
   }
+
+  reportFailure(
+    'The export is taking longer than expected — the server may still be waking up. Please try again.',
+  )
+}
+
+function reportFailure(message: string) {
+  alert('PDF generation failed')
+  pdfState.errorMessage = message
+  //If it doesn’t work the first time, don’t be afraid to try again — it’s normal!
+}
+
+function downloadPdf(blob: Blob, jobId: string) {
+  const url: string = URL.createObjectURL(blob)
+
+  if (isIOS()) {
+    window.location.href = url // Convert Blob to Base64 and use a data URL for immediate download
+  } else {
+    window.open(url, '_blank', 'noopener') // Desktop: open in new tab
+
+    const a = document.createElement('a') // And trigger download
+    a.href = url
+    a.download = `${jobId}-menu.pdf`
+
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
+  setTimeout(() => {
+    URL.revokeObjectURL(url)
+  }, 10000)
 }
 
 function isIOS(): boolean {
