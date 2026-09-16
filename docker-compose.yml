@@ -9,6 +9,9 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - FRONTEND_ROOT=/usr/src/frontend
+      # Use the native apt chromium, as backend-dev already does. Without this
+      # Puppeteer looks for its own download, which the image no longer carries.
+      - CHROMIUM_PATH=/usr/bin/chromium
 
   frontend:
     build:

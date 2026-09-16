@@ -1,12 +1,5 @@
 import { ref, computed } from 'vue'
-import { compressImage } from '@/composables/imageCompression'
-
-// Comfortably above the 300px the PDF service resizes to, so the exported menu
-// looks the same while a phone photo stops arriving as several megabytes of
-// base64. That payload is parsed twice server side and was large enough on its
-// own to exhaust the heap of a 512MB instance.
-const MAX_EDGE = 600
-const JPEG_QUALITY = 0.8
+import { compressImage, MAX_EDGE, JPEG_QUALITY } from '@/composables/imageCompression'
 
 export function useImageUpload(
   initialValue: string | null,

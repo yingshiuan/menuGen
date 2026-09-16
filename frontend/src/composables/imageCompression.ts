@@ -1,3 +1,14 @@
+// Comfortably above the 300px the PDF service resizes to, so the exported menu
+// looks the same while a phone photo stops arriving as several megabytes of
+// base64. That payload is parsed twice server side and was large enough on its
+// own to exhaust the heap of a 512MB instance.
+//
+// They also have to stay above that 300px target: sharp is called with
+// withoutEnlargement, so an image arriving at or below it is never resized and
+// the second encode costs quality for nothing.
+export const MAX_EDGE = 600
+export const JPEG_QUALITY = 0.8
+
 /**
  * Downscale an image file and return it as a JPEG data URI.
  *
@@ -10,9 +21,9 @@
  */
 export function compressImage(
   file: File,
-  maxWidth = 200,
-  maxHeight = 200,
-  quality = 1,
+  maxWidth = MAX_EDGE,
+  maxHeight = MAX_EDGE,
+  quality = JPEG_QUALITY,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image()
