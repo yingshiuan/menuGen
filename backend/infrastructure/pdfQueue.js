@@ -38,33 +38,51 @@ async function processQueue() {
 
   const job = queue.shift()
 
+  // Hold the record instead of looking it up again after the await. If it ever
+  // goes missing, writing through the lookup throws -- and it threw from inside
+  // the catch block too, so the rejection escaped with nothing to handle it and
+  // took the process down, losing the queue with it.
+  const record = jobs[job.jobId]
+
   try {
-    jobs[job.jobId].status = 'processing'
+    if (record) record.status = 'processing'
 
     const pdfBuffer = await generatePdfFromHtml(job.payload)
 
-    jobs[job.jobId].status = 'done'
-    jobs[job.jobId].result = pdfBuffer
+    if (record) {
+      record.status = 'done'
+      record.result = pdfBuffer
+    }
   } catch (err) {
     console.error('Queue PDF error:', err)
 
-    jobs[job.jobId].status = 'error'
-    jobs[job.jobId].error = err.message
+    if (record) {
+      record.status = 'error'
+      record.error = err.message
+    }
+  } finally {
+    // Both statements belong here: whatever happened above, the queue has to
+    // free up and then drain whatever arrived while this job was running.
+    processing = false
+    processQueue()
   }
-
-  processing = false
-
-  processQueue()
 }
 
-/* auto cleanup memory */
+/* auto cleanup memory: drop settled jobs once the client has had time to
+   collect them. Jobs still queued or rendering are left alone -- deleting a
+   live record is what used to wedge processQueue above. Sweeping every minute
+   rather than every five keeps the effective retention close to the TTL
+   instead of stretching it to ten minutes. */
+const JOB_TTL = 5 * 60 * 1000
+
 setInterval(() => {
-  const TTL = 5 * 60 * 1000
   const now = Date.now()
 
   for (const id in jobs) {
-    if (now - jobs[id].createdAt > TTL) {
+    const settled = jobs[id].status === 'done' || jobs[id].status === 'error'
+
+    if (settled && now - jobs[id].createdAt > JOB_TTL) {
       delete jobs[id]
     }
   }
-}, 300000)
+}, 60000)
