@@ -1,4 +1,12 @@
 import { ref, computed } from 'vue'
+import { compressImage } from '@/composables/imageCompression'
+
+// Comfortably above the 300px the PDF service resizes to, so the exported menu
+// looks the same while a phone photo stops arriving as several megabytes of
+// base64. That payload is parsed twice server side and was large enough on its
+// own to exhaust the heap of a 512MB instance.
+const MAX_EDGE = 600
+const JPEG_QUALITY = 0.8
 
 export function useImageUpload(
   initialValue: string | null,
@@ -13,19 +21,21 @@ export function useImageUpload(
 
   const displayedPicture = computed(() => pictureBase64.value)
 
-  function processFile(file: File) {
+  async function processFile(file: File) {
     if (!file.type.startsWith('image/')) {
       alert('Please upload a valid image file')
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      pictureBase64.value = reader.result as string
+    try {
+      pictureBase64.value = await compressImage(file, MAX_EDGE, MAX_EDGE, JPEG_QUALITY)
       pictureVisible.value = true
       emit(pictureBase64.value)
+    } catch {
+      // A file can carry an image mime type and still not decode, e.g. a
+      // renamed text file. Say so rather than leaving the picture blank.
+      alert('Could not read that image file')
     }
-    reader.readAsDataURL(file)
   }
 
   /* Upload Trigger */

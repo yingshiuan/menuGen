@@ -2,7 +2,12 @@ import { JSDOM } from 'jsdom'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
-import { sanitizeHtml, inlineLocalImages, hideUiOnly } from '../services/htmlService.js'
+import {
+  sanitizeHtml,
+  inlineLocalImages,
+  hideUiOnly,
+  shrinkInlineImages,
+} from '../services/htmlService.js'
 import { renderPdf } from '../infrastructure/puppeteerInfra.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -25,14 +30,23 @@ function parseFontName(fontFamily) {
 export async function generatePdfFromHtml({ html, width = '210mm', height = '297mm', font }) {
   if (!html) throw new Error('HTML content is required')
 
-  const dom = new JSDOM(html)
+  // Resize the photos before the DOM exists. Parsing them first is what ran the
+  // heap out of memory; see shrinkInlineImages.
+  const shrunkHtml = await shrinkInlineImages(html)
+
+  const dom = new JSDOM(shrunkHtml)
   const document = dom.window.document
 
   sanitizeHtml(document)
   await inlineLocalImages(document)
   hideUiOnly(document)
 
-  const fontName = parseFontName(font || '')                         
+  // Take the markup and let the tree go: JSDOM holds the whole document alive
+  // until the window is closed, and Chrome is about to want that memory.
+  const bodyHtml = document.body.innerHTML
+  dom.window.close()
+
+  const fontName = parseFontName(font || '')
   const isSystemFont = systemFonts.includes(fontName.toLowerCase())
 
   const fontLink = fontName && !isSystemFont
@@ -53,7 +67,7 @@ export async function generatePdfFromHtml({ html, width = '210mm', height = '297
           body { font-family: ${fontFamily}; }
         </style>
       </head>
-      <body>${document.body.innerHTML}</body>
+      <body>${bodyHtml}</body>
     </html>
   `
 

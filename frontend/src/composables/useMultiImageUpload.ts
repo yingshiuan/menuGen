@@ -1,5 +1,6 @@
 import { ref, reactive, computed } from 'vue'
 import type { MenuItem } from '@/types/types'
+import { compressImage } from '@/composables/imageCompression'
 
 export interface ImageState {
   isDragging: boolean
@@ -54,49 +55,6 @@ export function useMultiImageUpload(
 
   function triggerUpload() {
     inputRef.value?.click()
-  }
-
-  async function compressImage(
-    file: File,
-    maxWidth = 200,
-    maxHeight = 200,
-    quality = 1,
-  ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const img = new Image()
-      const reader = new FileReader()
-
-      reader.onload = () => {
-        img.src = reader.result as string
-      }
-
-      img.onload = () => {
-        let { width, height } = img
-
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width
-          width = maxWidth
-        }
-        if (height > maxHeight) {
-          width = (width * maxHeight) / height
-          height = maxHeight
-        }
-
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')!
-        ctx.drawImage(img, 0, 0, width, height)
-
-        const base64 = canvas.toDataURL('image/jpeg', quality)
-        resolve(base64)
-      }
-
-      img.onerror = () => reject(new Error(`Could not decode ${file.name}`))
-
-      reader.onerror = () => reject(new Error(`Could not read ${file.name}`))
-      reader.readAsDataURL(file)
-    })
   }
 
   async function handleFiles(files: FileList | File[]) {
