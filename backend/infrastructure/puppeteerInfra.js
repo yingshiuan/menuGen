@@ -1,5 +1,10 @@
 import puppeteer from 'puppeteer'
 
+// Fetching the webfont stylesheet means reaching out to Google's CDN in the
+// middle of a render, so that wait gets a budget of its own well inside the 60s
+// the whole page is allowed.
+const STYLESHEET_BUDGET_MS = 20000
+
 export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}) {
   const launchOptions = {
     headless: true,
@@ -25,18 +30,33 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
     page.setDefaultNavigationTimeout(60000)
     page.setDefaultTimeout(60000)
 
-    //  await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 60000 })
-    // await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 })
+    // A throwaway page used to be loaded first, holding just this page's <head>,
+    // meant to warm the webfonts. It could not do that -- its body was empty, and
+    // Chrome fetches a font file only once a glyph needs one -- but it did wait
+    // for networkidle0, total network silence, on a request out to Google's CDN.
+    // That wait is what timed out at 60s on a cold instance.
+    //
+    // Waiting for 'load' here is what actually gets the fonts: stylesheets are
+    // still unfetched when domcontentloaded fires, so the Google Fonts link never
+    // loaded and every export quietly used the fallback face -- 0 registered
+    // @font-face rules, against 525 once the sheet is in. A timeout is not fatal,
+    // because the markup is already in place by then: the menu exports in the
+    // fallback face instead of failing, which is the right trade for a font.
+    try {
+      await page.setContent(html, {
+        waitUntil: 'load',
+        timeout: STYLESHEET_BUDGET_MS,
+      })
+    } catch (err) {
+      if (err.name !== 'TimeoutError') throw err
+      console.warn('Stylesheets did not load in time; exporting with fallback fonts')
+    }
 
-    const fontPreload = html.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? ''
-    await page.setContent(`<html><head>${fontPreload}</head><body></body></html>`, {
-      waitUntil: 'networkidle0',
-      timeout: 60000,
-    })
-
-    await page.setContent(html, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000,
+    // Before
+    const memBefore = process.memoryUsage()
+    console.log('Memory before PDF (MB):', {
+      rss: (memBefore.rss / 1024 / 1024).toFixed(2),
+      heapUsed: (memBefore.heapUsed / 1024 / 1024).toFixed(2),
     })
 
     // Wait for all images to load
@@ -72,6 +92,14 @@ export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}
       // margin: { top: '20mm', bottom: '20mm', left: '15mm', right: '15mm' },
     })
 
+    // After 
+    const memAfter = process.memoryUsage()
+    console.log('Memory after PDF (MB):', {
+      rss: (memAfter.rss / 1024 / 1024).toFixed(2),
+      heapUsed: (memAfter.heapUsed / 1024 / 1024).toFixed(2),
+    })
+
+  
     return pdfBuffer
   } finally {
     await browser.close()

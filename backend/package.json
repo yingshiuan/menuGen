@@ -12,6 +12,7 @@
     "sharp": "^0.34.5"
   },
   "scripts": {
+    "start": "node --max-old-space-size=256 server.js",
     "postinstall": "npx puppeteer browsers install chrome"
   }
 }
