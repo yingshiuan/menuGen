@@ -166,18 +166,26 @@ const { jobId } = await response.json()
 3. Polls the job status until complete:
 
 ```js
-let pdfReady = false
-while (!pdfReady) {
+// Every outcome has to end the loop, including the deadline. A failed render
+// answers 500 and an expired record answers 404 with plain text, so neither is
+// safe to parse as JSON and then keep polling on.
+const giveUpAt = Date.now() + 3 * 60 * 1000
+
+while (Date.now() < giveUpAt) {
   const res = await fetch(`http://localhost:3000/job/${jobId}`)
-  if (res.headers.get('content-type') === 'application/pdf') {
+
+  if (res.headers.get('content-type')?.includes('application/pdf')) {
     const blob = await res.blob()
-    pdfReady = true
     // Open or download PDF
-  } else {
-    const status = await res.json()
-    console.log('PDF status:', status.status)
-    await new Promise((r) => setTimeout(r, 2000)) // poll every 2s
+    break
   }
+
+  if (!res.ok) break // 404 expired, 500 failed -- either way nothing is coming
+
+  const status = await res.json().catch(() => null)
+  if (!status || status.status === 'error') break
+
+  await new Promise((r) => setTimeout(r, 2000)) // poll every 2s
 }
 ```
 
@@ -206,20 +214,30 @@ async function exportPDF(html: string) {
 
   const { jobId } = await enqueueRes.json()
 
-  // Poll for completion
+  // Poll for completion. The deadline is a terminal condition like any other:
+  // the backend gives a render 60s and a sleeping free-tier instance can spend
+  // ~40s waking up first, so three minutes means nothing is coming.
+  const giveUpAt = Date.now() + 3 * 60 * 1000
   let pdfBlob: Blob | null = null
-  while (!pdfBlob) {
+
+  while (!pdfBlob && Date.now() < giveUpAt) {
     const statusRes = await fetch(`http://localhost:3000/job/${jobId}`)
-    if (statusRes.headers.get('content-type') === 'application/pdf') {
+
+    if (statusRes.headers.get('content-type')?.includes('application/pdf')) {
       pdfBlob = await statusRes.blob()
-    } else {
-      const status = await statusRes.json()
-      if (status.status === 'error') {
-        throw new Error('PDF generation failed')
-      }
-      await new Promise((r) => setTimeout(r, 2000)) // wait 2s before polling again
+      break
     }
+
+    if (statusRes.status === 404) throw new Error('PDF job expired')
+    if (!statusRes.ok) throw new Error('PDF generation failed')
+
+    const status = await statusRes.json().catch(() => null)
+    if (!status || status.status === 'error') throw new Error('PDF generation failed')
+
+    await new Promise((r) => setTimeout(r, 2000)) // wait 2s before polling again
   }
+
+  if (!pdfBlob) throw new Error('PDF export timed out')
 
   // Download or open PDF
   const url = URL.createObjectURL(pdfBlob)
@@ -242,9 +260,18 @@ async function exportPDF(html: string) {
 - Ensures _all images appear_ in the PDF via base64 inlining
 - Uses async job queue to prevent overload
 
-### ✔ The frontend does NOT need to handle image compression
+### ✔ The frontend compresses uploads before they are sent
 
-Just send the original HTML — backend takes care of it.
+Uploads are capped at `MAX_EDGE` (600px) in `src/composables/imageCompression.ts`,
+shared by the single and batch upload paths. This is the primary defense, not a
+convenience: an untouched phone photo travels as several megabytes of base64 and
+was on its own enough to exhaust the heap of a 512MB instance.
+
+The backend still resizes to 300px as a backstop, since it cannot trust what it
+receives — older saved menus carry full-resolution photos. Keep the frontend cap
+above that 300px target: sharp is called with `withoutEnlargement`, so an image
+arriving at or below it is never resized and the second encode costs quality for
+nothing.
 
 ### ✔ Keep images in:
 

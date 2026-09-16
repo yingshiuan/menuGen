@@ -48,6 +48,16 @@ describe('compressImage', () => {
     expect(canvasSize).toEqual({ width: 600, height: 400 })
   })
 
+  // Every other case passes the bounds explicitly, so the defaults were the one
+  // path nothing covered -- which is how they sat at 200x200 while the batch
+  // upload called this with no arguments at all.
+  it('applies the shared defaults when called with no bounds', async () => {
+    await compressImage(file())
+
+    expect(canvasSize).toEqual({ width: 600, height: 400 })
+    expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledWith('image/jpeg', 0.8)
+  })
+
   it('caps by height when the image is portrait', async () => {
     sourceWidth = 1200
     sourceHeight = 3000
