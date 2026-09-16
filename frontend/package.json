@@ -17,6 +17,10 @@
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix --cache",
     "lint": "run-s lint:*",
+    "check:lint:oxlint": "oxlint . -D correctness --ignore-path .gitignore",
+    "check:lint:eslint": "eslint .",
+    "check:lint": "run-s check:lint:*",
+    "check:format": "prettier --check src/",
     "format": "prettier --write --experimental-cli src/",
     "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./public/css/tailwind.css --minify"
   },

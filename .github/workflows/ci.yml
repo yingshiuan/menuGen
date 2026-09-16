@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push makes an in-flight run obsolete; don't pay for it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # puppeteer sits in both workspaces' dependencies, but nothing in CI drives a
+  # browser. Skipping the Chrome download saves ~150MB and a minute per install.
+  PUPPETEER_SKIP_DOWNLOAD: 'true'
+
+jobs:
+  frontend:
+    name: frontend (type-check, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      # Separate steps rather than `npm run build` (which runs type-check and
+      # build-only in parallel) so a red run names which one broke.
+      - run: npm run type-check
+
+      - run: npm run test:unit:run -- --coverage
+
+      - run: npm run build-only
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
+  lint:
+    name: lint & format
+    runs-on: ubuntu-latest
+    # Both checks fail on main today: 5 lint errors across 4 files, and 20
+    # unformatted files under src/. Until those are cleaned up this job reports
+    # without blocking a merge -- drop this line to make it a real gate.
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      # `if: always()` on the later steps so one failure doesn't hide the rest.
+      - run: npm run check:lint:oxlint
+
+      - run: npm run check:lint:eslint
+        if: always()
+
+      - run: npm run check:format
+        if: always()
+
+  backend:
+    name: backend (install, parse)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # --ignore-scripts skips the postinstall Chrome download. Installing at
+      # all is still worth it: it proves the lockfile resolves.
+      - run: npm ci --ignore-scripts
+
+      # No backend test suite yet, so parsing every module is the minimum gate.
+      - run: git ls-files '*.js' | xargs -n1 node --check
