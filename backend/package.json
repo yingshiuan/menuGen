@@ -11,8 +11,15 @@
     "puppeteer": "^24.32.0",
     "sharp": "^0.34.5"
   },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.15",
+    "supertest": "^7.2.2",
+    "vitest": "^4.0.15"
+  },
   "scripts": {
     "start": "node --max-old-space-size=256 server.js",
-    "postinstall": "npx puppeteer browsers install chrome"
+    "postinstall": "npx puppeteer browsers install chrome",
+    "test:unit": "vitest",
+    "test:unit:run": "vitest run"
   }
 }
