@@ -95,3 +95,67 @@ jobs:
 
       # No backend test suite yet, so parsing every module is the minimum gate.
       - run: git ls-files '*.js' | xargs -n1 node --check
+
+  docker:
+    name: backend (docker build, smoke render)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v3
+
+      # The other backend job installs from the lockfile on the runner, so it
+      # never touches the Dockerfile. That is how a base image going EOL got
+      # through: apt-get update still succeeded while every .deb 404'd, and
+      # nothing in CI built the image to notice.
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          load: true
+          tags: menu-gen-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Building proves the image resolves; it does not prove Chromium can
+      # actually start. Rendering one small PDF covers the rest of the path --
+      # browser launch, sharp, and the webfont wait.
+      - name: Boot the container
+        run: |
+          docker run -d --name backend-ci -p 3000:3000 \
+            -e CHROMIUM_PATH=/usr/bin/chromium \
+            menu-gen-backend:ci
+          for i in $(seq 1 30); do
+            if curl -sf -m 5 http://localhost:3000/ping >/dev/null; then
+              echo "backend up after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "backend never answered /ping"; exit 1
+
+      - name: Smoke render a PDF
+        run: |
+          IMG='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+          JOB=$(curl -sf -m 30 -X POST http://localhost:3000/generate-pdf \
+            -H 'Content-Type: application/json' \
+            -d "{\"html\":\"<div><h1>CI</h1><img src='$IMG' /></div>\",\"font\":\"Inter\"}" \
+            | node -e 'let b="";process.stdin.on("data",d=>b+=d).on("end",()=>console.log(JSON.parse(b).jobId))')
+          test -n "$JOB" || { echo "no jobId returned"; exit 1; }
+
+          for i in $(seq 1 90); do
+            CODE=$(curl -s -o /tmp/out -w '%{http_code}' -m 30 "http://localhost:3000/job/$JOB")
+            case "$CODE" in
+              200)
+                # A PDF starts with %PDF; a status reply is JSON.
+                if head -c 4 /tmp/out | grep -q '%PDF'; then
+                  echo "rendered $(wc -c < /tmp/out) bytes in ${i}s"; exit 0
+                fi
+                ;;
+              *) echo "job failed: HTTP $CODE"; cat /tmp/out; exit 1 ;;
+            esac
+            sleep 1
+          done
+          echo "render timed out"; exit 1
+
+      - name: Backend logs
+        if: always()
+        run: docker logs backend-ci 2>&1 || true
