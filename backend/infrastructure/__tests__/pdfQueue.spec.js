@@ -145,6 +145,59 @@ describe('pdfQueue', () => {
     expect(queue.getJob('not-a-job')).toBeUndefined()
   })
 
+  // Each waiting payload is a string held in memory and express accepts up to
+  // 50mb of them, against a 256MB heap. Accepting without limit is how an open
+  // endpoint turns into an OOM.
+  describe('backpressure', () => {
+    /** Fill the queue: one job renders while MAX_PENDING_JOBS wait behind it. */
+    function saturate() {
+      const held = deferred()
+      renderPdf.mockReturnValue(held.promise) // nothing ever finishes
+      const ids = []
+      for (let i = 0; i <= queue.MAX_PENDING_JOBS; i++) {
+        ids.push(queue.enqueuePdfJob({ html: `job ${i}` }))
+      }
+      return ids
+    }
+
+    it('refuses a job once the queue is full instead of accepting it', () => {
+      saturate()
+
+      expect(queue.enqueuePdfJob({ html: 'one too many' })).toBeNull()
+    })
+
+    it('accepts everything up to the limit', () => {
+      const ids = saturate()
+
+      expect(ids).toHaveLength(queue.MAX_PENDING_JOBS + 1) // the renderer plus the waiters
+      expect(ids.every((id) => typeof id === 'string')).toBe(true)
+    })
+
+    it('takes work again once the queue drains', async () => {
+      const held = deferred()
+      renderPdf.mockReturnValue(held.promise)
+      for (let i = 0; i <= queue.MAX_PENDING_JOBS; i++) {
+        queue.enqueuePdfJob({ html: `job ${i}` })
+      }
+      expect(queue.enqueuePdfJob({ html: 'rejected' })).toBeNull()
+
+      held.resolve(Buffer.from('%PDF-1.4'))
+      await flush() // one job leaves the queue
+
+      expect(queue.enqueuePdfJob({ html: 'now accepted' })).toMatch(/^[0-9a-f-]{36}$/)
+    })
+
+    it('refuses before doing any of the work of accepting', () => {
+      saturate()
+      const callsWhenFull = renderPdf.mock.calls.length
+
+      expect(queue.enqueuePdfJob({ html: 'rejected' })).toBeNull()
+
+      // no id issued, no record created, and nothing handed to the renderer
+      expect(renderPdf.mock.calls.length).toBe(callsWhenFull)
+    })
+  })
+
   it('hands back the live record, which is what lets the route send the buffer', async () => {
     const jobId = queue.enqueuePdfJob({ html: '<p>menu</p>' })
     const before = queue.getJob(jobId)

@@ -6,7 +6,20 @@ const jobs = {}
 
 let processing = false
 
+/* How many jobs may be waiting behind the one being rendered.
+   Two things bound this and both want a small number. Each waiting payload is a
+   string held in memory, and express accepts up to 50mb of them, against a 256MB
+   heap on a 512MB instance. And the browser gives a render 60s before it times
+   out, while the client gives up after three minutes, so a job queued much
+   deeper than this cannot be collected even if it does render. Past the limit
+   the honest answer is to refuse rather than to accept work nobody will wait
+   for. */
+export const MAX_PENDING_JOBS = 5
+
+/** The job id, or null when the queue is too deep to take any more. */
 export function enqueuePdfJob(payload) {
+  if (queue.length >= MAX_PENDING_JOBS) return null
+
   const jobId = crypto.randomUUID()
 
   jobs[jobId] = {

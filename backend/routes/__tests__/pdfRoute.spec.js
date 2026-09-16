@@ -48,6 +48,20 @@ describe('POST /generate-pdf', () => {
     expect(res.text).toBe('HTML content is required')
     expect(enqueuePdfJob).not.toHaveBeenCalled()
   })
+
+  // A queue this instance cannot drain inside the client's own deadline is worse
+  // than a refusal: the caller polls for three minutes and then gives up anyway,
+  // while the payload sits in a 256MB heap the whole time.
+  it('refuses with 503 and a Retry-After when the queue is full', async () => {
+    enqueuePdfJob.mockReturnValue(null)
+
+    const res = await request(app).post('/generate-pdf').send({ html: '<p>Soup</p>' })
+
+    expect(res.status).toBe(503)
+    expect(res.headers['retry-after']).toBe('30')
+    expect(res.body.error).toMatch(/queue is full/i)
+    expect(res.body.jobId).toBeUndefined() // nothing to poll for
+  })
 })
 
 describe('GET /job/:id', () => {

@@ -8,13 +8,18 @@ const STYLESHEET_BUDGET_MS = 20000
 export async function renderPdf(html, { width = '210mm', height = '297mm' } = {}) {
   const launchOptions = {
     headless: true,
+    // No --disable-web-security here, and no --allow-running-insecure-content.
+    // The html being rendered arrives in a request body, so it is untrusted and
+    // its scripts run for real; without the same-origin policy they could read
+    // the response from anything this container can reach and hand it back
+    // inside the PDF. Nothing in a menu needs them: photos arrive base64
+    // inlined, Tailwind is inlined, and Google Fonts serves its stylesheets
+    // CORS-enabled.
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-gpu',
-      '--disable-web-security',
-      '--allow-running-insecure-content',
       '--disable-extensions',
       '--disable-background-networking',
       '--disable-default-apps',
