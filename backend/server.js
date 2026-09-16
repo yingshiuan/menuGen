@@ -7,6 +7,12 @@ import pdfRoutes from './routes/pdfRoute.js'
 const app = express()
 const PORT = process.env.PORT || 3000;
 
+// Render terminates TLS in front of this process, so without this every request
+// looks like it came from the proxy and the rate limiter would count the whole
+// internet as one caller. One hop, not `true`: trusting every hop would let a
+// caller set X-Forwarded-For themselves and get a fresh budget per request.
+app.set('trust proxy', 1)
+
 // Middleware
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))

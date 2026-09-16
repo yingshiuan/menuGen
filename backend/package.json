@@ -6,6 +6,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
     "jsdom": "^27.2.0",
     "multer": "^2.0.2",
     "puppeteer": "^24.32.0",
