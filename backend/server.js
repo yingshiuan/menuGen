@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import { pathToFileURL } from 'url'
 // import uploadRoutes from './routes/uploadRoute.js' // use upload routes, but now didn't save in the backend
 import pdfRoutes from './routes/pdfRoute.js'
 
@@ -34,18 +35,27 @@ app.get('/ping', (req, res) => {
 // app.use('/api', uploadRoutes);
 app.use('/', pdfRoutes)
 
+// Only bind a port when this module is the one that was run. Importing it --
+// a test, or anything that wants the routes without a listener -- must not take
+// port 3000, which is what made this file untestable.
+const isEntrypoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+
 // Start server
-try {
-  // Listen on all interfaces (LAN / mobile)
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Backend server running on port ${PORT}`);
-    // console.log(`Backend server running on http://192.168.1.163:${PORT}`)
-    // console.log(`Backend server running on http://localhost:${PORT}`);
-  })
-  // For local development, you can also listen on localhost:
-  // app.listen(PORT, () => {
-  //   console.log(`Backend server running on http://localhost:${PORT}`);
-  // });
-} catch (err) {
-  console.error('Server failed to start:', err)
+if (isEntrypoint) {
+  try {
+    // Listen on all interfaces (LAN / mobile)
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Backend server running on port ${PORT}`);
+      // console.log(`Backend server running on http://192.168.1.163:${PORT}`)
+      // console.log(`Backend server running on http://localhost:${PORT}`);
+    })
+    // For local development, you can also listen on localhost:
+    // app.listen(PORT, () => {
+    //   console.log(`Backend server running on http://localhost:${PORT}`);
+    // });
+  } catch (err) {
+    console.error('Server failed to start:', err)
+  }
 }
+
+export default app

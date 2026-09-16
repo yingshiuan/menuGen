@@ -75,7 +75,7 @@ jobs:
         if: always()
 
   backend:
-    name: backend (install, parse)
+    name: backend (test)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -90,11 +90,22 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       # --ignore-scripts skips the postinstall Chrome download. Installing at
-      # all is still worth it: it proves the lockfile resolves.
+      # all is still worth it: it proves the lockfile resolves. devDependencies
+      # still install, and vitest needs no install script of its own.
       - run: npm ci --ignore-scripts
 
-      # No backend test suite yet, so parsing every module is the minimum gate.
+      - run: npm run test:unit:run -- --coverage
+
+      # Still worth keeping alongside the suite: it is the only thing that reads
+      # files no test imports, including the untracked scratch routes.
       - run: git ls-files '*.js' | xargs -n1 node --check
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage/
+          retention-days: 7
 
   docker:
     name: backend (docker build, smoke render)
