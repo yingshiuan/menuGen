@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import { ref, reactive, computed, nextTick } from 'vue'
 import Papa from 'papaparse'
-import type { MenuItem, MenuOption } from '@/types/types'
+import type { MenuItem } from '@/types/types'
 import { useMenuStore } from '@/stores/menu'
 import { useIcons, UndefinedIcon } from '@/composables/useIcons'
+import { generateId, isDietaryKey } from '@/domain/menuItem'
+import { parseMenuRows } from '@/domain/menuCsv'
 
 const props = defineProps<{
   items: MenuItem[]
@@ -25,21 +27,8 @@ const fileInput = ref<HTMLInputElement | null>(null) // DOM uses ref
 const fileName = ref<string | null>(null)
 const menuStore = useMenuStore()
 
-const { iconMap, renamedLabels } = useIcons()
-const allOptions = computed(() => Object.keys(iconMap.value))
-
-const DATA_COLUMNS = new Set(['No.', 'Price', 'Name', 'Measure', 'Chinese Name', 'Description'])
-
-/* Helpers */
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-}
-
-function getOptionsFromRow(row: Record<string, string>): MenuOption[] {
-  return Object.entries(row)
-    .filter(([key, val]) => !DATA_COLUMNS.has(key) && val?.trim() !== '')
-    .map(([key]) => key)
-}
+const { iconMap } = useIcons()
+const customTags = computed(() => Object.keys(iconMap.value).filter((k) => !isDietaryKey(k)))
 
 /* CSV Handling */
 function handleDrop(e: DragEvent) {
@@ -68,37 +57,20 @@ function parseCsvFile(file: File) {
     header: true,
     skipEmptyLines: true,
     complete: async (result) => {
+      const fields = (result as Papa.ParseResult<Record<string, string>>).meta?.fields ?? []
+      const { items: processed, customTags: csvTags } = parseMenuRows(
+        result.data,
+        fields,
+        generateId,
+      )
+
       // Register any unknown option columns from CSV into iconMap
       const knownOptions = Object.keys(iconMap.value)
-      const csvOptionColumns = (
-        (result as Papa.ParseResult<Record<string, string>>).meta?.fields ?? []
-      ).filter((f) => !DATA_COLUMNS.has(f) && f.trim() !== '' && !knownOptions.includes(f))
-      for (const opt of csvOptionColumns) {
-        addCustomOption(opt, UndefinedIcon['Undefined']!)
+      for (const tag of csvTags.filter((t) => !knownOptions.includes(t))) {
+        addCustomOption(tag, UndefinedIcon['Undefined']!)
       }
 
       await nextTick()
-
-      let currentCategory = ''
-      const processed: MenuItem[] = []
-
-      result.data.forEach((row) => {
-        if (!row['No.'] && !row['Price'] && row['Name']) {
-          currentCategory = row['Name']?.trim() ?? ''
-        } else {
-          processed.push({
-            id: generateId(),
-            No: row['No.'] ?? '',
-            Price: row['Price'] ?? '',
-            Name: row['Name'] ?? '',
-            Measure: row['Measure'] ?? '',
-            ChineseName: row['Chinese Name'] ?? '',
-            Description: row['Description'] ?? '',
-            Options: getOptionsFromRow(row),
-            Category: currentCategory || 'Uncategorized',
-          })
-        }
-      })
 
       emit('csvLoaded', processed)
       menuStore.items = processed
@@ -126,7 +98,7 @@ function handleFileChange(e: Event) {
 function downloadCSV() {
   if (!props.items?.length) return alert('No data to export')
 
-  const csv = menuStore.exportToCSV(props.items, allOptions.value, renamedLabels.value)
+  const csv = menuStore.exportToCSV(props.items, customTags.value)
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)

@@ -7,8 +7,11 @@ declare module 'papaparse' {
 
   function parse<T>(input: string | File, config?: ParseConfig<T>): void
 
+  function unparse(data: { fields: string[]; data: string[][] }): string
+
   const Papa: {
     parse: typeof parse
+    unparse: typeof unparse
   }
 
   export default Papa

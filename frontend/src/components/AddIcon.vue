@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, computed } from 'vue'
-import type { MenuOption } from '@/types/types'
+import { isDietaryKey } from '@/domain/menuItem'
 import { useIcons } from '@/composables/useIcons.ts'
 import ImageCropper from '@/components/ImageCropper.vue'
 
@@ -33,8 +33,7 @@ const renameState = reactive<{
   value: '',
 })
 
-const options = computed(() => Object.keys(icons.iconMap.value) as MenuOption[])
-const PRESET_KEYS = new Set(['Recommend', 'Spicy', 'Vegan', 'Vegetarian', 'Gluten Free'])
+const options = computed(() => Object.keys(icons.iconMap.value))
 const newOption = reactive({ label: '', icon: null as string | null, typedName: '' })
 
 const iconState = reactive({ isExpanded: false })
@@ -142,7 +141,7 @@ function confirmRename(opt: string) {
     return
   }
 
-  if (PRESET_KEYS.has(opt)) {
+  if (isDietaryKey(opt)) {
     // Preset: just update display label, keep internal key unchanged
     renameOption(opt, newLabel)
   } else {
@@ -233,7 +232,7 @@ function cancelRename() {
 
           <!-- Reset for presets, Remove for custom -->
           <button
-            v-if="PRESET_KEYS.has(opt)"
+            v-if="isDietaryKey(opt)"
             class="p-1 text-xs bg-gray-200 rounded hover:bg-gray-300 shrink-0 ml-auto"
             @click="handleReset(opt)"
           >

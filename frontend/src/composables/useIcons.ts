@@ -1,4 +1,6 @@
 import { ref, computed } from 'vue'
+import { DIETARY_LABELS, isDietaryKey } from '@/domain/menuItem'
+import { useMenuLang } from '@/composables/useMenuLang'
 
 import RecommendedIconSvg from '@/asset/svg/recommend.svg?raw'
 import SpicyIconSvg from '@/asset/svg/spicy.svg?raw'
@@ -9,12 +11,13 @@ import UndefinedIconSvg from '@/asset/svg/undefine.svg?raw'
 
 const svgToDataUri = (svg: string): string => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
 
+// Keyed by DietaryKey; custom icons are added under their own label
 export const defaultIcons: Record<string, string> = {
-  Recommend: svgToDataUri(RecommendedIconSvg),
-  Spicy: svgToDataUri(SpicyIconSvg),
-  Vegan: svgToDataUri(VeganIconSvg),
-  Vegetarian: svgToDataUri(VegetarianIconSvg),
-  'Gluten Free': svgToDataUri(GlutenFreeIconSvg),
+  recommend: svgToDataUri(RecommendedIconSvg),
+  spicy: svgToDataUri(SpicyIconSvg),
+  vegan: svgToDataUri(VeganIconSvg),
+  vegetarian: svgToDataUri(VegetarianIconSvg),
+  gluten_free: svgToDataUri(GlutenFreeIconSvg),
   Undefined: svgToDataUri(UndefinedIconSvg),
 }
 
@@ -43,9 +46,11 @@ const iconMap = computed<Record<string, string>>(() => {
   return merged
 })
 
-// displayLabel: get the renamed label or fall back to internal key
+const { primary } = useMenuLang()
+
+// displayLabel: the renamed label, else the dietary label in the menu language, else the key
 function getDisplayLabel(key: string): string {
-  return renamedLabels.value[key] ?? key
+  return renamedLabels.value[key] ?? (isDietaryKey(key) ? DIETARY_LABELS[primary.value][key] : key)
 }
 
 function renameOption(key: string, newLabel: string) {

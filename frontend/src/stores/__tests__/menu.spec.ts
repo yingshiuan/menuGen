@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useMenuStore } from '@/stores/menu'
+import { createMenuItem, emptyDietary } from '@/domain/menuItem'
 import type { MenuItem } from '@/types/types'
 
 // Pinia needs an active instance before any store is used outside a component
@@ -8,46 +9,66 @@ beforeEach(() => {
   setActivePinia(createPinia())
 })
 
+// The fixtures hold no commas or quotes, so a plain split reads the CSV back
+function rows(csv: string): string[][] {
+  return csv.split('\r\n').map((line) => line.split(','))
+}
+
 describe('exportToCSV', () => {
   const items: MenuItem[] = [
-    {
+    createMenuItem({
       id: 'a',
-      No: '1',
-      Price: '12.50',
-      Name: 'Kung Pao Chicken',
-      Measure: 'plate',
-      ChineseName: '宫保鸡丁',
-      Description: 'With peanuts',
-      Options: ['Spicy'],
-      Category: 'Mains',
-    },
-    {
+      no: '1',
+      price: '12.50',
+      measure: 'plate',
+      name: { en: 'Kung Pao Chicken', zh: '宫保鸡丁' },
+      description: { en: 'With peanuts' },
+      category: { en: 'Mains', de: 'Hauptgerichte' },
+      dietary: { ...emptyDietary(), spicy: true },
+      tags: ['House Special'],
+    }),
+    createMenuItem({
       id: 'b',
-      No: '2',
-      Price: '3.00',
-      Name: 'Steamed Rice',
-      Measure: 'bowl',
-      ChineseName: '米饭',
-      Options: [],
-      Category: 'Sides',
-    },
+      no: '2',
+      price: '3.00',
+      measure: 'bowl',
+      name: { en: 'Steamed Rice', zh: '米饭' },
+      category: { en: 'Sides' },
+    }),
   ]
 
-  it('emits a tab-separated header, category rows and an X per active option', () => {
+  it('writes a header with a column per language, dietary flag and custom icon', () => {
     const store = useMenuStore()
-    const lines = store.exportToCSV(items, ['Spicy', 'Vegan']).split('\n')
+    const [header] = rows(store.exportToCSV(items, ['House Special']))
 
-    expect(lines[0]).toBe('No.\tPrice\tName\tMeasure\tChinese Name\tDescription\tSpicy\tVegan')
-    // category separator row: category name sits in the Name column
-    expect(lines[1]!.split('\t')[2]).toBe('Mains')
-    expect(lines[2]!.split('\t').slice(-2)).toEqual(['X', ''])
-    expect(lines[3]!.split('\t')[2]).toBe('Sides')
+    expect(header).toEqual([
+      'No.',
+      'Price',
+      'Measure',
+      'Name (EN)',
+      'Name (DE)',
+      'Name (ZH)',
+      'Description (EN)',
+      'Description (DE)',
+      'Description (ZH)',
+      'Recommend',
+      'Spicy',
+      'Vegan',
+      'Vegetarian',
+      'Gluten Free',
+      'House Special',
+    ])
   })
 
-  it('applies renamed option labels to the header only', () => {
+  it('writes a category row before each change of category and an X per active flag', () => {
     const store = useMenuStore()
-    const header = store.exportToCSV(items, ['Spicy'], { Spicy: '🌶️' }).split('\n')[0]!
+    const [, mains, kungPao, sides, rice] = rows(store.exportToCSV(items, ['House Special']))
 
-    expect(header.endsWith('\t🌶️')).toBe(true)
+    // category separator row: category names sit in the Name columns
+    expect(mains!.slice(0, 6)).toEqual(['', '', '', 'Mains', 'Hauptgerichte', ''])
+    expect(kungPao!.slice(3, 6)).toEqual(['Kung Pao Chicken', '', '宫保鸡丁'])
+    expect(kungPao!.slice(-6)).toEqual(['', 'X', '', '', '', 'X'])
+    expect(sides![3]).toBe('Sides')
+    expect(rice!.slice(-6)).toEqual(['', '', '', '', '', ''])
   })
 })

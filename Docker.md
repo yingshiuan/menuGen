@@ -56,6 +56,10 @@ docker compose --profile dev up --build
 
 ## Notes
 
+- PDFs are styled with `frontend/public/css/tailwind.css`, a prebuilt copy of the app's CSS (the backend has no Vite). You don't need to rebuild it by hand:
+  - the frontend dev server (local or `frontend-dev`) rebuilds it whenever a file in `frontend/src` changes, and the backend rereads it on the next PDF, with no restart;
+  - CI rebuilds it on every push to `main` and commits it if it was out of date (a pull request only gets a warning);
+  - to rebuild it yourself: `npm run build:css` in `frontend/`.
 - Puppeteer requires system libraries and fonts to render PDFs. The backend images include Chromium and common runtime libs. If you have a custom Chromium binary, set `CHROMIUM_PATH` in the service environment to its path.
   -- For Chinese (CJK) text rendering in PDFs, ensure CJK fonts are installed in the image (e.g. `fonts-noto-cjk`, `fonts-wqy-zenhei`). The current backend images attempt to include fonts; if characters don't render, add the desired font and rebuild.
 

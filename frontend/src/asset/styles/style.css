@@ -1,4 +1,10 @@
-@import 'tailwindcss';
+/* Scan only the app's own sources (src/), not untracked scratch copies or notes.
+   public/css/tailwind.css is built from this file for the PDF backend, and CI checks it
+   against a fresh checkout, so a local build must not pick up classes CI can't see. */
+@import 'tailwindcss' source('../..');
+@source not '../../components/archive';
+@source not '../../**/* copy.vue';
+@source not '../../**/*.md';
 
 @custom-variant dark (&:where(.dark, .dark *));
 

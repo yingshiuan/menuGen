@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useMultiImageUpload } from '@/composables/useMultiImageUpload'
 import type { MenuItem } from '@/types/types'
+import { createMenuItem } from '@/domain/menuItem'
 
 // jsdom has no canvas and never fires Image.onload, so compressImage needs both stubbed
 class MockImage {
@@ -21,17 +22,14 @@ beforeEach(() => {
 })
 
 function dish(overrides: Partial<MenuItem> = {}): MenuItem {
-  return {
+  return createMenuItem({
     id: 'a',
-    No: '1',
-    Price: '10',
-    Name: 'Spring Roll',
-    Measure: '',
-    ChineseName: '春捲',
-    Options: [],
-    Category: 'Starters',
+    no: '1',
+    price: '10',
+    name: { en: 'Spring Roll', de: 'Frühlingsrolle', zh: '春捲' },
+    category: { en: 'Starters' },
     ...overrides,
-  }
+  })
 }
 
 function imageFile(name: string) {
@@ -75,10 +73,30 @@ describe('useMultiImageUpload', () => {
   it('matches the zero-padded and bare filename forms', async () => {
     const { handleFiles, skippedFiles, emit } = setup([
       dish(),
-      dish({ id: 'b', No: '2', Name: 'Laksa' }),
+      dish({ id: 'b', no: '2', name: { en: 'Laksa' } }),
     ])
 
     await handleFiles([imageFile('01_Spring Roll.png'), imageFile('Laksa.png')])
+
+    expect(skippedFiles.value).toEqual([])
+    expect(emit).toHaveBeenCalledTimes(2)
+  })
+
+  it('matches a photo named without the piece count the dish name carries', async () => {
+    const { handleFiles, skippedFiles, emit } = setup([
+      dish({ no: '10', name: { en: 'Spring Roll - 1 pc', de: 'Frühlingsrolle - 1 Stk.' } }),
+    ])
+
+    await handleFiles([imageFile('10_Spring Roll.png')])
+
+    expect(skippedFiles.value).toEqual([])
+    expect(emit).toHaveBeenCalledTimes(1)
+  })
+
+  it('matches a filename in any of the dish languages', async () => {
+    const { handleFiles, skippedFiles, emit } = setup()
+
+    await handleFiles([imageFile('1_Frühlingsrolle.png'), imageFile('春捲.png')])
 
     expect(skippedFiles.value).toEqual([])
     expect(emit).toHaveBeenCalledTimes(2)
