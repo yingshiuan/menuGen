@@ -32,7 +32,7 @@ describe('IconFilterSelector', () => {
 
     expect(option('Vegetarian').text()).toMatch(/2$/)
     expect(option('Vegan').text()).toMatch(/1$/)
-    expect(option('Recommend').text()).toMatch(/0$/)
+    expect(option('Recommended').text()).toMatch(/0$/)
   })
 
   it('shows the ticked icons as checked', () => {

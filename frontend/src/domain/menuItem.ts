@@ -10,7 +10,7 @@ import {
 
 export const DIETARY_LABELS: Record<Lang, Record<DietaryKey, string>> = {
   en: {
-    recommend: 'Recommend',
+    recommend: 'Recommended',
     spicy: 'Spicy',
     vegan: 'Vegan',
     vegetarian: 'Vegetarian',

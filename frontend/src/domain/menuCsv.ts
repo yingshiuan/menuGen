@@ -32,6 +32,7 @@ const PLAIN_COLUMNS: Record<string, Column> = {
 
 const DIETARY_HEADERS: Record<string, DietaryKey> = {
   recommend: 'recommend',
+  recommended: 'recommend',
   empfohlen: 'recommend',
   spicy: 'spicy',
   scharf: 'spicy',
