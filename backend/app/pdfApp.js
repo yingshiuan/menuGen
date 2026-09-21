@@ -1,6 +1,5 @@
 import { JSDOM } from 'jsdom'
 import path from 'path'
-import fs from 'fs'
 import { fileURLToPath } from 'url'
 import {
   sanitizeHtml,
@@ -9,12 +8,14 @@ import {
   shrinkInlineImages,
 } from '../services/htmlService.js'
 import { renderPdf } from '../infrastructure/puppeteerInfra.js'
+import { createCssLoader } from './cssLoader.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const cssPath = path.resolve(__dirname, '../../frontend/public/css/tailwind.css')
-const tailwindCSS = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, 'utf-8') : ''
+// Reread when the frontend rebuilds it, so a running backend never renders with a stale copy
+const loadTailwindCss = createCssLoader(cssPath)
 
 const systemFonts = ['sans-serif', 'serif', 'monospace', 'arial', 'times new roman', 'courier new']
 
@@ -63,7 +64,7 @@ export async function generatePdfFromHtml({ html, width = '210mm', height = '297
         ${fontLink}
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@200;300;400;500;700&display=swap" rel="stylesheet">
         <style>
-          ${tailwindCSS}
+          ${loadTailwindCss()}
           body { font-family: ${fontFamily}; }
         </style>
       </head>

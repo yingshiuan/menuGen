@@ -74,6 +74,48 @@ jobs:
       - run: npm run check:format
         if: always()
 
+  pdf-stylesheet:
+    # The backend styles PDFs with frontend/public/css/tailwind.css, a committed build of
+    # the app's CSS (the backend has no Vite). The dev server rebuilds it on every save;
+    # this job is the safety net for a copy that was never rebuilt or never committed.
+    # On main it commits the rebuilt file, so the backend never renders with old styles.
+    # On a pull request it only warns: main fixes it right after the merge.
+    name: PDF stylesheet (frontend/public/css/tailwind.css)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run build:css
+
+      - name: Commit it on main, warn on a pull request
+        run: |
+          if git diff --quiet -- public/css/tailwind.css; then
+            echo "The PDF stylesheet is up to date."
+            exit 0
+          fi
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'chore: rebuild the PDF stylesheet' -- public/css/tailwind.css
+            # A push made with GITHUB_TOKEN starts no new workflow run, so this can't loop
+            git push origin HEAD:main
+          else
+            echo "::warning file=frontend/public/css/tailwind.css::The PDF stylesheet is out of date with the frontend sources. It is rebuilt and committed on main after this merges, or run 'npm run build:css' in frontend/ and commit it now."
+          fi
+
   backend:
     name: backend (test)
     runs-on: ubuntu-latest

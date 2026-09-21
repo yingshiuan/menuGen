@@ -27,7 +27,9 @@ services:
       - NODE_ENV=development
       - PORT=5173
       - HOST=0.0.0.0
-      - VITE_API_URL=http://localhost:3000 
+      - VITE_API_URL=http://localhost:3000
+      # file changes from the Mac don't reach Vite's watcher through the bind mount; poll instead
+      - CHOKIDAR_USEPOLLING=true
     ports:
       - '5173:5173'
     depends_on:
