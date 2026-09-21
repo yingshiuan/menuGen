@@ -111,24 +111,23 @@ function downloadCSV() {
 </script>
 
 <template>
-  <div class="flex gap-2">
+  <div class="flex gap-2 flex-1 min-w-0">
     <div
-      class="border-2 border-dashed rounded-lg p-1 cursor-pointer flex flex-col items-center justify-center gap-4 hover:bg-blue-500 transition-colors group"
+      class="flex-1 min-w-0 border-2 border-dashed rounded-lg px-2 py-1 cursor-pointer flex flex-col items-center justify-center hover:bg-blue-500 transition-colors group"
       :class="csvState.isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
       @dragover.prevent="handleDragOver"
       @dragleave="handleDragLeave"
       @drop.prevent="handleDrop"
       @click="fileInput?.click()"
+      :title="fileName ?? 'Click to choose a CSV file, or drop one here'"
     >
       <!-- Text -->
-      <div class="text-container">
+      <div class="text-container min-w-0 w-full">
         <div class="text-gray-600 text-center group-hover:text-white transition-colors text-sm">
-          <p>
-            {{ fileName ? fileName : 'Please upload a CSV file.' }}
+          <p class="truncate">
+            {{ fileName ? fileName : 'Upload CSV' }}
           </p>
-          <p>
-            {{ 'Drag & drop your CSV here, or click to browse' }}
-          </p>
+          <p class="text-xs">or drop it here</p>
         </div>
 
         <!-- Browse Button (optional, still clickable) -->
@@ -151,10 +150,10 @@ function downloadCSV() {
       </div>
     </div>
     <!-- Export CVS-->
-    <div class="max-w-xl mx-auto flex justify-center">
+    <div class="flex">
       <button
         @click="downloadCSV"
-        class="border-blue-500 p-1 rounded-lg hover:bg-blue-700 hover:text-white border transition-colors duration-200 shadow-md"
+        class="border-blue-500 px-2 py-1 rounded-lg hover:bg-blue-700 hover:text-white border transition-colors duration-200 shadow-md"
       >
         Export CSV
       </button>

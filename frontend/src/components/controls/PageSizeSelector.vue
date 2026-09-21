@@ -121,12 +121,12 @@ onMounted(() => {
   <div class="flex flex-col gap-2 text-sm">
     <!-- Paper size selector -->
     <div class="flex items-center gap-2">
-      <label>Paper Size</label>
+      <label class="w-24 shrink-0">Paper</label>
       <select
         v-model="pageState.selectedPaper"
         @change="selectPaperSize"
         :disabled="pageState.isCustom"
-        class="border p-1 rounded"
+        class="border p-1 rounded min-w-0 disabled:opacity-50"
       >
         <option value="">Select</option>
         <option v-for="p in paperSizes" :key="p.name" :value="p.name">
@@ -135,9 +135,13 @@ onMounted(() => {
       </select>
     </div>
 
-    <div class="flex gap-2 items-center">
+    <label class="pl-26 flex gap-2 items-center">
       <input type="checkbox" class="w-4 h-4" v-model="pageState.isCustom" />
-      <label>Custom sizes</label>
+      Custom size
+    </label>
+
+    <!-- Only while "Custom size" is ticked; drag the W / H letters to change them -->
+    <div v-if="pageState.isCustom" class="pl-26 flex flex-wrap gap-2 items-center">
       <!-- Width -->
       <label class="flex items-center select-none gap-1">
         <span
@@ -154,7 +158,7 @@ onMounted(() => {
             :max="pageState.maxWidth"
             :readonly="!pageState.isCustom"
             :disabled="!pageState.isCustom"
-            class="border p-1 rounded disabled:opacity-50"
+            class="border p-1 rounded w-16"
           />
 
           <span>mm</span>
@@ -177,7 +181,7 @@ onMounted(() => {
             :max="pageState.maxHeight"
             :readonly="!pageState.isCustom"
             :disabled="!pageState.isCustom"
-            class="border p-1 rounded disabled:opacity-50"
+            class="border p-1 rounded w-16"
           />
 
           <span>mm</span>

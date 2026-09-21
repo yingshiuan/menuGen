@@ -16,10 +16,10 @@ function clamp() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-1 text-sm mt-1">
+  <div class="flex flex-col gap-2 text-sm">
     <div class="flex flex-col gap-1" :class="{ 'opacity-50': props.disabled }">
       <label class="flex items-center gap-2">
-        Photo size
+        <span class="w-24 shrink-0">Photo size</span>
         <input
           type="number"
           v-model.number="photoSize"
@@ -32,7 +32,7 @@ function clamp() {
         />
         px
       </label>
-      <p class="text-xs text-gray-500">
+      <p class="pl-26 text-xs text-gray-500">
         <template v-if="props.disabled">Used with "Fill page".</template>
         <template v-else>
           Max {{ maxPhotoSize }} px still fits the fullest page, so every page shows the same size.
@@ -41,7 +41,7 @@ function clamp() {
     </div>
 
     <!-- Both spacings: without the curved name the photo fills most of its circle -->
-    <label class="flex items-center gap-2">
+    <label class="pl-26 flex items-center gap-2">
       <input type="checkbox" v-model="showNameRing" class="w-4 h-4" />
       Name around photo
     </label>

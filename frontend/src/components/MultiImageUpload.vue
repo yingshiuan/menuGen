@@ -41,7 +41,7 @@ const {
 <template>
   <div>
     <div>
-      <p>Multi Image Upload</p>
+      <p>Upload photos</p>
     </div>
 
     <!-- Upload area -->

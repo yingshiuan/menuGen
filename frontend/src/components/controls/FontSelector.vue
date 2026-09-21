@@ -72,13 +72,13 @@ watch(selectedFont, (newFont) => {
 </script>
 
 <template>
-  <div class="flex flex-col lg:flex-row gap-2 mt-1">
-    <div class="flex flex-col lg:flex-row gap-2 text-sm">
-      <!-- <label for="fontSelect" class="">Select Font</label> -->
+  <div class="flex flex-col gap-2 text-sm">
+    <label class="flex items-center gap-2">
+      <span class="w-24 shrink-0">Font</span>
       <select
         id="fontSelect"
         v-model="selectedFont"
-        class="border px-2 py-1 rounded w-35"
+        class="border px-2 py-1 rounded w-40"
         :style="{ fontFamily: selectedFont }"
       >
         <option
@@ -90,28 +90,27 @@ watch(selectedFont, (newFont) => {
           {{ font.label }}
         </option>
       </select>
-      <!-- <label class="">Font Name</label> -->
+    </label>
+    <label class="flex items-center gap-2">
+      <span class="w-24 shrink-0">Google font</span>
       <input
         v-model="selectedFont"
-        placeholder="Paste Google Font name (e.g., Roboto, Poppins)"
+        placeholder="e.g. Roboto"
         title="paste Google Font name here"
-        class="border px-2 py-1 rounded w-35"
+        class="border px-2 py-1 rounded w-40"
         :style="{ fontFamily: selectedFont }"
       />
-    </div>
+    </label>
   </div>
 
-  <!-- Footer hint -->
-  <p class="text-[0.8rem] text-gray-400 mt-1">
-    Find font names at
+  <!-- Footer hint (the input's placeholder gives the example) -->
+  <p class="pl-26 text-[0.8rem] text-gray-400 mt-1">
+    From
     <a
       href="https://fonts.google.com"
       target="_blank"
       class="text-blue-400 underline hover:text-blue-600"
+      >fonts.google.com</a
     >
-      fonts.google.com</a
-    >
-    <!-- — paste the name exactly as shown -->
-    - e.g. Roboto
   </p>
 </template>

@@ -32,27 +32,33 @@ const keepCategoryModel = computed({
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 text-sm mt-1">
-    <div class="flex items-center gap-2">
-      <label>Items Per Page</label>
-      <input
-        type="number"
-        v-model.number="itemsPerPageModel"
-        min="1"
-        max="11"
-        class="border rounded p-1"
-      />
-      <!-- <p class="text-xs text-gray-500">Current: {{ props.itemsPerPage }} items per page</p> -->
-    </div>
-
-    <div class="flex items-center gap-2">
+  <div class="flex flex-col gap-2 text-sm">
+    <label class="pl-26 flex items-center gap-2">
       <input
         type="checkbox"
         v-model="keepCategoryModel"
         id="keepCategoryTogether"
         class="w-4 h-4"
       />
-      <label for="keepCategoryTogether text-xs">Keep items together on the same page</label>
-    </div>
+      Keep categories together
+    </label>
+
+    <!-- Keeping categories together ignores this limit, so it is locked meanwhile -->
+    <label
+      class="flex items-center gap-2"
+      :class="{ 'opacity-50': keepCategoryModel }"
+      :title="keepCategoryModel ? 'Not used while categories are kept together' : undefined"
+    >
+      <span class="w-24 shrink-0">Per page</span>
+      <input
+        type="number"
+        v-model.number="itemsPerPageModel"
+        min="1"
+        max="11"
+        :disabled="keepCategoryModel"
+        class="border rounded p-1 w-20"
+      />
+      dishes
+    </label>
   </div>
 </template>

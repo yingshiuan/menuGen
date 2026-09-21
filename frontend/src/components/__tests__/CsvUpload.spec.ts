@@ -74,12 +74,12 @@ function emittedItems(wrapper: VueWrapper) {
 describe('upload', () => {
   it('prompts for a file and then shows the chosen file name', async () => {
     const wrapper = mountCsv()
-    expect(wrapper.text()).toContain('Please upload a CSV file.')
+    expect(wrapper.text()).toContain('Upload CSV')
 
     await selectFile(wrapper, csvFile())
 
     expect(wrapper.text()).toContain('menu.csv')
-    expect(wrapper.text()).not.toContain('Please upload a CSV file.')
+    expect(wrapper.text()).not.toContain('Upload CSV')
   })
 
   it('maps data rows to MenuItems and emits them', async () => {

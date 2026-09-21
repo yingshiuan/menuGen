@@ -23,7 +23,7 @@ function clamp(key: TextSizeKey) {
 <template>
   <div class="flex flex-col gap-1 text-sm">
     <label v-for="row in rows" :key="row.key" class="flex items-center gap-2">
-      <span class="w-24">{{ row.label }}</span>
+      <span class="w-24 shrink-0">{{ row.label }}</span>
       <input
         type="number"
         v-model.number="textSizes[row.key]"
@@ -35,7 +35,7 @@ function clamp(key: TextSizeKey) {
       />
       pt
     </label>
-    <div>
+    <div class="pl-26">
       <button
         type="button"
         @click="resetTextSizes"

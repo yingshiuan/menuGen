@@ -36,7 +36,9 @@ const renameState = reactive<{
 const options = computed(() => Object.keys(icons.iconMap.value))
 const newOption = reactive({ label: '', icon: null as string | null, typedName: '' })
 
-const iconState = reactive({ isExpanded: false })
+// Embedded in a collapsible panel section: the section opens it, so no toggle of its own
+const props = defineProps<{ embedded?: boolean }>()
+const iconState = reactive({ isExpanded: props.embedded ?? false })
 const resetCounters = reactive<Partial<Record<string, number>>>({})
 const typedNames = reactive<Partial<Record<string, string>>>({})
 const currentColors = computed(() => userColors.value)
@@ -162,7 +164,7 @@ function cancelRename() {
 
 <template>
   <div>
-    <div class="flex justify-between items-center">
+    <div v-if="!props.embedded" class="flex justify-between items-center">
       <button
         @click="toggleExpand"
         class="flex items-center gap-1"
