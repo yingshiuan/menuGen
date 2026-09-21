@@ -9,7 +9,7 @@ import { generatePdfFromHtml } from '../pdfApp.js'
  * The font branch is the interesting part. A system font must not pull a Google
  * Fonts link -- that is an outbound request on a cold instance for a face the
  * machine already has -- while a webfont must, and CJK always needs Noto Sans TC
- * behind whatever was asked for.
+ * (then SC, for the characters TC lacks) behind whatever was asked for.
  *
  * Assertions stay on the structure of the markup rather than Tailwind's contents:
  * pdfApp reads frontend/public/css/tailwind.css at import, and matching its text
@@ -77,7 +77,9 @@ describe('generatePdfFromHtml', () => {
     await generatePdfFromHtml({ html: '<p>Soup</p>', font: 'Inter' })
 
     expect(renderedHtml()).toContain('https://fonts.googleapis.com/css2?family=Inter')
-    expect(renderedHtml()).toContain("font-family: 'Inter', 'Noto Sans TC', sans-serif")
+    expect(renderedHtml()).toContain(
+      "font-family: 'Inter', 'Noto Sans TC', 'Noto Sans SC', sans-serif",
+    )
   })
 
   it('joins a multi-word family with + for the stylesheet URL', async () => {
@@ -91,7 +93,9 @@ describe('generatePdfFromHtml', () => {
     await generatePdfFromHtml({ html: '<p>Soup</p>', font: "'Inter', Helvetica, sans-serif" })
 
     expect(renderedHtml()).toContain('family=Inter&display=swap')
-    expect(renderedHtml()).toContain("font-family: 'Inter', 'Noto Sans TC', sans-serif")
+    expect(renderedHtml()).toContain(
+      "font-family: 'Inter', 'Noto Sans TC', 'Noto Sans SC', sans-serif",
+    )
   })
 
   it('does not reach out to a CDN for a font the machine already has', async () => {
@@ -100,14 +104,27 @@ describe('generatePdfFromHtml', () => {
     const links = renderedHtml().match(/fonts\.googleapis\.com/g) ?? []
     expect(links).toHaveLength(1) // only the unconditional CJK sheet
     expect(renderedHtml()).not.toContain('family=Arial')
-    expect(renderedHtml()).toContain("font-family: 'Noto Sans TC', sans-serif")
+    expect(renderedHtml()).toContain("font-family: 'Noto Sans TC', 'Noto Sans SC', sans-serif")
   })
 
   it('falls back to the CJK face when no font is named at all', async () => {
     await generatePdfFromHtml({ html: '<p>Soup</p>' })
 
-    expect(renderedHtml()).toContain("font-family: 'Noto Sans TC', sans-serif")
+    expect(renderedHtml()).toContain("font-family: 'Noto Sans TC', 'Noto Sans SC', sans-serif")
     expect(renderedHtml()).toContain('family=Noto+Sans+TC') // always requested, for CJK glyphs
+  })
+
+  it('backs Noto Sans TC with Noto Sans SC for the characters TC lacks, in one sheet', async () => {
+    await generatePdfFromHtml({ html: '<p>叄峇豆腐</p>', font: 'Inter' })
+
+    // 叄 (U+53C4) is missing from TC; a server without CJK system fonts would print a box
+    expect(renderedHtml()).toContain(
+      "font-family: 'Inter', 'Noto Sans TC', 'Noto Sans SC', sans-serif",
+    )
+    const sheets = renderedHtml().match(/<link href="[^"]*Noto\+Sans[^"]*"/g) ?? []
+    expect(sheets).toHaveLength(1)
+    expect(sheets[0]).toContain('family=Noto+Sans+TC:wght@200;300;400;500;700')
+    expect(sheets[0]).toContain('family=Noto+Sans+SC:wght@200;300;400;500;700')
   })
 
   it('turns editor inputs into text and hides UI-only chrome', async () => {

@@ -172,8 +172,9 @@ function onDrop(e: DragEvent) {
 }
 
 /* UI */
+// Noto Sans SC after TC, as in the PDF: it has the characters TC lacks (叄 in 叄峇)
 const styleObject = computed(() => ({
-  fontFamily: `${props.fontFamily ?? 'sans-serif'}, 'Noto Sans TC', sans-serif`,
+  fontFamily: `${props.fontFamily ?? 'sans-serif'}, 'Noto Sans TC', 'Noto Sans SC', sans-serif`,
   backgroundColor: props.bgColor ?? '#ffffff',
   color: props.textColor ?? '#000000',
 }))
