@@ -180,12 +180,12 @@ function retryPDF() {
 </script>
 
 <template>
-  <div class="max-w-xl mx-auto flex justify-center">
-    <!-- Generate PDF Button -->
+  <div class="flex">
+    <!-- Generate PDF Button: the panel's main action, full width -->
     <button
       @click="generatePDF"
       :disabled="pdfState.uploading"
-      class="relative flex items-center gap-2 p-1 bg-blue-500 text-white rounded-lg hover:bg-blue-700 border border-blue-500 transition-colors duration-200 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+      class="relative w-full flex items-center justify-center gap-2 p-1 bg-blue-500 text-white rounded-lg hover:bg-blue-700 border border-blue-500 transition-colors duration-200 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
     >
       <span v-if="!pdfState.uploading">Generate PDF</span>
 

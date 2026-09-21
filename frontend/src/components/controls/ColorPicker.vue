@@ -43,22 +43,26 @@ function resetColor() {
 
 <template>
   <div class="flex items-center gap-2 text-sm">
-    <label>{{ props.type === 'bg' ? 'Background' : 'Text' }}</label>
+    <label class="w-24 shrink-0">{{ props.type === 'bg' ? 'Background' : 'Text colour' }}</label>
     <!-- Color wheel picker -->
     <input
       type="color"
       v-model="colorState.localColor"
-      class="w-8 h-8 border-none cursor-pointer"
+      class="w-8 h-8 shrink-0 border-none cursor-pointer"
     />
     <!-- Text input for hex, rgb(), etc. -->
     <input
       type="text"
       v-model="colorState.localColor"
       placeholder="e.g. #ff0000 or rgb(255,0,0)"
-      class="border p-1 rounded w-24"
+      class="border p-1 rounded w-24 min-w-0"
     />
 
-    <button type="button" @click="resetColor" class="p-1 bg-gray-200 rounded hover:bg-gray-300">
+    <button
+      type="button"
+      @click="resetColor"
+      class="shrink-0 p-1 bg-gray-200 rounded hover:bg-gray-300"
+    >
       Reset
     </button>
   </div>

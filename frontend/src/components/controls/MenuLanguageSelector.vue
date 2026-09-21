@@ -7,9 +7,9 @@ const { primary, extraNames } = useMenuLang()
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2 text-sm">
+  <div class="flex flex-col gap-2 text-sm">
     <label class="flex items-center gap-2">
-      Menu Language
+      <span class="w-24 shrink-0">Language</span>
       <select v-model="primary" class="border p-1 rounded">
         <option v-for="lang in PRIMARY_LANGS" :key="lang" :value="lang">
           {{ LANG_LABELS[lang] }}
@@ -17,7 +17,7 @@ const { primary, extraNames } = useMenuLang()
       </select>
     </label>
     <div class="flex items-center gap-2">
-      Also show
+      <span class="w-24 shrink-0">Also show</span>
       <label
         v-for="lang in LANGS.filter((l) => l !== primary)"
         :key="lang"

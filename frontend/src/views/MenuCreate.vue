@@ -22,6 +22,7 @@ import FontSelector from '@/components/controls/FontSelector.vue'
 import MenuLanguageSelector from '@/components/controls/MenuLanguageSelector.vue'
 import TextSizeControl from '@/components/controls/TextSizeControl.vue'
 import PhotoSizeControl from '@/components/controls/PhotoSizeControl.vue'
+import PanelSection from '@/components/controls/PanelSection.vue'
 import ColorPicker from '@/components/controls/ColorPicker.vue'
 import PageSizeSelector from '@/components/controls/PageSizeSelector.vue'
 import ScaleControl from '@/components/controls/ScaleControl.vue'
@@ -77,7 +78,7 @@ const pageState = reactive<PageState>({
 const menuState = reactive<MenuState>({
   menuCsv: [],
   pdfReadonly: false,
-  selectedFont: 'Sans-serif',
+  selectedFont: 'Sans-Serif', // matches the font list's option, so the dropdown shows it
   bgColor: '#ffffff',
   textColor: '#000000',
   scalePage: 0.8,
@@ -455,7 +456,8 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
 </script>
 
 <template>
-  <div class="">
+  <!-- Desktop: exactly one screen tall, so the controls and the preview scroll on their own -->
+  <div class="lg:h-screen lg:flex lg:flex-col">
     <TopBanner />
     <div class="flex flex-col lg:flex-row lg:gap-2 p-2 items-center border-b border-gray-300">
       <h1 class="w-full lg:w-1/4 text-xl font-bold p-1">Menu Gen (CSV to PDF)</h1>
@@ -489,20 +491,21 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
           </div>
         </div>
 
-        <!-- Desktop Two Page button -->
-        <div class="hidden lg:flex lg:w-1/4 lg:justify-start justify-center">
+        <!-- Desktop: Two Page button and the preview zoom, next to the page arrows -->
+        <div class="hidden lg:flex lg:w-1/4 items-center gap-3">
           <button
             @click="uiState.showTwoPage = !uiState.showTwoPage"
-            class="border-blue-500 px-3 py-1 rounded-lg hover:bg-blue-700 hover:text-white border transition-colors duration-200 shadow-md disabled:opacity-50"
+            class="shrink-0 border-blue-500 px-3 py-1 rounded-lg hover:bg-blue-700 hover:text-white border transition-colors duration-200 shadow-md disabled:opacity-50"
           >
             {{ uiState.showTwoPage ? 'Show Single Page' : 'Show Two Page' }}
           </button>
+          <ScaleControl v-model="menuState.scalePage" label="Scale" class="flex-1 min-w-0" />
         </div>
       </div>
     </div>
 
     <div
-      class="flex flex-col lg:flex-row flex-1 overflow-hidden gap-2 lg:divide-x lg:divide-gray-300"
+      class="flex flex-col lg:flex-row flex-1 lg:min-h-0 overflow-hidden gap-2 lg:divide-x lg:divide-gray-300"
     >
       <!-- Left side: controls -->
       <div
@@ -511,15 +514,15 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
         @click="uiState.showMobileControls = false"
       ></div>
       <div
-        class="fixed lg:static top-0 left-0 h-full lg:h-auto w-3/4 max-w-sm lg:max-w-none bg-white z-50 transform transition-transform duration-300 lg:translate-x-0 lg:w-1/4 overflow-y-auto px-3"
+        class="fixed lg:static top-0 left-0 h-full w-3/4 max-w-sm lg:max-w-none bg-white z-50 transform transition-transform duration-300 lg:translate-x-0 lg:w-1/4 overflow-y-auto px-3 pb-8"
         :class="{
           '-translate-x-full lg:translate-x-0': !uiState.showMobileControls,
           'translate-x-0': uiState.showMobileControls,
         }"
       >
         <div @click.stop class="divide-y divide-gray-300">
-          <!-- Drag & Drop CSV and Generate PDF side by side -->
-          <div class="flex gap-2 py-2">
+          <!-- Actions: load a CSV, export it, make the PDF -->
+          <div class="py-2 flex flex-col gap-2">
             <CsvUpload
               :key="uiState.csvKey"
               @csvLoaded="handleCsvLoaded"
@@ -531,62 +534,54 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
               :page-height="pageState.height"
               :font-family="menuState.selectedFont"
             />
-          </div>
-
-          <div class="py-2">
             <button
               @click="loadSampleMenu"
-              class="border-blue-500 w-full p-1 rounded-lg hover:bg-blue-700 hover:text-white border transition-colors duration-200 shadow-md"
+              class="self-start text-xs text-blue-600 underline hover:text-blue-800"
             >
-              Load Sample Menu
+              Load sample menu
             </button>
           </div>
-          <!-- Font selector and color pickers stacked below -->
-          <div class="py-2">
-            <div>Typography</div>
-            <FontSelector v-model:font="menuState.selectedFont" />
-            <div class="mt-2">Text Size</div>
-            <TextSizeControl />
-          </div>
-          <div class="py-2">
-            <div>Language</div>
+
+          <!-- Grouped by what they change; Photos and Icons start closed -->
+          <PanelSection title="Menu" open>
             <MenuLanguageSelector />
-          </div>
-          <div class="py-2">
-            <div>Color</div>
-            <ColorPicker type="bg" v-model:color="menuState.bgColor" />
+          </PanelSection>
+
+          <PanelSection title="Text" open>
+            <FontSelector v-model:font="menuState.selectedFont" />
+            <TextSizeControl />
             <ColorPicker type="text" v-model:color="menuState.textColor" />
-          </div>
-          <div class="py-2">
-            <div>Layout</div>
+          </PanelSection>
+
+          <PanelSection title="Page" open>
             <PageSizeSelector v-model:width="pageState.width" v-model:height="pageState.height" />
-          </div>
-          <div class="py-2"><ScaleControl v-model="menuState.scalePage" label="Scale" /></div>
-          <div class="py-2">
-            <div>Items</div>
+            <ColorPicker type="bg" v-model:color="menuState.bgColor" />
             <ItemSpacingControl v-model="menuState.itemSpacing" />
-            <PhotoSizeControl :disabled="menuState.itemSpacing !== 'fill'" />
             <ItemsPerCategorySelector
               v-model:itemsPerPage="pageState.itemsPerPage"
               v-model:keepCategoryTogether="pageState.keepCategoryTogether"
             />
-          </div>
-          <div class="py-2">
-            <AddIcon @rename-option="handleRenameOption" />
-          </div>
+            <!-- Phones have no room for the zoom next to the page arrows -->
+            <ScaleControl v-model="menuState.scalePage" label="Scale" class="lg:hidden" />
+          </PanelSection>
 
-          <div class="py-2">
+          <PanelSection title="Photos">
+            <PhotoSizeControl :disabled="menuState.itemSpacing !== 'fill'" />
             <MultiImageUpload
               :menuItems="menuState.menuCsv"
               @update:item="onItemUpdated"
               @update:menuItems="menuState.menuCsv = $event"
             />
-          </div>
+          </PanelSection>
+
+          <PanelSection title="Icons">
+            <AddIcon embedded @rename-option="handleRenameOption" />
+          </PanelSection>
         </div>
       </div>
 
       <!-- Right side: preview -->
-      <div class="w-full lg:w-3/4 flex p-2 overflow-x-auto">
+      <div class="w-full lg:w-3/4 lg:h-full flex p-2 overflow-x-auto lg:overflow-y-auto">
         <!-- Single-page menu preview -->
         <div
           class="menu-preview-wrapper"
