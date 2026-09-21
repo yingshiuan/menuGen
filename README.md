@@ -35,7 +35,7 @@ Updating restaurant menus is often repetitive and time-consuming, especially whe
 
 ### Content
 
-- CSV import with full inline editing (No, Name, ChineseName, Measure, Price, Description, Options, Pictures, Icons, Category)
+- CSV import with full inline editing (No, Name and Description in English / German / Chinese, Measure, Price, Dietary icons, Pictures, Category)
 - Auto-numbering per category with intelligent gap reuse
 - Unique UUID-based item tracking
 
@@ -142,7 +142,7 @@ Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 ### **Frontend (Vue + Tailwind CSS v4)**
 
 - Upload CSV → auto-structured menu items with auto-generated unique IDs
-- Inline editable UI (No, Name, ChineseName, Measure, Price, Description, Categories, Icons)
+- Inline editable UI (No, Name, Measure, Price, Description, Categories, Icons), per menu language
 - Upload custom images or SVG icons per item
 - Upload logo image (displays in PDF)
 - Reusable `ImageUploader` component supports variants (logo, cover, avatar) and powers AddLogo/CoverLogo wrappers
@@ -336,17 +336,23 @@ Alternatively, if you prefer a single file with profiles, the repo also supports
 User uploads a CSV file like:
 
 ```
-No,Price,Name,ChineseName,Description,Recommend,Spicy,Vegan,Vegetarian,Gluten Free
-1,12.99,Pizza,披薩,Cheese and tomato sauce,true,false,false,false,true
+No.,Price,Measure,Name (EN),Name (DE),Name (ZH),Description (EN),Description (DE),Description (ZH),Recommend,Spicy,Vegan,Vegetarian,Gluten Free
+,,,SOUP / SALAD,SUPPE / SALAT,,,,,,,,,
+1,8.5,,Szechuan Soup,Szechuan Suppe,酸辣湯,Hot and sour soup with vegetables and tofu,Scharf-saure Suppe mit Gemüse & Tofu,,,X,,X,
 ```
 
-Frontend parses → structured menu → editable state.
+- A row with no `No.` and no `Price` is a category row; its name columns name the category for the rows below.
+- A flag cell counts as set unless it is empty or `false` / `no` / `nein` / `0` / `-`, so `X`, `true` and the sheet codes `V` `S` `VG` `VT` `G` all work.
+- Any other column becomes a custom icon, set per dish by its cell.
+- Older sheets still import: plain `Name` / `Description` are read as English, or as German when the headers are German (`Preis`, `Empfohlen`, `Scharf`, `Vegetarisch`, `Glutenfrei`), and `Chinese Name` fills `Name (ZH)`.
+
+Frontend parses → structured menu → editable state. Each dish holds its text per language and its flags as `dietary: { recommend, spicy, vegan, vegetarian, gluten_free }`; the menu is printed in the main language picked under **Language**, and each language ticked under **Also show** (中文 by default) adds that name after a slash: `Szechuan Suppe / Szechuan Soup / 酸辣湯`. Descriptions, categories and icon labels stay in the main language.
 
 ---
 
 ## **2. User Edits Inline**
 
-- Edit all fields: No, Name, ChineseName, Measure, Price, Description, Category
+- Edit all fields: No, Name (per language), Measure, Price, Description, Category
 - Change text color and font (support Google Fonts (paste font name to load dynamically))
 - Add images/icons per item
 - Upload logo image

@@ -22,16 +22,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:footerText', value: string): void
   (e: 'update:logo', base64: string): void
-  (e: 'add-before', payload: { No: string }): void
-  (e: 'add-after', payload: { No: string }): void
-  (e: 'delete-item', payload: { No: string }): void
-  (e: 'reorder', payload: { fromNo: string; toNo: string }): void
-  (e: 'update:totalPages', value: number): void
+  (e: 'add-before', payload: { id: string }): void
+  (e: 'add-after', payload: { id: string }): void
+  (e: 'delete-item', payload: { id: string }): void
+  (e: 'reorder', payload: { fromId: string; toId: string }): void
 }>()
-
-function handleTotalPagesUpdate(val: number) {
-  emit('update:totalPages', val)
-}
 </script>
 
 <template>
@@ -56,7 +51,6 @@ function handleTotalPagesUpdate(val: number) {
       @delete-item="(p) => emit('delete-item', p)"
       @reorder="(p) => emit('reorder', p)"
       @update:logo="(p) => emit('update:logo', p)"
-      @update:totalPages="handleTotalPagesUpdate"
     />
 
     <!-- Right Page -->
@@ -79,7 +73,6 @@ function handleTotalPagesUpdate(val: number) {
       @delete-item="(p) => emit('delete-item', p)"
       @reorder="(p) => emit('reorder', p)"
       @update:logo="(p) => emit('update:logo', p)"
-      @update:totalPages="handleTotalPagesUpdate"
     />
   </div>
 </template>

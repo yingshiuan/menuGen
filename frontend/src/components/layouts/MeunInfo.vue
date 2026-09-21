@@ -1,27 +1,24 @@
 <script lang="ts" setup>
 import { ref, watch, nextTick, computed } from 'vue'
-import type { MenuOption } from '@/types/types'
 import { useIcons } from '@/composables/useIcons'
 
 const props = defineProps<{
-  modelValue?: MenuOption[]
+  modelValue?: string[]
   footerText: string
   readonly?: boolean
   showAll: boolean
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: MenuOption[]): void
+  (e: 'update:modelValue', value: string[]): void
   (e: 'update:footerText', value: string): void
 }>()
 
 const { iconMap, getDisplayLabel } = useIcons()
 
-const allOptions = computed(() => Object.keys(iconMap.value) as MenuOption[])
+const allOptions = computed(() => Object.keys(iconMap.value))
 
-const selected = ref<MenuOption[]>(
-  props.modelValue?.length ? props.modelValue : [...allOptions.value],
-)
+const selected = ref<string[]>(props.modelValue?.length ? props.modelValue : [...allOptions.value])
 
 const infoText = ref(props.footerText)
 const editingInfo = ref(false)
@@ -34,7 +31,7 @@ watch(
   { deep: true },
 )
 
-function toggle(option: MenuOption) {
+function toggle(option: string) {
   if (props.readonly) return
   const idx = selected.value.indexOf(option)
 

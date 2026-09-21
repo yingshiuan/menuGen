@@ -5,6 +5,7 @@ import CsvUpload from '@/components/CsvUpload.vue'
 import { useIcons } from '@/composables/useIcons'
 import { useMenuStore } from '@/stores/menu'
 import type { MenuItem } from '@/types/types'
+import { createMenuItem } from '@/domain/menuItem'
 
 const HEADER = 'No.,Price,Name,Measure,Chinese Name,Description,Spicy,House Special'
 const CSV = [
@@ -89,12 +90,11 @@ describe('upload', () => {
 
     expect(items).toHaveLength(2)
     expect(items[0]).toMatchObject({
-      No: '1',
-      Price: '12.50',
-      Name: 'Kung Pao Chicken',
-      Measure: 'plate',
-      ChineseName: '宫保鸡丁',
-      Description: 'With peanuts',
+      no: '1',
+      price: '12.50',
+      name: { en: 'Kung Pao Chicken', zh: '宫保鸡丁' },
+      measure: 'plate',
+      description: { en: 'With peanuts' },
     })
     expect(items.every((i) => i.id.length > 0)).toBe(true)
   })
@@ -105,7 +105,7 @@ describe('upload', () => {
 
     const items = await emittedItems(wrapper)
 
-    expect(items[0]!.Category).toBe('Uncategorized')
+    expect(items[0]!.category).toEqual({})
   })
 
   it('keeps a quoted comma inside a description in one field', async () => {
@@ -117,8 +117,9 @@ describe('upload', () => {
 
     // a naive split(',') would spill the description across Spicy/House Special
     expect(items).toHaveLength(1)
-    expect(items[0]!.Description).toBe('With peanuts, chilli and rice')
-    expect(items[0]!.Options).toEqual(['Spicy'])
+    expect(items[0]!.description.en).toBe('With peanuts, chilli and rice')
+    expect(items[0]!.dietary.spicy).toBe(true)
+    expect(items[0]!.tags).toEqual([])
   })
 
   it('treats a name-only row as a category header for the rows beneath it', async () => {
@@ -127,17 +128,19 @@ describe('upload', () => {
 
     const items = await emittedItems(wrapper)
 
-    expect(items.map((i) => i.Category)).toEqual(['Mains', 'Sides'])
+    expect(items.map((i) => i.category.en)).toEqual(['Mains', 'Sides'])
   })
 
-  it('derives Options from the non-empty option columns', async () => {
+  it('derives dietary flags and custom tags from the non-empty option columns', async () => {
     const wrapper = mountCsv()
     await selectFile(wrapper, csvFile())
 
     const items = await emittedItems(wrapper)
 
-    expect(items[0]!.Options).toEqual(['Spicy'])
-    expect(items[1]!.Options).toEqual(['House Special'])
+    expect(items[0]!.dietary.spicy).toBe(true)
+    expect(items[0]!.tags).toEqual([])
+    expect(items[1]!.dietary.spicy).toBe(false)
+    expect(items[1]!.tags).toEqual(['House Special'])
   })
 
   it('registers unknown option columns as custom icons', async () => {
@@ -160,7 +163,7 @@ describe('upload', () => {
     await emittedItems(wrapper)
 
     expect(store.items).toHaveLength(2)
-    expect(store.items[1]!.Name).toBe('Steamed Rice')
+    expect(store.items[1]!.name.en).toBe('Steamed Rice')
   })
 
   it('accepts a dropped file and clears the drag highlight', async () => {
@@ -188,17 +191,16 @@ describe('upload', () => {
 
 describe('export', () => {
   const items: MenuItem[] = [
-    {
+    createMenuItem({
       id: 'a',
-      No: '1',
-      Price: '12.50',
-      Name: 'Kung Pao Chicken',
-      Measure: 'plate',
-      ChineseName: '宫保鸡丁',
-      Description: 'With peanuts',
-      Options: ['Spicy'],
-      Category: 'Mains',
-    },
+      no: '1',
+      price: '12.50',
+      measure: 'plate',
+      name: { en: 'Kung Pao Chicken', zh: '宫保鸡丁' },
+      description: { en: 'With peanuts' },
+      category: { en: 'Mains' },
+      dietary: { ...createMenuItem().dietary, spicy: true },
+    }),
   ]
 
   function exportButton(wrapper: VueWrapper) {
@@ -230,14 +232,27 @@ describe('export', () => {
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:menu-csv')
   })
 
-  it('uses renamed option labels in the exported header', async () => {
+  it('keeps the canonical dietary header when the label is renamed, so it re-imports', async () => {
     const { renameOption } = useIcons()
-    renameOption('Spicy', '🌶️ Hot')
+    renameOption('spicy', '🌶️ Hot')
     const wrapper = mountCsv(items)
 
     await exportButton(wrapper).trigger('click')
 
-    const blob = createObjectURL.mock.calls[0]![0]
-    await expect(readBlob(blob)).resolves.toContain('🌶️ Hot')
+    const header = (await readBlob(createObjectURL.mock.calls[0]![0])).split('\r\n')[0]!
+    expect(header.split(',')).toContain('Spicy')
+    expect(header).not.toContain('🌶️ Hot')
+  })
+
+  it('adds a column for each custom icon', async () => {
+    const { addCustomOption } = useIcons()
+    addCustomOption('House Special', 'data:image/svg+xml,<svg/>')
+    const wrapper = mountCsv([{ ...items[0]!, tags: ['House Special'] }])
+
+    await exportButton(wrapper).trigger('click')
+
+    const [header, , row] = (await readBlob(createObjectURL.mock.calls[0]![0])).split('\r\n')
+    expect(header!.split(',').pop()).toBe('House Special')
+    expect(row!.split(',').pop()).toBe('X')
   })
 })

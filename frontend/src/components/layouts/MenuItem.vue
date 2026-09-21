@@ -1,7 +1,11 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch, nextTick } from 'vue'
-import type { MenuItem, MenuOption } from '@/types/types'
+import type { Lang, MenuItem } from '@/types/types'
 import { useIcons } from '@/composables/useIcons'
+import { useMenuLang } from '@/composables/useMenuLang'
+import { useMenuTypography } from '@/composables/useMenuTypography'
+import { useMenuPhoto } from '@/composables/useMenuPhoto'
+import { LANG_LABELS, MEASURE_UNIT, cloneMenuItem, isDietaryKey, pickText } from '@/domain/menuItem'
 import ImageCropper from '@/components/ImageCropper.vue'
 
 /* Props & Emits */
@@ -9,6 +13,7 @@ const props = defineProps<{
   item: MenuItem
   readonly?: boolean // PDF/export mode
   textColor?: string
+  fillHeight?: boolean // "Fill page" spacing: the photo grows to the dish box height
 }>()
 
 const emit = defineEmits<{
@@ -18,11 +23,38 @@ const emit = defineEmits<{
 
 /* State */
 const local = reactive({
-  ...props.item,
-  Options: props.item.Options ? [...props.item.Options] : [],
+  ...cloneMenuItem(props.item),
   mainImageBase64: props.item.mainImageBase64 || null,
   lastUpdated: props.item.lastUpdated ?? 0,
 })
+
+/* Language */
+const { primary, extraLangs } = useMenuLang()
+
+const displayName = computed(() => pickText(local.name, primary.value))
+// Names after the main one. No fallback: "Szechuan Soup / Szechuan Soup" is worse than
+// leaving out a language the dish has no name in.
+const extraNameText = (lang: Lang) => local.name[lang]?.trim() ?? ''
+const displayDescription = computed(() => pickText(local.description, primary.value))
+const displayCategory = computed(() => pickText(local.category, primary.value))
+const measureUnit = computed(() => MEASURE_UNIT[primary.value])
+
+const { fontSize } = useMenuTypography()
+const { photoSize, showNameRing } = useMenuPhoto()
+
+// v-model for one language of a localized field
+function localizedModel(field: 'name' | 'description' | 'category', lang: () => Lang) {
+  return computed({
+    get: () => local[field][lang()] ?? '',
+    set: (value: string) => {
+      local[field][lang()] = value
+    },
+  })
+}
+
+const nameText = localizedModel('name', () => primary.value)
+const descriptionText = localizedModel('description', () => primary.value)
+const categoryText = localizedModel('category', () => primary.value)
 
 interface PictureState {
   visible: boolean
@@ -40,46 +72,64 @@ const displayedPicture = ref<string | null>(null)
 // Icon mapping
 const { iconMap, getDisplayLabel } = useIcons()
 
-const allOptions = computed(() => Object.keys(iconMap.value) as MenuOption[])
-const otherOptions = computed(() => allOptions.value.filter((o) => o !== 'Recommend'))
+const allOptions = computed(() => Object.keys(iconMap.value))
+const otherOptions = computed(() => allOptions.value.filter((o) => o !== 'recommend'))
 
-const displayedRecommend = computed(() => !props.readonly || local.Options.includes('Recommend'))
+// Dietary keys live in `dietary`, custom icons in `tags`
+function isOn(option: string): boolean {
+  return isDietaryKey(option) ? local.dietary[option] : local.tags.includes(option)
+}
+
+const displayedRecommend = computed(() => !props.readonly || isOn('recommend'))
 
 const displayedOtherOptions = computed(() =>
-  otherOptions.value.filter((opt) => !props.readonly || local.Options.includes(opt)),
+  otherOptions.value.filter((opt) => !props.readonly || isOn(opt)),
 )
 
 // Toggle Options
-function toggleOption(option: MenuOption) {
+function toggleOption(option: string) {
   if (props.readonly) return
 
-  const list = local.Options
-  const i = list.indexOf(option)
-
-  if (i >= 0) {
-    list.splice(i, 1)
+  if (isDietaryKey(option)) {
+    local.dietary[option] = !local.dietary[option]
   } else {
-    list.push(option)
+    const i = local.tags.indexOf(option)
+    if (i >= 0) local.tags.splice(i, 1)
+    else local.tags.push(option)
   }
+  emit('update:item', cloneMenuItem(local))
 }
 
 function toggleRecommend() {
-  toggleOption('Recommend')
+  toggleOption('recommend')
 }
 
 /* Editing State */
-type Field = 'No' | 'Name' | 'ChineseName' | 'Measure' | 'Description' | 'Price' | 'Category'
+type Field = 'no' | 'name' | 'measure' | 'description' | 'price' | 'category'
 
 // Editing state
 const editingState = reactive<Record<Field, boolean>>({
-  No: false,
-  Name: false,
-  ChineseName: false,
-  Measure: false,
-  Description: false,
-  Price: false,
-  Category: false,
+  no: false,
+  name: false,
+  measure: false,
+  description: false,
+  price: false,
+  category: false,
 })
+
+// The extra name being edited, if any (one at a time)
+const editingExtraName = ref<Lang | null>(null)
+
+function startEditingExtraName(lang: Lang) {
+  if (props.readonly) return
+  editingExtraName.value = lang
+  nextTick(() => document.getElementById(`name-${lang}`)?.focus())
+}
+
+function stopEditingExtraName() {
+  editingExtraName.value = null
+  emit('update:item', cloneMenuItem(local))
+}
 
 // Start/stop editing
 function startEditing(field: Field) {
@@ -94,7 +144,7 @@ function startEditing(field: Field) {
 function stopEditing(field: Field) {
   editingState[field] = false
   // Emit update when stopping edit on any field
-  emit('update:item', { ...local })
+  emit('update:item', cloneMenuItem(local))
 }
 
 // const isEditingImage = ref(false)
@@ -122,7 +172,7 @@ function lightenColor(hex: string, percent: number) {
 
 // Run initially and whenever name/no/base64/version change
 watch(
-  () => [local.mainImageBase64, local.Name, local.No, props.item.lastUpdated],
+  () => [local.mainImageBase64, displayName.value, local.no, props.item.lastUpdated],
   () => {
     updateDisplayedPicture()
   },
@@ -195,7 +245,7 @@ function deletePicture() {
   const remainingImages = (local.images ?? []).slice(1)
 
   const updatedItem: MenuItem = {
-    ...local,
+    ...cloneMenuItem(local),
     images: remainingImages,
     mainImageBase64: remainingImages[0]?.base64 ?? null,
     lastUpdated: Date.now(),
@@ -207,9 +257,8 @@ function deletePicture() {
 watch(
   () => props.item,
   (newItem) => {
-    const currentOptions = [...local.Options] // ← save current options
-    Object.assign(local, newItem)
-    local.Options = currentOptions // ← restore, don't let parent overwrite
+    // Copy, so editing `local` never writes into the parent's item
+    Object.assign(local, cloneMenuItem(newItem))
     updateDisplayedPicture()
   },
   { deep: true, immediate: true },
@@ -226,7 +275,7 @@ function setDisplayedPicture(src: string | null) {
 function handleImageChange(base64: string | null) {
   local.mainImageBase64 = base64
   local.lastUpdated = Date.now()
-  emit('update:item', { ...local })
+  emit('update:item', cloneMenuItem(local))
   setDisplayedPicture(base64)
 }
 
@@ -271,52 +320,53 @@ async function updateDisplayedPicture() {
 //   { deep: true },
 // )
 
+// A newly added custom icon starts switched on for every dish
 watch(allOptions, (newOptions, oldOptions) => {
-  const added = newOptions.filter((opt) => !oldOptions.includes(opt))
+  const added = newOptions.filter(
+    (opt) => !oldOptions.includes(opt) && !isDietaryKey(opt) && !local.tags.includes(opt),
+  )
   if (!added.length) return
-  for (const opt of added) {
-    if (!local.Options.includes(opt)) {
-      local.Options.push(opt)
-    }
-  }
+  local.tags.push(...added)
   // Emit to update parent BEFORE it can sync back and wipe us
-  emit('update:item', { ...local })
+  emit('update:item', cloneMenuItem(local))
 })
 </script>
 
 <template>
-  <div class="my-1">
-    <div class="flex items-start gap-2 font-bold text-sm">
-      <!-- Recommend Icon -->
-      <div class="shrink-0 w-4 flex justify-center items-center">
+  <!-- "Fill page": no gap between dishes, so the photo can use the dish's whole height -->
+  <div data-dish :class="props.fillHeight ? 'my-0' : 'my-1'">
+    <!-- Dish line (number, names, price); the description sets its own size -->
+    <div class="h-full flex items-start gap-2 font-bold text-base" :style="fontSize('name')">
+      <!-- Recommend Icon (1em: follows the dish name size; 1lh: centred on the name's first line) -->
+      <div class="shrink-0 w-[1em] h-lh flex justify-center items-center">
         <img
           v-if="displayedRecommend"
-          :src="iconMap['Recommend']"
-          class="w-4 h-4 cursor-pointer hover:opacity-100"
+          :src="iconMap['recommend']"
+          class="w-[1em] h-[1em] cursor-pointer hover:opacity-100"
           :class="{
-            'opacity-100': local.Options.includes('Recommend'),
-            'opacity-30': !local.Options.includes('Recommend'),
+            'opacity-100': isOn('recommend'),
+            'opacity-30': !isOn('recommend'),
             'pointer-events-none': props.readonly,
           }"
           @click="toggleRecommend"
-          :title="getDisplayLabel('Recommend')"
-          :data-selected="local.Options.includes('Recommend')"
+          :title="getDisplayLabel('recommend')"
+          :data-selected="isOn('recommend')"
         />
       </div>
 
-      <!-- No -->
-      <div class="shrink-0 w-6 text-right">
+      <!-- No (em: wide enough for "413" at any dish name size) -->
+      <div class="shrink-0 w-[1.75em] text-right">
         <span
-          v-if="local.No && !editingState.No"
-          @click="startEditing('No')"
+          v-if="local.no && !editingState.no"
+          @click="startEditing('no')"
           :title="`Click to edit the Number...`"
           class="cursor-pointer"
-          >{{ local.No }}</span
+          >{{ local.no }}</span
         >
         <span
-          v-else-if="!local.No && !props.readonly && !editingState.No"
+          v-else-if="!local.no && !props.readonly && !editingState.no"
           data-ui-only
-          @click="startEditing('No')"
+          @click="startEditing('no')"
           title="Click to add No..."
           class="opacity-30 cursor-pointer"
         >
@@ -324,47 +374,47 @@ watch(allOptions, (newOptions, oldOptions) => {
         </span>
         <input
           v-else
-          id="No"
+          id="no"
           type="number"
-          v-model="local.No"
-          @blur="stopEditing('No')"
-          @keyup.enter="stopEditing('No')"
+          v-model="local.no"
+          @blur="stopEditing('no')"
+          @keyup.enter="stopEditing('no')"
           :readonly="props.readonly"
           class="border p-1 w-20"
         />
       </div>
 
-      <!-- Name & Chinese Name -->
+      <!-- Name & Extra Names -->
       <div class="flex-1 flex flex-col">
         <div>
           <span
-            v-if="local.Name && !editingState.Name"
-            @click="startEditing('Name')"
+            v-if="displayName && !editingState.name"
+            @click="startEditing('name')"
             :title="`Click to edit the Name...`"
             class="cursor-pointer"
-            >{{ local.Name }}
+            >{{ displayName }}
             <span
-              v-if="local.Measure && !editingState.Measure"
+              v-if="local.measure && !editingState.measure"
               class="cursor-pointer hover:bg-gray-300 rounded"
-              @click.stop="startEditing('Measure')"
+              @click.stop="startEditing('measure')"
               :title="`Click to edit the Measure...`"
             >
-              ({{ local.Measure }} pcs)</span
+              ({{ local.measure }} {{ measureUnit }})</span
             >
             <span
-              v-else-if="!local.Measure && !props.readonly && !editingState.Measure"
+              v-else-if="!local.measure && !props.readonly && !editingState.measure"
               data-ui-only
-              @click.stop="startEditing('Measure')"
+              @click.stop="startEditing('measure')"
               title="Click to add Measure..."
               class="opacity-30 cursor-pointer"
             >
-              (pcs)
+              ({{ measureUnit }})
             </span>
           </span>
           <span
-            v-else-if="!local.Name && !props.readonly && !editingState.Name"
+            v-else-if="!displayName && !props.readonly && !editingState.name"
             data-ui-only
-            @click="startEditing('Name')"
+            @click="startEditing('name')"
             title="Click to add Name..."
             class="opacity-30 cursor-pointer"
           >
@@ -373,75 +423,81 @@ watch(allOptions, (newOptions, oldOptions) => {
 
           <input
             v-else
-            id="Name"
-            v-model="local.Name"
-            @blur="stopEditing('Name')"
-            @keyup.enter="stopEditing('Name')"
+            id="name"
+            v-model="nameText"
+            @blur="stopEditing('name')"
+            @keyup.enter="stopEditing('name')"
             :readonly="props.readonly"
+            :placeholder="displayName"
             class="p-1"
           />
           <!-- Measure editing (inline) -->
-          <span v-if="editingState.Measure" class="inline-flex items-center gap-1">
+          <span v-if="editingState.measure" class="inline-flex items-center gap-1">
             (
             <input
-              id="Measure"
-              v-model="local.Measure"
-              @blur="stopEditing('Measure')"
-              @keyup.enter="stopEditing('Measure')"
+              id="measure"
+              v-model="local.measure"
+              @blur="stopEditing('measure')"
+              @keyup.enter="stopEditing('measure')"
               :readonly="props.readonly"
               class="p-1 w-12 border"
               placeholder="qty"
             />
-            pcs)
+            {{ measureUnit }})
           </span>
-          <!-- Chinese Name -->
-          <span
-            v-if="local.ChineseName && !editingState.ChineseName"
-            class="font-light menu-item whitespace-normal break-keep cursor-pointer"
-            @click="startEditing('ChineseName')"
-            title="Click to edit the Chinese Name..."
-          >
-            <span class="inline"> / </span>
-            {{ local.ChineseName }}
-          </span>
+          <!-- Extra Names (e.g. English, Chinese) -->
+          <template v-for="lang in extraLangs" :key="lang">
+            <span
+              v-if="extraNameText(lang) && editingExtraName !== lang"
+              class="font-light menu-item whitespace-normal break-keep cursor-pointer"
+              @click="startEditingExtraName(lang)"
+              :title="`Click to edit the ${LANG_LABELS[lang]} Name...`"
+            >
+              <span class="inline"> / </span>
+              {{ extraNameText(lang) }}
+            </span>
 
-          <span
-            v-else-if="!local.ChineseName && !props.readonly && !editingState.ChineseName"
-            data-ui-only
-            @click="startEditing('ChineseName')"
-            title="Click to add Chinese Name..."
-            class="opacity-30 cursor-pointer"
-          >
-            <span class="inline"> / </span>
-            Click to add Chinese Name
-          </span>
+            <span
+              v-else-if="!extraNameText(lang) && !props.readonly && editingExtraName !== lang"
+              data-ui-only
+              @click="startEditingExtraName(lang)"
+              :title="`Click to add ${LANG_LABELS[lang]} Name...`"
+              class="opacity-30 cursor-pointer"
+            >
+              <span class="inline"> / </span>
+              Click to add {{ LANG_LABELS[lang] }} Name
+            </span>
 
-          <input
-            v-else
-            id="ChineseName"
-            v-model="local.ChineseName"
-            @blur="stopEditing('ChineseName')"
-            @keyup.enter="stopEditing('ChineseName')"
-            :readonly="props.readonly"
-            class="p-1 whitespace-normal break-keep"
-          />
+            <input
+              v-else-if="editingExtraName === lang"
+              :id="`name-${lang}`"
+              v-model="local.name[lang]"
+              @blur="stopEditingExtraName"
+              @keyup.enter="stopEditingExtraName"
+              :readonly="props.readonly"
+              class="p-1 whitespace-normal break-keep"
+            />
+          </template>
         </div>
 
         <!-- Description -->
-        <div class="font-extralight mt-1" :style="{ color: lighterTextColor }">
+        <div
+          class="text-sm font-extralight mt-1"
+          :style="{ color: lighterTextColor, ...fontSize('description') }"
+        >
           <span
-            v-if="!editingState.Description && local.Description"
-            @click="startEditing('Description')"
+            v-if="!editingState.description && displayDescription"
+            @click="startEditing('description')"
             :title="'Click to edit the Description...'"
             class="cursor-pointer"
           >
-            {{ local.Description }}
+            {{ displayDescription }}
           </span>
 
           <span
-            v-else-if="!props.readonly && !local.Description && !editingState.Description"
+            v-else-if="!props.readonly && !displayDescription && !editingState.description"
             data-ui-only
-            @click="startEditing('Description')"
+            @click="startEditing('description')"
             title="Click to add description..."
             class="opacity-30 cursor-pointer"
           >
@@ -450,14 +506,14 @@ watch(allOptions, (newOptions, oldOptions) => {
 
           <!-- Textarea for editing -->
           <textarea
-            v-if="editingState.Description"
-            id="Description"
-            v-model="local.Description"
-            @blur="stopEditing('Description')"
-            @keyup.enter="stopEditing('Description')"
+            v-if="editingState.description"
+            id="description"
+            v-model="descriptionText"
+            @blur="stopEditing('description')"
+            @keyup.enter="stopEditing('description')"
             :readonly="props.readonly"
             class="p-1 w-full"
-            placeholder="Click to add description"
+            :placeholder="displayDescription || 'Click to add description'"
           />
         </div>
 
@@ -465,67 +521,67 @@ watch(allOptions, (newOptions, oldOptions) => {
         <div class="relative group text-xs font-extralight mt-1" data-ui-only>
           <!-- Hover label -->
           <div
-            v-if="!editingState.Category && local.Category"
+            v-if="!editingState.category && displayCategory"
             class="absolute left-0 top-0 px-2 py-0.5 bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer whitespace-nowrap"
-            @click="startEditing('Category')"
+            @click="startEditing('category')"
             title="Click to edit category"
           >
-            {{ local.Category }}
+            {{ displayCategory }}
           </div>
 
           <!-- Empty state -->
           <div
-            v-else-if="!editingState.Category && !local.Category && !props.readonly"
+            v-else-if="!editingState.category && !displayCategory && !props.readonly"
             class="absolute left-0 top-0 px-2 py-0.5 bg-gray-200 text-gray-600 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer whitespace-nowrap"
-            @click="startEditing('Category')"
+            @click="startEditing('category')"
           >
             + Category
           </div>
 
           <!-- Edit mode -->
           <textarea
-            v-if="editingState.Category"
-            id="Category"
-            v-model="local.Category"
-            @blur="stopEditing('Category')"
-            @keyup.enter="stopEditing('Category')"
+            v-if="editingState.category"
+            id="category"
+            v-model="categoryText"
+            @blur="stopEditing('category')"
+            @keyup.enter="stopEditing('category')"
             class="p-1 w-full border border-gray-300 rounded"
-            placeholder="Edit category"
+            :placeholder="displayCategory || 'Edit category'"
           />
         </div>
       </div>
 
-      <!-- Other Options -->
-      <div class="shrink-0 flex gap-1 justify-start items-center">
+      <!-- Other Options (1em: follow the dish name size; 1lh: centred on the name's first line) -->
+      <div class="shrink-0 h-lh flex gap-1 justify-start items-center">
         <img
           v-for="opt in displayedOtherOptions"
           :key="opt"
           :src="iconMap[opt]"
-          class="w-4 h-4 cursor-pointer hover:opacity-100"
+          class="w-[1em] h-[1em] cursor-pointer hover:opacity-100"
           :class="{
-            'opacity-100': local.Options.includes(opt as MenuOption),
-            'opacity-30': !local.Options.includes(opt as MenuOption),
+            'opacity-100': isOn(opt),
+            'opacity-30': !isOn(opt),
             'pointer-events-none': props.readonly,
           }"
-          @click="toggleOption(opt as MenuOption)"
+          @click="toggleOption(opt)"
           :title="getDisplayLabel(opt)"
-          :data-selected="local.Options.includes(opt)"
+          :data-selected="isOn(opt)"
         />
       </div>
 
-      <!-- Price -->
-      <div class="w-8 text-right">
+      <!-- Price (em: wide enough for "42.5" at any dish name size) -->
+      <div class="shrink-0 w-[2em] text-right">
         <span
-          v-if="local.Price && !editingState.Price"
-          @click="startEditing('Price')"
+          v-if="local.price && !editingState.price"
+          @click="startEditing('price')"
           :title="`Click to edit the Price...`"
           class="cursor-pointer"
-          >{{ local.Price }}</span
+          >{{ local.price }}</span
         >
         <span
-          v-else-if="!local.Price && !props.readonly && !editingState.Price"
+          v-else-if="!local.price && !props.readonly && !editingState.price"
           data-ui-only
-          @click="startEditing('Price')"
+          @click="startEditing('price')"
           title="Click to add Price..."
           class="opacity-30 cursor-pointer"
         >
@@ -533,22 +589,27 @@ watch(allOptions, (newOptions, oldOptions) => {
         </span>
         <input
           v-else
-          id="Price"
-          v-model="local.Price"
-          @blur="stopEditing('Price')"
-          @keyup.enter="stopEditing('Price')"
+          id="price"
+          v-model="local.price"
+          @blur="stopEditing('price')"
+          @keyup.enter="stopEditing('price')"
           :readonly="props.readonly"
           class="border p-1 w-24"
         />
       </div>
 
-      <!-- Picture -->
-      <!-- min-w and min-h need to change by the w-20 and h-20-->
-      <div class="shrink-0 w-20 h-20 relative rounded-full cursor-pointer">
-        <!-- Normal img -->
+      <!-- Picture: 80px, or with "Fill page" the chosen photo size, shrunk to the dish box on
+           a page too full for it; aspect-square keeps it round -->
+      <div
+        class="shrink-0 min-w-0 aspect-square relative rounded-full cursor-pointer"
+        :class="props.fillHeight ? 'h-full min-h-20' : 'h-20'"
+        :style="props.fillHeight ? { maxHeight: `${photoSize}px` } : undefined"
+      >
+        <!-- Normal img: leaves the outer ring free for the curved name, or fills the circle -->
         <div
           v-if="displayedPicture && pictureState.visible"
-          class="absolute inset-0 rounded-full overflow-hidden m-[12%] w-[76%] h-[76%]"
+          class="absolute inset-0 rounded-full overflow-hidden"
+          :class="showNameRing ? 'm-[12%] w-[76%] h-[76%]' : 'm-[3%] w-[94%] h-[94%]'"
         >
           <img
             :src="displayedPicture"
@@ -559,7 +620,7 @@ watch(allOptions, (newOptions, oldOptions) => {
 
         <!-- Curved text overlay SVG -->
         <svg
-          v-if="displayedPicture && pictureState.visible"
+          v-if="displayedPicture && pictureState.visible && showNameRing"
           viewBox="0 0 100 100"
           class="absolute inset-0 w-full h-full pointer-events-none"
         >
@@ -572,7 +633,7 @@ watch(allOptions, (newOptions, oldOptions) => {
           />
           <text class="font-extralight text-[0.6rem]" :style="{ fill: lighterTextColor }">
             <textPath :href="`#path-${props.item.id}`" startOffset="0%" text-anchor="start">
-              {{ local.Name }}
+              {{ displayName }}
             </textPath>
           </text>
         </svg>

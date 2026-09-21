@@ -1,6 +1,10 @@
 <script lang="ts" setup>
-import { computed, ref, reactive, watch } from 'vue'
+import { computed, onMounted, onUpdated, ref, reactive, watch } from 'vue'
 import type { MenuItem } from '@/types/types'
+import { paginateMenu } from '@/domain/menuPages'
+import { useMenuLang } from '@/composables/useMenuLang'
+import { useMenuTypography } from '@/composables/useMenuTypography'
+import { useMenuPhoto } from '@/composables/useMenuPhoto'
 import MenuItemComponent from '@/components/layouts/MenuItem.vue'
 import LogoUpload from '@/components/AddLogo.vue'
 import MeunInfo from '@/components/layouts/MeunInfo.vue'
@@ -26,19 +30,14 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:footerText', value: string): void
   (e: 'update:logo', base64: string): void
-  (e: 'add-before', payload: { No: string }): void
-  (e: 'add-after', payload: { No: string }): void
-  (e: 'delete-item', payload: { No: string }): void
-  (e: 'reorder', payload: { fromNo: string; toNo: string }): void
-  (e: 'update:totalPages', value: number): void
+  // Dishes are identified by id: numbers can be empty or repeat (side dishes, desserts)
+  (e: 'add-before', payload: { id: string }): void
+  (e: 'add-after', payload: { id: string }): void
+  (e: 'delete-item', payload: { id: string }): void
+  (e: 'reorder', payload: { fromId: string; toId: string }): void
 }>()
 
 /* State */
-interface PageEntry {
-  category: string
-  item: MenuItem
-}
-
 const dragState = reactive<{ draggingIndex: number | null; dragOverIndex: number | null }>({
   draggingIndex: null,
   dragOverIndex: null,
@@ -54,80 +53,15 @@ watch(isModalOpen, () => {
 })
 
 /* Domain / Computed */
-// Group items by category
-function groupItems(items: MenuItem[]): Record<string, MenuItem[]> {
-  const grouped: Record<string, MenuItem[]> = {}
-  items.forEach((item) => {
-    const cat = item.Category || 'Uncategorized'
-    if (!grouped[cat]) grouped[cat] = []
-    grouped[cat].push(item)
-  })
-  return grouped
-}
-
-// Pagination logic
-function paginateItems(
-  items: MenuItem[],
-  itemsPerPage: number,
-  keepCategoryTogether?: boolean,
-): PageEntry[][] {
-  const grouped = groupItems(items)
-
-  const result: PageEntry[][] = []
-  let currentPage: PageEntry[] = []
-
-  if (keepCategoryTogether) {
-    for (const [category, items] of Object.entries(grouped)) {
-      const categoryEntries = items.map((item) => ({ category, item }))
-      const categoryLength = categoryEntries.length
-
-      if (categoryLength > 11) {
-        if (currentPage.length) {
-          result.push(currentPage)
-          currentPage = []
-        }
-        for (let i = 0; i < categoryLength; i += 11) {
-          result.push(categoryEntries.slice(i, i + 11))
-        }
-        continue
-      }
-
-      if (currentPage.length > 0 && currentPage.length + categoryLength > 10) {
-        result.push(currentPage)
-        currentPage = []
-      }
-
-      currentPage.push(...categoryEntries)
-      if (currentPage.length >= 10) {
-        result.push(currentPage)
-        currentPage = []
-      }
-    }
-  } else {
-    for (const [category, items] of Object.entries(grouped)) {
-      items.forEach((item) => {
-        if (currentPage.length >= itemsPerPage) {
-          result.push(currentPage)
-          currentPage = []
-        }
-        currentPage.push({ category, item })
-      })
-    }
-  }
-
-  if (currentPage.length > 0) result.push(currentPage)
-  return result
-}
+const { primary } = useMenuLang()
+const { fontSize } = useMenuTypography()
 
 const pages = computed(() =>
-  paginateItems(props.items, props.itemsPerPage, props.keepCategoryTogether),
+  paginateMenu(props.items, props.itemsPerPage, props.keepCategoryTogether, primary.value),
 )
 const totalPages = computed(() => pages.value.length)
 const clampedPage = computed(() => Math.min(Math.max(props.currentPage, 0), totalPages.value - 1))
 const pageItems = computed(() => pages.value[clampedPage.value] ?? [])
-
-// Sync total pages with parent
-watch(totalPages, (val) => emit('update:totalPages', val), { immediate: true })
 
 /* Infrastructure / Helpers */
 watch(
@@ -137,6 +71,40 @@ watch(
   },
   { immediate: true },
 )
+
+// The on-screen page measures how much room headers and dishes get, so "Fill page" can
+// work out the photo size that fits the menu's fullest page. (The PDF copy is hidden and
+// has no layout, and uses the same numbers.)
+const pageRef = ref<HTMLElement | null>(null)
+const logoRef = ref<HTMLElement | null>(null)
+const footerRef = ref<HTMLElement | null>(null)
+const { pageLayout } = useMenuPhoto()
+
+function measureLayout() {
+  const page = pageRef.value
+  const logo = logoRef.value
+  const footer = footerRef.value
+  // Only "Fill page" uses the result, and its spacing differs from "Compact"
+  if (props.readonly || props.itemSpacing !== 'fill' || !page || !logo || !footer) return
+
+  const header = page.querySelector('h2')
+  const box = page.querySelector<HTMLElement>('[data-dish-box]')
+  const content = box?.querySelector<HTMLElement>('[data-dish]')
+  const areaHeight = footer.offsetTop - (logo.offsetTop + logo.offsetHeight)
+  if (!header || !box || !content || areaHeight <= 0) return
+
+  const measured = {
+    areaHeight,
+    headerHeight: header.offsetHeight + parseFloat(getComputedStyle(header).marginBottom),
+    dishMargin: box.offsetHeight - content.offsetHeight,
+  }
+  if (Object.entries(measured).some(([k, v]) => pageLayout[k as keyof typeof measured] !== v)) {
+    Object.assign(pageLayout, measured)
+  }
+}
+
+onMounted(measureLayout)
+onUpdated(measureLayout)
 
 function shouldShowCategoryHeader(index: number) {
   const current = pageItems.value[index]
@@ -195,11 +163,11 @@ function onDrop(e: DragEvent) {
   if (to === pageItems.value.length) {
     // Move to end
     emit('reorder', {
-      fromNo: fromItem.No,
-      toNo: pageItems.value[toIndex - 1]?.item.No ?? fromItem.No,
+      fromId: fromItem.id,
+      toId: pageItems.value[toIndex - 1]?.item.id ?? fromItem.id,
     })
   } else {
-    emit('reorder', { fromNo: fromItem.No, toNo: toItem.No })
+    emit('reorder', { fromId: fromItem.id, toId: toItem.id })
   }
 }
 
@@ -210,7 +178,11 @@ const styleObject = computed(() => ({
   color: props.textColor ?? '#000000',
 }))
 
-const itemFlexClass = computed(() => (props.itemSpacing === 'fill' ? 'flex-1' : 'flex-none'))
+// "Fill page": boxes share the page height, and flex-col passes that height down so the
+// dish photo can grow to fill its box
+const itemFlexClass = computed(() =>
+  props.itemSpacing === 'fill' ? 'flex-1 flex flex-col' : 'flex-none',
+)
 
 const itemSpacingClass = computed(() => {
   switch (props.itemSpacing) {
@@ -228,6 +200,7 @@ const itemSpacingClass = computed(() => {
 
 <template>
   <div
+    ref="pageRef"
     class="a4-preview p-6 flex flex-col relative"
     :style="{
       ...styleObject,
@@ -236,7 +209,7 @@ const itemSpacingClass = computed(() => {
     }"
   >
     <!-- Logo Section -->
-    <div class="flex items-start justify-end">
+    <div ref="logoRef" class="flex items-start justify-end">
       <LogoUpload
         :default-src="logoBase64 || undefined"
         :readonly="readonly"
@@ -250,122 +223,135 @@ const itemSpacingClass = computed(() => {
     </div>
 
     <!-- Menu Items Section -->
-    <div
+    <template
       v-for="(entry, index) in pageItems"
-      :key="`${clampedPage}-${entry.category}-${entry.item.No || 'item'}-${index}`"
-      class="group relative"
-      :class="[itemFlexClass, itemSpacingClass]"
-      @dragover="(e) => onDragOver(e, index)"
-      @drop="onDrop"
+      :key="`${clampedPage}-${entry.category}-${entry.item.no || 'item'}-${index}`"
     >
-      <h2 v-if="shouldShowCategoryHeader(index)" class="text-xl font-bold mb-1 border-b-1">
+      <!-- Its own row, so "Fill page" gives every dish the same share of the page -->
+      <!-- Dropping a dish on the header puts it before the category's first dish -->
+      <h2
+        v-if="shouldShowCategoryHeader(index)"
+        class="flex-none text-xl font-bold mb-1 border-b-1"
+        :style="fontSize('category')"
+        @dragover.prevent="dragState.dragOverIndex = index"
+        @drop="onDrop"
+      >
         {{ entry.category }}
       </h2>
 
       <div
-        v-if="dragState.dragOverIndex === index"
-        data-ui-only
-        class="absolute top-0 left-0 w-full h-0.5 bg-blue-500"
-      ></div>
-
-      <div
-        class="relative transition-all duration-150 rounded-md flex flex-1"
-        :class="[
-          'transition-all duration-200 ease-in-out',
-          dragState.draggingIndex === index ? 'scale-90 opacity-60 z-10' : '',
-          tappedIndex === index ? 'scale-102 shadow-sm' : '',
-          isModalOpen ? '' : 'group-hover:scale-102 group-hover:shadow-sm',
-        ]"
-        @click="tappedIndex = tappedIndex === index ? null : index"
+        data-dish-box
+        class="group relative"
+        :class="[itemFlexClass, itemSpacingClass]"
+        @dragover="(e) => onDragOver(e, index)"
+        @drop="onDrop"
       >
-        <MenuItemComponent
-          class="flex-1"
-          :item="entry.item"
-          :readonly="readonly"
-          :text-color="props.textColor"
-          @update:item="(updated) => Object.assign(entry.item, updated)"
-          @modalOpen="isModalOpen = $event"
-        />
+        <div
+          v-if="dragState.dragOverIndex === index"
+          data-ui-only
+          class="absolute top-0 left-0 w-full h-0.5 bg-blue-500"
+        ></div>
 
-        <!-- Overlay Controls -->
         <div
-          v-if="!props.readonly"
-          data-ui-only
-          class="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
-          :class="{
-            'opacity-0 pointer-events-none': isModalOpen,
-            'opacity-100 pointer-events-auto': tappedIndex === index,
-            'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
-          }"
+          class="relative transition-all duration-150 rounded-md flex flex-1"
+          :class="[
+            'transition-all duration-200 ease-in-out',
+            dragState.draggingIndex === index ? 'scale-90 opacity-60 z-10' : '',
+            tappedIndex === index ? 'scale-102 shadow-sm' : '',
+            isModalOpen ? '' : 'group-hover:scale-102 group-hover:shadow-sm',
+          ]"
+          @click="tappedIndex = tappedIndex === index ? null : index"
         >
-          <button
-            class="w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
-            @click.stop.prevent="() => emit('add-before', { No: entry.item.No })"
-            title="Add item before"
+          <MenuItemComponent
+            class="flex-1"
+            :item="entry.item"
+            :readonly="readonly"
+            :text-color="props.textColor"
+            :fill-height="props.itemSpacing === 'fill'"
+            @update:item="(updated) => Object.assign(entry.item, updated)"
+            @modalOpen="isModalOpen = $event"
+          />
+
+          <!-- Overlay Controls -->
+          <div
+            v-if="!props.readonly"
+            data-ui-only
+            class="absolute -top-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
+            :class="{
+              'opacity-0 pointer-events-none': isModalOpen,
+              'opacity-100 pointer-events-auto': tappedIndex === index,
+              'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
+            }"
           >
-            ＋
-          </button>
-        </div>
-        <div
-          v-if="!props.readonly"
-          data-ui-only
-          class="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
-          :class="{
-            'opacity-0 pointer-events-none': isModalOpen,
-            'opacity-100 pointer-events-auto': tappedIndex === index,
-            'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
-          }"
-        >
-          <button
-            class="w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
-            @click.stop.prevent="() => emit('add-after', { No: entry.item.No })"
-            title="Add item after"
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
+              @click.stop.prevent="() => emit('add-before', { id: entry.item.id })"
+              title="Add item before"
+            >
+              ＋
+            </button>
+          </div>
+          <div
+            v-if="!props.readonly"
+            data-ui-only
+            class="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
+            :class="{
+              'opacity-0 pointer-events-none': isModalOpen,
+              'opacity-100 pointer-events-auto': tappedIndex === index,
+              'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
+            }"
           >
-            ＋
-          </button>
-        </div>
-        <div
-          v-if="!props.readonly"
-          data-ui-only
-          class="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
-          :class="{
-            'opacity-0 pointer-events-none': isModalOpen,
-            'opacity-100 pointer-events-auto': tappedIndex === index,
-            'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
-          }"
-        >
-          <button
-            class="w-8 h-8 flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
-            @click.stop.prevent="() => emit('delete-item', { No: entry.item.No })"
-            title="Delete item"
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
+              @click.stop.prevent="() => emit('add-after', { id: entry.item.id })"
+              title="Add item after"
+            >
+              ＋
+            </button>
+          </div>
+          <div
+            v-if="!props.readonly"
+            data-ui-only
+            class="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
+            :class="{
+              'opacity-0 pointer-events-none': isModalOpen,
+              'opacity-100 pointer-events-auto': tappedIndex === index,
+              'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
+            }"
           >
-            ✕
-          </button>
-        </div>
-        <div
-          v-if="!props.readonly"
-          class="drag-handle absolute bottom-0 left-0 text-2xl cursor-move text-gray-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
-          :class="{
-            'opacity-0 pointer-events-none': isModalOpen,
-            'opacity-100 pointer-events-auto': tappedIndex === index,
-            'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
-          }"
-          title="Drag to reorder"
-          data-ui-only
-          @dragstart="(e) => onDragStart(e, index)"
-          draggable="true"
-        >
-          <span
-            class="w-10 h-10 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white"
+            <button
+              class="w-8 h-8 flex items-center justify-center text-red-500 rounded-full shadow-sm hover:bg-blue-500 hover:text-white cursor-pointer"
+              @click.stop.prevent="() => emit('delete-item', { id: entry.item.id })"
+              title="Delete item"
+            >
+              ✕
+            </button>
+          </div>
+          <div
+            v-if="!props.readonly"
+            class="drag-handle absolute bottom-0 left-0 text-2xl cursor-move text-gray-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150"
+            :class="{
+              'opacity-0 pointer-events-none': isModalOpen,
+              'opacity-100 pointer-events-auto': tappedIndex === index,
+              'group-hover:opacity-100 group-hover:pointer-events-auto': !isModalOpen,
+            }"
+            title="Drag to reorder"
+            data-ui-only
+            @dragstart="(e) => onDragStart(e, index)"
+            draggable="true"
           >
-            ⠿
-          </span>
+            <span
+              class="w-10 h-10 flex items-center justify-center rounded-full shadow-sm hover:bg-blue-500 hover:text-white"
+            >
+              ⠿
+            </span>
+          </div>
         </div>
       </div>
-    </div>
+    </template>
 
     <!-- Footer Section -->
-    <div class="mt-auto bottom-0 left-0 w-full">
+    <div ref="footerRef" class="mt-auto bottom-0 left-0 w-full">
       <MeunInfo
         :footer-text="props.footerText"
         :readonly="readonly"

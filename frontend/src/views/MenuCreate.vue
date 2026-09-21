@@ -2,10 +2,26 @@
 import { reactive, ref, watch, onMounted, computed } from 'vue'
 import type { MenuItem } from '@/types/types'
 import { useIcons } from '@/composables/useIcons'
+import { useMenuLang } from '@/composables/useMenuLang'
+import {
+  categoryLabel,
+  cloneMenuItem,
+  createMenuItem,
+  emptyDietary,
+  generateId,
+  isDietaryKey,
+  pickText,
+} from '@/domain/menuItem'
+import { paginateMenu } from '@/domain/menuPages'
+import { clampSize, uniformPhotoSize } from '@/domain/sizes'
+import { PHOTO_SIZE_RANGE, useMenuPhoto } from '@/composables/useMenuPhoto'
 import MenuPreview from '@/components/layouts/MenuPreview.vue'
 import GeneratePdf from '@/components/GeneratePdf.vue'
 import CsvUpload from '@/components/CsvUpload.vue'
 import FontSelector from '@/components/controls/FontSelector.vue'
+import MenuLanguageSelector from '@/components/controls/MenuLanguageSelector.vue'
+import TextSizeControl from '@/components/controls/TextSizeControl.vue'
+import PhotoSizeControl from '@/components/controls/PhotoSizeControl.vue'
 import ColorPicker from '@/components/controls/ColorPicker.vue'
 import PageSizeSelector from '@/components/controls/PageSizeSelector.vue'
 import ScaleControl from '@/components/controls/ScaleControl.vue'
@@ -82,59 +98,39 @@ const uiState = reactive({
 })
 
 /* Demo Data */
+function demoItem(n: number, category: number, dietary: Partial<MenuItem['dietary']>) {
+  return createMenuItem({
+    id: String(n - 1),
+    no: String(n),
+    price: '18.00',
+    name: { en: `Sample ${n}`, de: `Beispiel ${n}`, zh: `中文菜名 ${n}` },
+    description: {
+      en: `Sample description ${n}`,
+      de: `Beispielbeschreibung ${n}`,
+    },
+    category:
+      category === 1
+        ? { en: 'Sample Category', de: 'Beispielkategorie' }
+        : { en: 'Sample Category 2', de: 'Beispielkategorie 2' },
+    dietary: { ...emptyDietary(), ...dietary },
+  })
+}
+
 const demoMenu: MenuItem[] = [
   {
-    id: '0',
-    No: '1',
-    Price: '00.00',
-    Name: 'Sample 1',
-    Measure: '1',
-    ChineseName: '中文菜名 1',
-    Description: 'Sample description 1',
-    Options: ['Recommend', 'Spicy', 'Vegetarian'],
-    Category: 'Sample Category',
+    ...demoItem(1, 1, { recommend: true, spicy: true, vegetarian: true }),
+    price: '00.00',
+    measure: '1',
     mainImageBase64: '/data/2_Sample2.png',
   },
-  {
-    id: '1',
-    No: '2',
-    Price: '18.00',
-    Name: 'Sample 2',
-    Measure: '',
-    ChineseName: '中文菜名 2',
-    Description: 'Sample description 2',
-    Options: ['Vegan', 'Gluten Free'],
-    Category: 'Sample Category',
-  },
-  {
-    id: '2',
-    No: '3',
-    Price: '18.00',
-    Name: 'Sample 3',
-    Measure: '',
-    ChineseName: '中文菜名 3',
-    Description: 'Sample description 3',
-    Options: ['Vegan', 'Gluten Free'],
-    Category: 'Sample Category 2',
-  },
-  {
-    id: '3',
-    No: '4',
-    Price: '18.00',
-    Name: 'Sample 4',
-    Measure: '',
-    ChineseName: '中文菜名 4',
-    Description: 'Sample description 4',
-    Options: ['Vegan', 'Gluten Free'],
-    Category: 'Sample Category 2',
-  },
+  demoItem(2, 1, { vegan: true, gluten_free: true }),
+  demoItem(3, 2, { vegan: true, gluten_free: true }),
+  demoItem(4, 2, { vegan: true, gluten_free: true }),
 ]
 
 const { iconMap } = useIcons()
-const customOptionKeys = computed(() => {
-  const presets = new Set(['Recommend', 'Spicy', 'Vegan', 'Vegetarian', 'Gluten Free'])
-  return Object.keys(iconMap.value).filter((k) => !presets.has(k))
-})
+const { primary, extraLangs } = useMenuLang()
+const customOptionKeys = computed(() => Object.keys(iconMap.value).filter((k) => !isDietaryKey(k)))
 
 // const itemSpacing = ref<ItemSpacing>('fill')
 const menuPreviewRef = ref<HTMLElement | null>(null)
@@ -146,19 +142,61 @@ const twoPageRef = ref<HTMLElement | null>(null)
 // const csvKey = ref(0)
 
 /* Computed */
-const computedTotalPages = computed(() => {
-  const itemsCount = menuState.menuCsv.length
-  const itemsPerPage = pageState.itemsPerPage
-  const pages = uiState.showTwoPage
-    ? Math.ceil(itemsCount / (itemsPerPage * 2))
-    : Math.ceil(itemsCount / itemsPerPage)
-  return Math.max(1, pages) + 1
+// Menu pages as the preview lays them out. Keeping categories together leaves pages
+// part-empty, so this can be more than items ÷ itemsPerPage.
+const menuPages = computed(() =>
+  paginateMenu(
+    menuState.menuCsv,
+    pageState.itemsPerPage,
+    pageState.keepCategoryTogether,
+    primary.value,
+  ),
+)
+const menuPageCount = computed(() => Math.max(1, menuPages.value.length))
+
+// "Fill page" photo size: the largest the fullest page can fit (most dishes and headers
+// for the room the on-screen page measured), so every page shows photos the same size.
+// It is the photo size box's maximum.
+const { photoSize, maxPhotoSize, followMax, pageLayout } = useMenuPhoto()
+
+const uniformMaxPhoto = computed(() => {
+  if (!pageLayout.areaHeight) return null
+  const pages = menuPages.value.map((page) => ({
+    dishes: page.length,
+    // Categories are contiguous on a page, so each distinct one there has a header
+    headers: new Set(page.map((e) => e.category)).size,
+  }))
+  const size = uniformPhotoSize(pageLayout, pages)
+  return clampSize(size, PHOTO_SIZE_RANGE, PHOTO_SIZE_RANGE.min)
 })
 
-const pdfTotalPages = computed(() => {
-  const totalItems = menuState.menuCsv.length
-  return Math.max(1, Math.ceil(totalItems / pageState.itemsPerPage))
+watch(
+  uniformMaxPhoto,
+  (max) => {
+    if (max === null) return
+    maxPhotoSize.value = max
+    if (followMax.value || photoSize.value > max) photoSize.value = max
+  },
+  { immediate: true },
+)
+
+// Choosing "Fill page" starts at the maximum
+watch(
+  () => menuState.itemSpacing,
+  (spacing) => {
+    if (spacing !== 'fill') return
+    followMax.value = true
+    photoSize.value = maxPhotoSize.value
+  },
+)
+
+// Menu pages (or two-page spreads) plus the cover
+const computedTotalPages = computed(() => {
+  const pages = uiState.showTwoPage ? Math.ceil(menuPageCount.value / 2) : menuPageCount.value
+  return pages + 1
 })
+
+const pdfTotalPages = menuPageCount
 
 onMounted(() => {
   loadSampleMenu()
@@ -174,32 +212,26 @@ onMounted(() => {
 
 /* Application Action */
 function handleCsvLoaded(items: MenuItem[]) {
-  menuState.menuCsv = items.map((item) => ({
-    ...item,
-    Options: [
-      ...item.Options,
-      ...customOptionKeys.value.filter((opt) => !item.Options.includes(opt)),
-    ],
-  }))
+  // Custom icons come from the CSV cells, so each dish keeps its own tags
+  menuState.menuCsv = items
   pageState.currentPage = 1
 }
 
 function loadSampleMenu() {
-  menuState.menuCsv = demoMenu.map((item) => ({ ...item }))
+  menuState.menuCsv = demoMenu.map(cloneMenuItem)
   pageState.currentPage = 1
   uiState.csvKey++
 }
 
 /* Domain */
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-}
+const sameCategory = (item: MenuItem, category: string) =>
+  categoryLabel(item, primary.value) === category
 
 function getNextNo(category?: string): string {
   // Get all numeric No. values globally
   const globalUsedNumbers = new Set<number>()
   menuState.menuCsv.forEach((item) => {
-    const num = parseInt(item.No, 10)
+    const num = parseInt(item.no, 10)
     if (!isNaN(num)) {
       globalUsedNumbers.add(num)
     }
@@ -210,12 +242,12 @@ function getNextNo(category?: string): string {
 
   // If category provided, prioritize filling gaps within category's range
   if (category) {
-    const categoryItems = menuState.menuCsv.filter((item) => item.Category === category)
+    const categoryItems = menuState.menuCsv.filter((item) => sameCategory(item, category))
     let minInCategory = Infinity
     let maxInCategory = 0
 
     categoryItems.forEach((item) => {
-      const num = parseInt(item.No, 10)
+      const num = parseInt(item.no, 10)
       if (!isNaN(num)) {
         minInCategory = Math.min(minInCategory, num)
         maxInCategory = Math.max(maxInCategory, num)
@@ -253,19 +285,15 @@ function getNextNo(category?: string): string {
   return (sortedGlobal[sortedGlobal.length - 1]! + 1).toString()
 }
 
-function createNewItem(defaultNo?: string, defaultCategory?: string) {
-  const no = defaultNo ?? getNextNo(defaultCategory)
-  return {
+// `neighbor` is the dish the new one is inserted next to; it shares its category
+function createNewItem(neighbor?: MenuItem) {
+  const no = getNextNo(neighbor ? categoryLabel(neighbor, primary.value) : undefined)
+  return createMenuItem({
     id: generateId(),
-    No: no,
-    Price: '',
-    Name: `New Item ${no}`,
-    Measure: '',
-    ChineseName: '',
-    Description: '',
-    Options: [],
-    Category: defaultCategory ?? 'Uncategorized',
-  } as MenuItem
+    no,
+    name: { [primary.value]: `New Item ${no}` },
+    category: neighbor ? { ...neighbor.category } : {},
+  })
 }
 
 function onItemUpdated(updated: MenuItem) {
@@ -275,53 +303,48 @@ function onItemUpdated(updated: MenuItem) {
     idx = menuState.menuCsv.findIndex((it) => it.id === updated.id)
   }
   if (idx === -1) {
-    idx = menuState.menuCsv.findIndex((it) => it.Name === updated.Name)
+    const name = pickText(updated.name, primary.value)
+    idx = menuState.menuCsv.findIndex((it) => pickText(it.name, primary.value) === name)
   }
-  if (idx === -1 && updated.No != null) {
-    idx = menuState.menuCsv.findIndex((it) => it.No === updated.No)
+  if (idx === -1 && updated.no != null) {
+    idx = menuState.menuCsv.findIndex((it) => it.no === updated.no)
   }
 
   if (idx >= 0) {
-    // Preserve any custom options the item already has
-    const existingOptions = menuState.menuCsv[idx]?.Options ?? []
-    const mergedOptions = [
-      ...updated.Options,
-      ...existingOptions.filter(
-        (opt) => customOptionKeys.value.includes(opt) && !updated.Options.includes(opt),
-      ),
-    ]
-    menuState.menuCsv.splice(idx, 1, { ...updated, Options: mergedOptions })
+    menuState.menuCsv.splice(idx, 1, cloneMenuItem(updated))
   } else {
-    menuState.menuCsv.push({ ...updated })
+    menuState.menuCsv.push(cloneMenuItem(updated))
   }
   uiState.previewRenderKey++
 }
 
 /* Application Action */
-function addItemBefore(No: string) {
-  const idx = menuState.menuCsv.findIndex((it) => it.No === No)
-  const category = menuState.menuCsv[idx]?.Category ?? 'Uncategorized'
-  const newItem = createNewItem(undefined, category)
+// Dishes are found by id: a number can be empty or shared (side dishes, desserts),
+// and looking those up by number would act on the first such dish in the menu
+const indexOfId = (id: string) => menuState.menuCsv.findIndex((it) => it.id === id)
+
+function addItemBefore(id: string) {
+  const idx = indexOfId(id)
+  const newItem = createNewItem(menuState.menuCsv[idx])
   if (idx === -1) menuState.menuCsv.push(newItem)
   else menuState.menuCsv.splice(idx, 0, newItem)
 }
 
-function addItemAfter(No: string) {
-  const idx = menuState.menuCsv.findIndex((it) => it.No === No)
-  const category = menuState.menuCsv[idx]?.Category ?? 'Uncategorized'
-  const newItem = createNewItem(undefined, category)
+function addItemAfter(id: string) {
+  const idx = indexOfId(id)
+  const newItem = createNewItem(menuState.menuCsv[idx])
   if (idx === -1) menuState.menuCsv.push(newItem)
   else menuState.menuCsv.splice(idx + 1, 0, newItem)
 }
 
-function deleteItemByNo(No: string) {
-  const idx = menuState.menuCsv.findIndex((it) => it.No === No)
+function deleteItem(id: string) {
+  const idx = indexOfId(id)
   if (idx >= 0) menuState.menuCsv.splice(idx, 1)
 }
 
-function reorderItems(fromNo: string, toNo: string) {
-  const from = menuState.menuCsv.findIndex((it) => it.No === fromNo)
-  const to = menuState.menuCsv.findIndex((it) => it.No === toNo)
+function reorderItems(fromId: string, toId: string) {
+  const from = indexOfId(fromId)
+  const to = indexOfId(toId)
   if (from === -1 || to === -1 || from === to) return
   const removed = menuState.menuCsv.splice(from, 1)
   const item = removed[0]
@@ -335,7 +358,7 @@ function reorderItems(fromNo: string, toNo: string) {
 function handleRenameOption(oldLabel: string, newLabel: string) {
   menuState.menuCsv = menuState.menuCsv.map((item) => ({
     ...item,
-    Options: item.Options.map((opt) => (opt === oldLabel ? newLabel : opt)),
+    tags: item.tags.map((tag) => (tag === oldLabel ? newLabel : tag)),
   }))
 }
 
@@ -350,13 +373,14 @@ function handleRenameOption(oldLabel: string, newLabel: string) {
 // );
 
 watch(
-  [() => menuState.menuCsv.length, () => uiState.showTwoPage, () => pageState.itemsPerPage],
-  () => {
-    pageState.totalPages = computedTotalPages.value
+  computedTotalPages,
+  (total) => {
+    pageState.totalPages = total
     if (pageState.currentPage >= pageState.totalPages) {
       pageState.currentPage = pageState.totalPages - 1
     }
   },
+  { immediate: true },
 )
 
 watch(
@@ -386,14 +410,17 @@ watch(
 watch(
   () => ({
     items: menuState.menuCsv.map((item) => ({
-      No: item.No,
-      Name: item.Name,
-      ChineseName: item.ChineseName,
-      Description: item.Description,
-      Price: item.Price,
-      Options: [...item.Options],
+      no: item.no,
+      price: item.price,
+      measure: item.measure,
+      name: { ...item.name },
+      description: { ...item.description },
+      category: { ...item.category },
+      dietary: { ...item.dietary },
+      tags: [...item.tags],
       mainImageBase64: item.mainImageBase64,
     })),
+    lang: [primary.value, ...extraLangs.value],
     logo: menuState.logoBase64,
   }),
   () => {
@@ -416,12 +443,13 @@ watch(
   },
 )
 
+// A newly added custom icon starts switched on for every dish
 watch(customOptionKeys, (newKeys, oldKeys) => {
   const added = newKeys.filter((k) => !oldKeys.includes(k))
   if (!added.length) return
   menuState.menuCsv = menuState.menuCsv.map((item) => ({
     ...item,
-    Options: [...item.Options, ...added.filter((opt) => !item.Options.includes(opt))],
+    tags: [...item.tags, ...added.filter((tag) => !item.tags.includes(tag))],
   }))
 })
 </script>
@@ -517,6 +545,12 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
           <div class="py-2">
             <div>Typography</div>
             <FontSelector v-model:font="menuState.selectedFont" />
+            <div class="mt-2">Text Size</div>
+            <TextSizeControl />
+          </div>
+          <div class="py-2">
+            <div>Language</div>
+            <MenuLanguageSelector />
           </div>
           <div class="py-2">
             <div>Color</div>
@@ -531,6 +565,7 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
           <div class="py-2">
             <div>Items</div>
             <ItemSpacingControl v-model="menuState.itemSpacing" />
+            <PhotoSizeControl :disabled="menuState.itemSpacing !== 'fill'" />
             <ItemsPerCategorySelector
               v-model:itemsPerPage="pageState.itemsPerPage"
               v-model:keepCategoryTogether="pageState.keepCategoryTogether"
@@ -588,11 +623,10 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
             :page-height="pageState.height"
             :keep-category-together="pageState.keepCategoryTogether"
             :default-src="menuState.logoBase64 || undefined"
-            @add-before="(p) => addItemBefore(p.No)"
-            @add-after="(p) => addItemAfter(p.No)"
-            @delete-item="(p) => deleteItemByNo(p.No)"
-            @reorder="(p) => reorderItems(p.fromNo, p.toNo)"
-            @update:totalPages="(val) => (pageState.totalPages = val + 1)"
+            @add-before="(p) => addItemBefore(p.id)"
+            @add-after="(p) => addItemAfter(p.id)"
+            @delete-item="(p) => deleteItem(p.id)"
+            @reorder="(p) => reorderItems(p.fromId, p.toId)"
             @update:logo="(base64: string) => (menuState.logoBase64 = base64)"
           />
         </div>
@@ -632,12 +666,11 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
             :footer-text="menuState.footerText"
             :default-src="menuState.logoBase64 || undefined"
             :readonly="menuState.pdfReadonly"
-            @add-before="(p) => addItemBefore(p.No)"
-            @add-after="(p) => addItemAfter(p.No)"
-            @delete-item="(p) => deleteItemByNo(p.No)"
-            @reorder="(p) => reorderItems(p.fromNo, p.toNo)"
+            @add-before="(p) => addItemBefore(p.id)"
+            @add-after="(p) => addItemAfter(p.id)"
+            @delete-item="(p) => deleteItem(p.id)"
+            @reorder="(p) => reorderItems(p.fromId, p.toId)"
             @update:logo="(base64: string) => (menuState.logoBase64 = base64)"
-            @update:totalPages="() => (pageState.totalPages = computedTotalPages)"
           />
 
           <!-- EMPTY STATE -->

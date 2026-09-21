@@ -1,6 +1,7 @@
 import { ref, reactive, computed } from 'vue'
 import type { MenuItem } from '@/types/types'
 import { compressImage } from '@/composables/imageCompression'
+import { matchesPictureName } from '@/domain/menuItem'
 
 export interface ImageState {
   isDragging: boolean
@@ -45,7 +46,7 @@ export function useMultiImageUpload(
       if (!item.images || item.images.length === 0) return []
 
       return item.images.map((img) => ({
-        key: `${item.No}_${img.name}`, // unique key
+        key: `${item.no}_${img.name}`, // unique key
         name: img.name,
         base64: img.base64,
         item,
@@ -74,14 +75,7 @@ export function useMultiImageUpload(
         const base64 = await compressImage(file)
         const filename = file.name.replace(/\.[^/.]+$/, '')
 
-        const matched = props.menuItems.find((item) => {
-          const num = item.No?.toString() ?? ''
-          return (
-            item.Name === filename ||
-            filename === `${num}_${item.Name}` ||
-            filename === `${num.padStart(2, '0')}_${item.Name}`
-          )
-        })
+        const matched = props.menuItems.find((item) => matchesPictureName(item, filename))
 
         if (!matched) {
           skippedFiles.value.push({ name: file.name, reason: 'no-match' })
