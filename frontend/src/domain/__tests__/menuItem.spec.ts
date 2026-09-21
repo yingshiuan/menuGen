@@ -5,7 +5,7 @@ import {
   createMenuItem,
   emptyDietary,
   extraNameLangs,
-  filterByDiet,
+  filterByIcons,
   matchesPictureName,
   pickText,
 } from '@/domain/menuItem'
@@ -99,21 +99,37 @@ describe('matchesPictureName', () => {
   })
 })
 
-describe('filterByDiet', () => {
-  const dish = (no: string, dietary: Partial<Dietary>) =>
-    createMenuItem({ no, dietary: { ...emptyDietary(), ...dietary } })
+describe('filterByIcons', () => {
+  const dish = (no: string, dietary: Partial<Dietary>, tags: string[] = []) =>
+    createMenuItem({ no, dietary: { ...emptyDietary(), ...dietary }, tags })
 
   const items = [
     dish('1', { vegetarian: true }), // marked VT
-    dish('2', { vegan: true }), // marked VG only, as in the source sheets
-    dish('3', { spicy: true }), // meat
+    dish('2', { vegan: true, gluten_free: true }), // marked VG only, as in the source sheets
+    dish('3', { vegan: true }, ['House Special']),
+    dish('4', { spicy: true }), // meat
   ]
+  const nos = (keys: string[]) => filterByIcons(items, keys).map((i) => i.no)
 
   it('counts vegan dishes as vegetarian', () => {
-    expect(filterByDiet(items, 'vegetarian').map((i) => i.no)).toEqual(['1', '2'])
+    expect(nos(['vegetarian'])).toEqual(['1', '2', '3'])
   })
 
   it('keeps only vegan dishes for a vegan menu', () => {
-    expect(filterByDiet(items, 'vegan').map((i) => i.no)).toEqual(['2'])
+    expect(nos(['vegan'])).toEqual(['2', '3'])
+  })
+
+  it('keeps the dishes that carry any ticked icon, each once', () => {
+    expect(nos(['vegetarian', 'vegan'])).toEqual(['1', '2', '3'])
+    expect(nos(['vegan', 'spicy'])).toEqual(['2', '3', '4'])
+    expect(nos(['gluten_free', 'House Special'])).toEqual(['2', '3'])
+  })
+
+  it('filters by custom icons too', () => {
+    expect(nos(['House Special'])).toEqual(['3'])
+  })
+
+  it('keeps every dish when nothing is ticked', () => {
+    expect(nos([])).toEqual(['1', '2', '3', '4'])
   })
 })

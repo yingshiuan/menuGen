@@ -8,6 +8,7 @@ import {
   cloneMenuItem,
   createMenuItem,
   emptyDietary,
+  filterByIcons,
   generateId,
   isDietaryKey,
   pickText,
@@ -20,6 +21,7 @@ import GeneratePdf from '@/components/GeneratePdf.vue'
 import CsvUpload from '@/components/CsvUpload.vue'
 import FontSelector from '@/components/controls/FontSelector.vue'
 import MenuLanguageSelector from '@/components/controls/MenuLanguageSelector.vue'
+import IconFilterSelector from '@/components/controls/IconFilterSelector.vue'
 import TextSizeControl from '@/components/controls/TextSizeControl.vue'
 import PhotoSizeControl from '@/components/controls/PhotoSizeControl.vue'
 import PanelSection from '@/components/controls/PanelSection.vue'
@@ -54,6 +56,7 @@ interface MenuState {
   coverTitle: string
   coverSubtitle: string
   coverLogoBase64: string | null
+  iconFilter: string[] // a dish with any of these icons is on the menu; none: every dish
 }
 
 interface PageState {
@@ -88,6 +91,7 @@ const menuState = reactive<MenuState>({
   coverTitle: 'Menu',
   coverSubtitle: 'Welcome to our restaurant',
   coverLogoBase64: null,
+  iconFilter: [],
 })
 
 const uiState = reactive({
@@ -143,11 +147,18 @@ const twoPageRef = ref<HTMLElement | null>(null)
 // const csvKey = ref(0)
 
 /* Computed */
+// The ticked icons that still exist: a removed custom icon no longer filters
+const activeIconFilter = computed(() => menuState.iconFilter.filter((key) => key in iconMap.value))
+
+// The dishes on the menu: every dish, or those with any ticked icon (vegetarian, vegan).
+// Editing, CSV export and photo matching still work on the whole menu.
+const menuItems = computed(() => filterByIcons(menuState.menuCsv, activeIconFilter.value))
+
 // Menu pages as the preview lays them out. Keeping categories together leaves pages
 // part-empty, so this can be more than items ÷ itemsPerPage.
 const menuPages = computed(() =>
   paginateMenu(
-    menuState.menuCsv,
+    menuItems.value,
     pageState.itemsPerPage,
     pageState.keepCategoryTogether,
     primary.value,
@@ -286,14 +297,18 @@ function getNextNo(category?: string): string {
   return (sortedGlobal[sortedGlobal.length - 1]! + 1).toString()
 }
 
-// `neighbor` is the dish the new one is inserted next to; it shares its category
+// `neighbor` is the dish the new one is inserted next to; it shares its category.
+// On a filtered menu the new dish carries the first ticked icon, or it would vanish at once.
 function createNewItem(neighbor?: MenuItem) {
   const no = getNextNo(neighbor ? categoryLabel(neighbor, primary.value) : undefined)
+  const [icon] = activeIconFilter.value
   return createMenuItem({
     id: generateId(),
     no,
     name: { [primary.value]: `New Item ${no}` },
     category: neighbor ? { ...neighbor.category } : {},
+    dietary: icon && isDietaryKey(icon) ? { ...emptyDietary(), [icon]: true } : emptyDietary(),
+    tags: icon && !isDietaryKey(icon) ? [icon] : [],
   })
 }
 
@@ -357,10 +372,9 @@ function reorderItems(fromId: string, toId: string) {
 }
 
 function handleRenameOption(oldLabel: string, newLabel: string) {
-  menuState.menuCsv = menuState.menuCsv.map((item) => ({
-    ...item,
-    tags: item.tags.map((tag) => (tag === oldLabel ? newLabel : tag)),
-  }))
+  const rename = (tag: string) => (tag === oldLabel ? newLabel : tag)
+  menuState.menuCsv = menuState.menuCsv.map((item) => ({ ...item, tags: item.tags.map(rename) }))
+  menuState.iconFilter = menuState.iconFilter.map(rename)
 }
 
 /* Infrastructure / Side Effect */
@@ -423,6 +437,7 @@ watch(
     })),
     lang: [primary.value, ...extraLangs.value],
     logo: menuState.logoBase64,
+    filter: activeIconFilter.value,
   }),
   () => {
     uiState.pdfRenderKey++
@@ -545,6 +560,7 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
           <!-- Grouped by what they change; Photos and Icons start closed -->
           <PanelSection title="Menu" open>
             <MenuLanguageSelector />
+            <IconFilterSelector v-model="menuState.iconFilter" :items="menuState.menuCsv" />
           </PanelSection>
 
           <PanelSection title="Text" open>
@@ -606,7 +622,7 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
             v-else
             :key="uiState.previewRenderKey"
             v-model:footerText="menuState.footerText"
-            :items="menuState.menuCsv"
+            :items="menuItems"
             :font-family="menuState.selectedFont"
             :bg-color="menuState.bgColor"
             :text-color="menuState.textColor"
@@ -648,7 +664,7 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
           <!-- Two-page MENU PREVIEW -->
           <TwoPage
             v-else-if="pageState.currentPage > 0"
-            :items="menuState.menuCsv"
+            :items="menuItems"
             :font-family="menuState.selectedFont"
             :bg-color="menuState.bgColor"
             :text-color="menuState.textColor"
@@ -703,7 +719,7 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
           <div v-for="page in pdfTotalPages" :key="page" class="pdf-page">
             <MenuPreview
               :footerText="menuState.footerText"
-              :items="menuState.menuCsv"
+              :items="menuItems"
               :fontFamily="menuState.selectedFont"
               :bgColor="menuState.bgColor"
               :text-color="menuState.textColor"
