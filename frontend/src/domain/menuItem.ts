@@ -8,11 +8,9 @@ import {
   type MenuItem,
 } from '@/types/types'
 
-export type DietFilter = 'vegetarian' | 'vegan'
-
 export const DIETARY_LABELS: Record<Lang, Record<DietaryKey, string>> = {
   en: {
-    recommend: 'Recommend',
+    recommend: 'Recommended',
     spicy: 'Spicy',
     vegan: 'Vegan',
     vegetarian: 'Vegetarian',
@@ -117,12 +115,18 @@ export function matchesPictureName(item: MenuItem, filename: string): boolean {
   })
 }
 
-// Vegan dishes are vegetarian too, even though the source data only marks them VG
-export function matchesDiet(item: MenuItem, diet: DietFilter): boolean {
-  if (diet === 'vegan') return item.dietary.vegan
-  return item.dietary.vegetarian || item.dietary.vegan
+// Whether a dish belongs on a menu of `key` dishes. Dietary keys live in `dietary`, custom
+// icons in `tags`. Vegan dishes are vegetarian too, even though the source data only marks
+// them VG.
+export function matchesIcon(item: MenuItem, key: string): boolean {
+  if (key === 'vegetarian') return item.dietary.vegetarian || item.dietary.vegan
+  return isDietaryKey(key) ? item.dietary[key] : item.tags.includes(key)
 }
 
-export function filterByDiet(items: MenuItem[], diet: DietFilter): MenuItem[] {
-  return items.filter((item) => matchesDiet(item, diet))
+// The dishes that carry any of `keys`: vegetarian and spicy keeps both kinds, and a
+// vegetarian dish that is also spicy once. No keys keeps every dish. A vegetarian or vegan
+// menu can be made from the same data this way.
+export function filterByIcons(items: MenuItem[], keys: string[]): MenuItem[] {
+  if (!keys.length) return items
+  return items.filter((item) => keys.some((key) => matchesIcon(item, key)))
 }

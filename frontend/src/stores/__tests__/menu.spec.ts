@@ -51,7 +51,7 @@ describe('exportToCSV', () => {
       'Description (EN)',
       'Description (DE)',
       'Description (ZH)',
-      'Recommend',
+      'Recommended',
       'Spicy',
       'Vegan',
       'Vegetarian',

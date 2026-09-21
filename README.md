@@ -336,7 +336,7 @@ Alternatively, if you prefer a single file with profiles, the repo also supports
 User uploads a CSV file like:
 
 ```
-No.,Price,Measure,Name (EN),Name (DE),Name (ZH),Description (EN),Description (DE),Description (ZH),Recommend,Spicy,Vegan,Vegetarian,Gluten Free
+No.,Price,Measure,Name (EN),Name (DE),Name (ZH),Description (EN),Description (DE),Description (ZH),Recommended,Spicy,Vegan,Vegetarian,Gluten Free
 ,,,SOUP / SALAD,SUPPE / SALAT,,,,,,,,,
 1,8.5,,Szechuan Soup,Szechuan Suppe,酸辣湯,Hot and sour soup with vegetables and tofu,Scharf-saure Suppe mit Gemüse & Tofu,,,X,,X,
 ```
@@ -344,7 +344,7 @@ No.,Price,Measure,Name (EN),Name (DE),Name (ZH),Description (EN),Description (DE
 - A row with no `No.` and no `Price` is a category row; its name columns name the category for the rows below.
 - A flag cell counts as set unless it is empty or `false` / `no` / `nein` / `0` / `-`, so `X`, `true` and the sheet codes `V` `S` `VG` `VT` `G` all work.
 - Any other column becomes a custom icon, set per dish by its cell.
-- Older sheets still import: plain `Name` / `Description` are read as English, or as German when the headers are German (`Preis`, `Empfohlen`, `Scharf`, `Vegetarisch`, `Glutenfrei`), and `Chinese Name` fills `Name (ZH)`.
+- Older sheets still import: a `Recommend` column counts as `Recommended`, plain `Name` / `Description` are read as English, or as German when the headers are German (`Preis`, `Empfohlen`, `Scharf`, `Vegetarisch`, `Glutenfrei`), and `Chinese Name` fills `Name (ZH)`.
 
 Frontend parses → structured menu → editable state. Each dish holds its text per language and its flags as `dietary: { recommend, spicy, vegan, vegetarian, gluten_free }`; the menu is printed in the main language picked under **Language**, and each language ticked under **Also show** (中文 by default) adds that name after a slash: `Szechuan Suppe / Szechuan Soup / 酸辣湯`. Descriptions, categories and icon labels stay in the main language.
 
