@@ -92,6 +92,30 @@ describe('matchesPictureName', () => {
     expect(matchesPictureName(springRoll, decomposed)).toBe(true)
   })
 
+  it('leaves off a piece count in the middle of a name', () => {
+    const tangYuan = createMenuItem({
+      name: {
+        en: 'Hong Dou Tang Yuan - 2 pcs. Tang Yuan',
+        de: 'Hong Dou Tang Yuan mit 2 Stk. Tang Yuan',
+      },
+    })
+    expect(matchesPictureName(tangYuan, 'Hong Dou Tang Yuan')).toBe(true)
+  })
+
+  it.each([
+    ['100', 'Malaysian-style Prawns', '100_Malaysian Style Prawns'],
+    ['', 'Schweinemagensuppe mit Pfeffer', 'Schweinemagen Suppe mit Pfeffer'],
+    ['10', 'Spring Roll', '10_spring roll'],
+  ])('does not count case, spaces or hyphens (dish %s "%s", file "%s")', (no, name, file) => {
+    expect(matchesPictureName(createMenuItem({ no, name: { en: name } }), file)).toBe(true)
+  })
+
+  it('still needs the same words: a singular does not match a plural', () => {
+    const wontons = createMenuItem({ no: '12', name: { en: 'Fried Wontons - 4 pcs.' } })
+    expect(matchesPictureName(wontons, '12_Fried Wontons')).toBe(true)
+    expect(matchesPictureName(wontons, '12_Fried Wonton')).toBe(false)
+  })
+
   it('does not match another dish under the same number', () => {
     const kimchi = createMenuItem({ no: '23', name: { en: 'Kimchi Jiaozi - 6 pcs' } })
     expect(matchesPictureName(kimchi, '23_Chicken Jiaozi')).toBe(false)

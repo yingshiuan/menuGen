@@ -96,11 +96,20 @@ export function categoryLabel(item: MenuItem, lang: Lang): string {
   return pickText(item.category, lang) || 'Uncategorized'
 }
 
-// The piece count some names carry: "Spring Roll - 1 pc", "Gemüse Jiao Zi - 10 Stk."
-const PIECE_COUNT = /\s+-\s*\d+\s*(?:pcs?|stk)\.?$/i
+// The piece count some names carry, and whatever follows it: "Spring Roll - 1 pc",
+// "Gemüse Jiao Zi - 10 Stk.", "Hong Dou Tang Yuan - 2 pcs. Tang Yuan"
+const PIECE_COUNT = /\s+-\s*\d+\s*(?:pcs?|stk)\b.*$/i
 
-// NFC, because macOS can hand over "ü" in a filename as "u" + a combining mark
-const pictureKey = (text: string) => text.normalize('NFC').trim().replace(PIECE_COUNT, '')
+// NFC, because macOS can hand over "ü" in a filename as "u" + a combining mark.
+// Filenames are typed by hand, so case, spaces and hyphens don't count: "Malaysian Style
+// Prawns" is "Malaysian-style Prawns", "Schweinemagen Suppe" is "Schweinemagensuppe".
+const pictureKey = (text: string) =>
+  text
+    .normalize('NFC')
+    .trim()
+    .replace(PIECE_COUNT, '')
+    .toLowerCase()
+    .replace(/[\s-]+/g, '')
 
 // A picture file is named after the dish in any of its languages, optionally prefixed
 // by its number ("01_Szechuan Soup"); the piece count may be left off
