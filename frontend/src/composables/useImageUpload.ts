@@ -1,6 +1,13 @@
 import { ref, computed } from 'vue'
 import { compressImage, MAX_EDGE, JPEG_QUALITY } from '@/composables/imageCompression'
 
+/** Whether the file is an image; if not, the user is told so. */
+export function acceptImageFile(file: File): boolean {
+  if (file.type.startsWith('image/')) return true
+  alert('Please upload a valid image file')
+  return false
+}
+
 export function useImageUpload(
   initialValue: string | null,
   readonly: boolean | null,
@@ -15,10 +22,7 @@ export function useImageUpload(
   const displayedPicture = computed(() => pictureBase64.value)
 
   async function processFile(file: File) {
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload a valid image file')
-      return
-    }
+    if (!acceptImageFile(file)) return
 
     try {
       pictureBase64.value = await compressImage(file, MAX_EDGE, MAX_EDGE, JPEG_QUALITY)

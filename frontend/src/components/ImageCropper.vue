@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, reactive } from 'vue'
-import { useImageUpload } from '@/composables/useImageUpload.ts'
+import { acceptImageFile, useImageUpload } from '@/composables/useImageUpload.ts'
 import { useImageCropper } from '@/composables/useImageCropper'
 
 /** Props */
@@ -131,6 +131,9 @@ const handleCrop = () => {
 
 /** Upload and read image */
 const readFileAndOpenCropper = (file: File) => {
+  // `accept="image/*"` only filters the file picker; a dropped file arrives unchecked
+  if (!acceptImageFile(file)) return
+
   const reader = new FileReader()
 
   reader.onload = () => {
