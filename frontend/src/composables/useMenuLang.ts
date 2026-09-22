@@ -8,7 +8,12 @@ export type PrimaryLang = (typeof PRIMARY_LANGS)[number]
 // The menu's main language: dish name, description, category, icon labels, pcs/Stk.
 const primary = ref<PrimaryLang>('en')
 // Which other languages' names follow the main name ("Szechuan Soup / 酸辣湯")
-const extraNames = ref<Record<Lang, boolean>>({ en: false, de: false, zh: true })
+export const DEFAULT_EXTRA_NAMES: Readonly<Record<Lang, boolean>> = {
+  en: false,
+  de: false,
+  zh: true,
+}
+const extraNames = ref<Record<Lang, boolean>>({ ...DEFAULT_EXTRA_NAMES })
 
 const extraLangs = computed(() => extraNameLangs(primary.value, extraNames.value))
 

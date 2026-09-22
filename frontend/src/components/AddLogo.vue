@@ -15,12 +15,11 @@ const emit = defineEmits<{
 // maintain a local value for v-model, starting from defaultSrc
 const local = ref(props.defaultSrc || '')
 
+// Always follow the menu's logo, so a logo cleared by "Start new menu" goes away here too
 watch(
   () => props.defaultSrc,
   (val) => {
-    if (!local.value) {
-      local.value = val || ''
-    }
+    local.value = val || ''
   },
 )
 

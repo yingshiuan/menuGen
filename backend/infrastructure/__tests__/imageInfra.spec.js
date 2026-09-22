@@ -70,7 +70,30 @@ describe('compressBase64Image', () => {
     expect({ width, height }).toEqual({ width: 40, height: 30 })
   })
 
-  it('re-encodes anything that is not a PNG as JPEG, losing transparency', async () => {
+  it('keeps a WebP a WebP, with its transparency, so a cut-out dish does not print on black', async () => {
+    // left half opaque red, right half fully transparent
+    const raw = Buffer.alloc(400 * 400 * 4)
+    for (let y = 0; y < 400; y++) {
+      for (let x = 0; x < 200; x++) raw.set([200, 40, 40, 255], (y * 400 + x) * 4)
+    }
+    const webp = await sharp(raw, { raw: { width: 400, height: 400, channels: 4 } })
+      .webp()
+      .toBuffer()
+
+    const result = await compressBase64Image(dataUri(webp, 'image/webp'))
+
+    expect(result.startsWith('data:image/webp;base64,')).toBe(true)
+    const { data, info } = await sharp(Buffer.from(result.split(',')[1], 'base64'))
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    const alphaAt = (x, y) => data[(y * info.width + x) * info.channels + 3]
+    expect(info.width).toBe(300)
+    expect(alphaAt(290, 10)).toBe(0) // still see-through
+    expect(alphaAt(10, 10)).toBe(255)
+  })
+
+  it('re-encodes anything that is not a PNG or WebP as JPEG', async () => {
     const uri = dataUri(await pixels(400, 400, 'jpeg'), 'image/jpeg')
 
     const result = await compressBase64Image(uri)

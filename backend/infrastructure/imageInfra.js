@@ -24,6 +24,9 @@ export async function compressSvg(filePath, width = 96, height = 96) {
 export async function compressBase64Image(base64, width = 300, height = 300) {
   try {
     const isPng = base64.startsWith('data:image/png')
+    // The browser sends a picture with transparency (a cut-out dish) as WebP: as a
+    // JPEG its see-through part would print black
+    const isWebp = base64.startsWith('data:image/webp')
     const base64Data = base64.replace(/^data:image\/\w+;base64,/, '')
     const buffer = Buffer.from(base64Data, 'base64')
 
@@ -34,6 +37,12 @@ export async function compressBase64Image(base64, width = 300, height = 300) {
         .png({ quality: 70, compressionLevel: 8 })
         .toBuffer()
       return `data:image/png;base64,${optimized.toString('base64')}`
+    } else if (isWebp) {
+      const optimized = await sharp(buffer)
+        .resize(width, height, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 70 })
+        .toBuffer()
+      return `data:image/webp;base64,${optimized.toString('base64')}`
     } else {
       // JPG
       const optimized = await sharp(buffer)

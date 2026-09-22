@@ -16,6 +16,8 @@ import {
 import { paginateMenu } from '@/domain/menuPages'
 import { clampSize, uniformPhotoSize } from '@/domain/sizes'
 import { PHOTO_SIZE_RANGE, useMenuPhoto } from '@/composables/useMenuPhoto'
+import { useMenuDraft } from '@/composables/useMenuDraft'
+import { defaultDraft } from '@/domain/menuDraft'
 import MenuPreview from '@/components/layouts/MenuPreview.vue'
 import GeneratePdf from '@/components/GeneratePdf.vue'
 import CsvUpload from '@/components/CsvUpload.vue'
@@ -69,28 +71,31 @@ interface PageState {
 }
 
 /* State */
+// The same defaults "Start new menu" goes back to
+const defaults = defaultDraft()
+
 const pageState = reactive<PageState>({
   currentPage: 0,
-  itemsPerPage: 9,
+  itemsPerPage: defaults.page.itemsPerPage,
   totalPages: 1,
-  width: '210mm',
-  height: '297mm',
-  keepCategoryTogether: true,
+  width: defaults.page.width,
+  height: defaults.page.height,
+  keepCategoryTogether: defaults.page.keepCategoryTogether,
 })
 
 const menuState = reactive<MenuState>({
   menuCsv: [],
   pdfReadonly: false,
-  selectedFont: 'Sans-Serif', // matches the font list's option, so the dropdown shows it
-  bgColor: '#ffffff',
-  textColor: '#000000',
+  selectedFont: defaults.style.font, // matches the font list's option, so the dropdown shows it
+  bgColor: defaults.style.bgColor,
+  textColor: defaults.style.textColor,
   scalePage: 0.8,
-  footerText: 'All prices are in CHF, including VAT',
-  logoBase64: null,
-  itemSpacing: 'fill',
-  coverTitle: 'Menu',
-  coverSubtitle: 'Welcome to our restaurant',
-  coverLogoBase64: null,
+  footerText: defaults.footerText,
+  logoBase64: defaults.logo,
+  itemSpacing: defaults.page.itemSpacing,
+  coverTitle: defaults.cover.title,
+  coverSubtitle: defaults.cover.subtitle,
+  coverLogoBase64: defaults.cover.logo,
   iconFilter: [],
 })
 
@@ -98,9 +103,15 @@ const uiState = reactive({
   showTwoPage: false,
   pdfRenderKey: 0,
   csvKey: 0,
+  csvUploaded: defaults.csvUploaded, // the sample menu shows until a CSV is loaded
   previewRenderKey: 0,
+  controlsKey: 0, // bumped by "Start new menu", so every control starts over
   showMobileControls: false,
 })
+
+// Saves the menu in this browser and puts it back on the next visit
+const draft = useMenuDraft({ menuState, pageState, uiState })
+const saveStatus = draft.status
 
 /* Demo Data */
 function demoItem(n: number, category: number, dietary: Partial<MenuItem['dietary']>) {
@@ -192,7 +203,8 @@ watch(
   { immediate: true },
 )
 
-// Choosing "Fill page" starts at the maximum
+// Choosing "Fill page" starts at the maximum. A restored menu sets the spacing before
+// this runs, so restoring "Fill page" over the default "Fill page" leaves its photo size alone.
 watch(
   () => menuState.itemSpacing,
   (spacing) => {
@@ -210,8 +222,17 @@ const computedTotalPages = computed(() => {
 
 const pdfTotalPages = menuPageCount
 
-onMounted(() => {
-  loadSampleMenu()
+// The saved menu if this browser has one, else the sample. Saving starts only after
+// that, or the empty starting state would be saved over the menu before it is read.
+onMounted(async () => {
+  let restored = false
+  try {
+    restored = await draft.restore()
+  } catch {
+    // restore() handles storage errors itself; anything else still leaves a usable page
+  }
+  if (!restored) loadSampleMenu()
+  draft.startAutosave()
 })
 
 const isMobile = window.matchMedia('(max-width: 1024px)').matches
@@ -227,12 +248,25 @@ function handleCsvLoaded(items: MenuItem[]) {
   // Custom icons come from the CSV cells, so each dish keeps its own tags
   menuState.menuCsv = items
   pageState.currentPage = 1
+  uiState.csvUploaded = true
 }
 
 function loadSampleMenu() {
   menuState.menuCsv = demoMenu.map(cloneMenuItem)
   pageState.currentPage = 1
   uiState.csvKey++
+  uiState.csvUploaded = false
+}
+
+// Back to a first visit: the sample dishes and every setting at its default
+async function startNewMenu() {
+  const ok = confirm(
+    'Start a new menu? Your dishes, photos, logos and settings in this browser will be cleared.',
+  )
+  if (!ok) return
+  await draft.reset()
+  loadSampleMenu()
+  uiState.controlsKey++
 }
 
 /* Domain */
@@ -535,7 +569,7 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
           'translate-x-0': uiState.showMobileControls,
         }"
       >
-        <div @click.stop class="divide-y divide-gray-300">
+        <div :key="uiState.controlsKey" @click.stop class="divide-y divide-gray-300">
           <!-- Actions: load a CSV, export it, make the PDF -->
           <div class="py-2 flex flex-col gap-2">
             <CsvUpload
@@ -548,13 +582,31 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
               :page-width="pageState.width"
               :page-height="pageState.height"
               :font-family="menuState.selectedFont"
+              :no-csv="!uiState.csvUploaded"
             />
-            <button
-              @click="loadSampleMenu"
-              class="self-start text-xs text-blue-600 underline hover:text-blue-800"
+            <!-- Each stays on one line; in the narrow phone drawer the status goes below -->
+            <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs">
+              <button
+                @click="startNewMenu"
+                class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 whitespace-nowrap"
+              >
+                Start new menu
+              </button>
+              <p
+                v-if="saveStatus === 'saved'"
+                role="status"
+                class="text-gray-500 whitespace-nowrap"
+              >
+                Saved in this browser
+              </p>
+            </div>
+            <p
+              v-if="saveStatus === 'error' || saveStatus === 'unavailable'"
+              role="status"
+              class="text-xs text-amber-700"
             >
-              Load sample menu
-            </button>
+              Couldn’t save in this browser. Use Export CSV to keep your dishes.
+            </p>
           </div>
 
           <!-- Grouped by what they change; Photos and Icons start closed -->

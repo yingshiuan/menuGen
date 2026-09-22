@@ -72,12 +72,16 @@ function pdfResponse() {
   } as unknown as Response
 }
 
-function mountPdf(contentRef: HTMLElement | null = document.createElement('div')) {
+function mountPdf(contentRef: HTMLElement | null = document.createElement('div'), noCsv = false) {
   if (contentRef) contentRef.innerHTML = '<p>Menu body</p>'
   return mount(GeneratePdf, {
     attachTo: document.body, // Teleport targets <body>, so the overlays need a real one
-    props: { contentRef, pageWidth: '210mm', pageHeight: '297mm', fontFamily: 'Inter' },
+    props: { contentRef, pageWidth: '210mm', pageHeight: '297mm', fontFamily: 'Inter', noCsv },
   })
+}
+
+function overlayButton(label: string) {
+  return [...document.body.querySelectorAll('button')].find((b) => b.textContent?.trim() === label)
 }
 
 /** Let pending timers and the promise chain they unblock settle. */
@@ -286,5 +290,45 @@ describe('GeneratePdf', () => {
 
     expect(fetchMock.mock.calls[1]![0]).toContain('/generate-pdf')
     expect(createObjectURL).toHaveBeenCalledOnce()
+  })
+
+  describe('without an uploaded CSV', () => {
+    it('warns before exporting the sample menu', async () => {
+      const wrapper = mountPdf(undefined, true)
+
+      await wrapper.get('button').trigger('click')
+      await flush()
+
+      expect(document.body.textContent).toContain('You haven’t uploaded a CSV file yet')
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it('exports once the user chooses Export Anyway', async () => {
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' }))
+        .mockResolvedValueOnce(pdfResponse())
+      const wrapper = mountPdf(undefined, true)
+
+      await wrapper.get('button').trigger('click')
+      await nextTick()
+      overlayButton('Export Anyway')?.click()
+      await flush()
+
+      expect(fetchMock.mock.calls[0]![0]).toContain('/generate-pdf')
+      expect(createObjectURL).toHaveBeenCalledOnce()
+      expect(document.body.textContent).not.toContain('You haven’t uploaded a CSV file yet')
+    })
+
+    it('goes back to editing without exporting', async () => {
+      const wrapper = mountPdf(undefined, true)
+
+      await wrapper.get('button').trigger('click')
+      await nextTick()
+      overlayButton('Back to Edit')?.click()
+      await flush()
+
+      expect(document.body.querySelector('.loader-overlay')).toBeNull()
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
   })
 })

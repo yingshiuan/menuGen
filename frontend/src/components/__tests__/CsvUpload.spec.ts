@@ -180,6 +180,47 @@ describe('upload', () => {
     expect(await emittedItems(wrapper)).toHaveLength(2)
   })
 
+  it('refuses a file that is not a CSV and leaves the menu alone', async () => {
+    const wrapper = mountCsv()
+
+    await selectFile(wrapper, new File(['\x89PNG'], 'dish.png', { type: 'image/png' }))
+
+    expect(alertMock).toHaveBeenCalledWith(
+      '“dish.png” is not a CSV file. Please upload a .csv file.',
+    )
+    expect(wrapper.text()).toContain('Upload CSV')
+    expect(wrapper.emitted('csvLoaded')).toBeUndefined()
+  })
+
+  it('refuses a dropped file too, which the picker filter never sees', async () => {
+    const wrapper = mountCsv()
+    const numbers = new File(['PK'], 'menu-2026.numbers')
+
+    await wrapper.get('div.border-dashed').trigger('drop', { dataTransfer: { files: [numbers] } })
+
+    expect(alertMock).toHaveBeenCalledWith(expect.stringContaining('File → Export To → CSV'))
+    expect(wrapper.text()).not.toContain('menu-2026.numbers')
+    expect(wrapper.emitted('csvLoaded')).toBeUndefined()
+  })
+
+  it('points an Excel file at Save As CSV', async () => {
+    const wrapper = mountCsv()
+
+    await selectFile(wrapper, new File(['PK'], 'menu.xlsx'))
+
+    expect(alertMock).toHaveBeenCalledWith(expect.stringContaining('Save As → CSV UTF-8'))
+    expect(wrapper.emitted('csvLoaded')).toBeUndefined()
+  })
+
+  it('accepts a CSV whatever case its extension is in', async () => {
+    const wrapper = mountCsv()
+
+    await selectFile(wrapper, csvFile(CSV, 'MENU.CSV'))
+
+    expect(alertMock).not.toHaveBeenCalled()
+    expect(await emittedItems(wrapper)).toHaveLength(2)
+  })
+
   it('ignores a drop that carries no file', async () => {
     const wrapper = mountCsv()
 

@@ -20,7 +20,13 @@ class MockImage {
 beforeEach(() => {
   vi.stubGlobal('alert', alertSpy)
   vi.stubGlobal('Image', MockImage)
-  HTMLCanvasElement.prototype.getContext = vi.fn(() => ({ drawImage: vi.fn() })) as never
+  // An opaque photo: every pixel's alpha is 255, so it is kept as a JPEG
+  HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+    drawImage: vi.fn(),
+    getImageData: (_x: number, _y: number, w: number, h: number) => ({
+      data: new Uint8ClampedArray(w * h * 4).fill(255),
+    }),
+  })) as never
   HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/jpeg;base64,AAA')
   alertSpy.mockClear()
 })
