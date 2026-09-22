@@ -584,11 +584,19 @@ watch(customOptionKeys, (newKeys, oldKeys) => {
               :font-family="menuState.selectedFont"
               :no-csv="!uiState.csvUploaded"
             />
-            <div class="flex items-center justify-between gap-2 text-xs">
-              <button @click="startNewMenu" class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300">
+            <!-- Each stays on one line; in the narrow phone drawer the status goes below -->
+            <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs">
+              <button
+                @click="startNewMenu"
+                class="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 whitespace-nowrap"
+              >
                 Start new menu
               </button>
-              <p v-if="saveStatus === 'saved'" role="status" class="text-gray-500">
+              <p
+                v-if="saveStatus === 'saved'"
+                role="status"
+                class="text-gray-500 whitespace-nowrap"
+              >
                 Saved in this browser
               </p>
             </div>
