@@ -38,8 +38,7 @@ function handleDrop(e: DragEvent) {
   const file = e.dataTransfer?.files?.[0]
   if (!file) return
 
-  fileName.value = file.name
-  parseCsvFile(file)
+  loadFile(file)
 }
 
 function handleDragOver(e: DragEvent) {
@@ -49,6 +48,31 @@ function handleDragOver(e: DragEvent) {
 
 function handleDragLeave() {
   csvState.isDragging = false
+}
+
+// `accept=".csv,text/csv"` only filters the file picker, and a drop skips it, so every file is
+// checked here. By extension: browsers report a CSV as text/csv, application/vnd.ms-excel
+// or nothing at all.
+function csvFileProblem(file: File): string | null {
+  const name = file.name.toLowerCase()
+  if (name.endsWith('.csv')) return null
+  if (name.endsWith('.numbers')) {
+    return 'Numbers files can’t be read. In Numbers, choose File → Export To → CSV, then upload that file.'
+  }
+  if (/\.xlsx?$/.test(name)) {
+    return 'Excel files can’t be read. In Excel, choose File → Save As → CSV UTF-8, then upload that file.'
+  }
+  return `“${file.name}” is not a CSV file. Please upload a .csv file.`
+}
+
+function loadFile(file: File) {
+  const problem = csvFileProblem(file)
+  if (problem) {
+    alert(problem)
+    return
+  }
+  fileName.value = file.name
+  parseCsvFile(file)
 }
 
 function parseCsvFile(file: File) {
@@ -81,9 +105,7 @@ function parseCsvFile(file: File) {
 function handleFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
-  fileName.value = null
-  fileName.value = file.name
-  parseCsvFile(file)
+  loadFile(file)
   if (fileInput.value) fileInput.value.value = ''
 }
 
@@ -142,7 +164,7 @@ function downloadCSV() {
         <!-- Hidden File Input -->
         <input
           type="file"
-          accept=".csv"
+          accept=".csv,text/csv"
           ref="fileInput"
           class="hidden"
           @change="handleFileChange"
