@@ -1,5 +1,18 @@
-node_modules
-dist.git.env
-npm - debug.log
-frontend / node_modules
-backend / node_modules
+# Only the backend image builds from the repo root (the frontend image uses
+# ./frontend as its context and frontend/.dockerignore). It needs the backend
+# plus the few frontend files the PDF renderer reads from disk, so everything
+# starts out excluded and those are let back in.
+*
+
+!backend
+backend/node_modules
+backend/coverage
+backend/.cache
+backend/.env*
+backend/core
+backend/core.*
+
+# The PDF styling: pdfApp.js inlines it into every render.
+!frontend/public/css/tailwind.css
+# The sample menu's photo, which reaches the backend as a path, not a data URI.
+!frontend/public/data/2_Sample2.png

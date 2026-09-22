@@ -1,6 +1,10 @@
 services:
   backend:
-    build: ./backend
+    # The repo root, so the image carries the frontend files the renderer reads.
+    # The ./frontend mount below still wins locally, keeping tailwind.css live.
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - '3000:3000'
     volumes:
