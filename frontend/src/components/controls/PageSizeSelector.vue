@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, reactive, onMounted } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 const { width, height } = defineProps<{ width: string; height: string }>()
 const emit = defineEmits<{
@@ -112,9 +112,18 @@ function selectPaperSize() {
   }
 }
 
-onMounted(() => {
-  selectPaperSize()
-})
+// The dropdown follows the size it is given, so a size set elsewhere (a menu restored from
+// the browser) shows as its paper, or as a custom size. Never unticks "Custom size" itself:
+// dragging a custom size across 210 × 297 must not leave custom mode.
+watch(
+  () => [width, height] as const,
+  ([w, h]) => {
+    const paper = paperSizes.find((p) => p.width === parseValue(w) && p.height === parseValue(h))
+    pageState.selectedPaper = paper?.name ?? ''
+    if (!paper) pageState.isCustom = true
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

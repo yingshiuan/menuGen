@@ -28,6 +28,7 @@
     "@tailwindcss/cli": "^4.1.17",
     "express": "^5.2.1",
     "html2pdf.js": "^0.12.1",
+    "idb-keyval": "^6.3.0",
     "papaparse": "^5.5.3",
     "pinia": "^3.0.4",
     "puppeteer": "^24.31.0",

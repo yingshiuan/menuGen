@@ -6,18 +6,21 @@ const props = defineProps<{
   pageWidth: string
   pageHeight: string
   fontFamily: string
+  noCsv?: boolean // no CSV uploaded yet: the menu is still the sample one
 }>()
 
 interface PdfState {
   uploading: boolean
   readonly: boolean
   errorMessage: null | string
+  noCsvWarning: boolean
 }
 
 const pdfState = reactive<PdfState>({
   uploading: false,
   readonly: false,
   errorMessage: null,
+  noCsvWarning: false,
 })
 
 const API = import.meta.env.VITE_API_URL
@@ -27,6 +30,20 @@ const POLL_INTERVAL_MS = 2000
 // instance can spend ~40s waking up first. Three minutes is comfortably past
 // both, so reaching it means nothing is coming.
 const POLL_TIMEOUT_MS = 3 * 60 * 1000
+
+// Without a CSV the PDF would be the sample menu, so check before exporting it
+function requestPdf() {
+  if (props.noCsv) {
+    pdfState.noCsvWarning = true
+    return
+  }
+  generatePDF()
+}
+
+function exportAnyway() {
+  pdfState.noCsvWarning = false
+  generatePDF()
+}
 
 async function generatePDF(): Promise<void> {
   pdfState.errorMessage = null
@@ -183,7 +200,7 @@ function retryPDF() {
   <div class="flex">
     <!-- Generate PDF Button: the panel's main action, full width -->
     <button
-      @click="generatePDF"
+      @click="requestPdf"
       :disabled="pdfState.uploading"
       class="relative w-full flex items-center justify-center gap-2 p-1 bg-blue-500 text-white rounded-lg hover:bg-blue-700 border border-blue-500 transition-colors duration-200 shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
     >
@@ -223,6 +240,31 @@ function retryPDF() {
           <!-- Back to Edit -->
           <button
             @click="pdfState.errorMessage = null"
+            class="p-2 rounded-lg bg-white text-black hover:bg-gray-200"
+          >
+            Back to Edit
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- No CSV warning -->
+    <div v-else-if="pdfState.noCsvWarning" class="loader-overlay">
+      <div class="loader-container">
+        <p class="text-m">
+          You haven’t uploaded a CSV file yet.<br />
+          The PDF will show the sample menu, with any changes you made to it.
+        </p>
+        <div class="flex gap-2 justify-center mt-4">
+          <button
+            @click="exportAnyway"
+            class="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-700"
+          >
+            Export Anyway
+          </button>
+
+          <button
+            @click="pdfState.noCsvWarning = false"
             class="p-2 rounded-lg bg-white text-black hover:bg-gray-200"
           >
             Back to Edit

@@ -195,6 +195,15 @@ function resetColor(option: string) {
   coloredIcons.value = { ...coloredIcons.value, [option]: undefined }
 }
 
+// Back to the built-in icons: no custom icons, renames, replaced images or colours
+function resetAllIcons() {
+  customOptions.value = {}
+  renamedLabels.value = {}
+  userIcons.value = {}
+  userColors.value = {}
+  coloredIcons.value = {}
+}
+
 export function useIcons() {
   return {
     defaultIcons,
@@ -213,5 +222,6 @@ export function useIcons() {
     userColors,
     setUserColor,
     resetColor,
+    resetAllIcons,
   }
 }
