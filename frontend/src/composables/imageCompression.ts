@@ -9,8 +9,78 @@
 export const MAX_EDGE = 600
 export const JPEG_QUALITY = 0.8
 
+// What the PDF service shrinks every photo to before it renders
+const PDF_PHOTO_EDGE = 300
+
+// JPEG has no transparency: a see-through pixel encodes as black, so a cut-out
+// dish on a transparent PNG came back on a black square. True when any pixel of
+// the drawn picture is even partly see-through.
+function hasTransparency(ctx: CanvasRenderingContext2D, width: number, height: number): boolean {
+  const { data } = ctx.getImageData(0, 0, width, height)
+  for (let alpha = 3; alpha < data.length; alpha += 4) {
+    if (data[alpha]! < 255) return true
+  }
+  return false
+}
+
+// The picture's size scaled down, never up, to fit the box
+function fit(img: HTMLImageElement, maxWidth: number, maxHeight: number) {
+  let { width, height } = img
+
+  if (width > maxWidth) {
+    height = (height * maxWidth) / width
+    width = maxWidth
+  }
+  if (height > maxHeight) {
+    width = (width * maxHeight) / height
+    height = maxHeight
+  }
+  return { width, height }
+}
+
+function draw(
+  img: HTMLImageElement,
+  { width, height }: { width: number; height: number },
+  name: string,
+) {
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error(`Could not draw ${name}`)
+  ctx.drawImage(img, 0, 0, width, height)
+  return { canvas, ctx }
+}
+
+// The decoded picture, scaled into the box and encoded
+function encode(
+  img: HTMLImageElement,
+  file: File,
+  maxWidth: number,
+  maxHeight: number,
+  quality: number,
+): string {
+  const { canvas, ctx } = draw(img, fit(img, maxWidth, maxHeight), file.name)
+
+  // A JPEG file never has transparency, so it skips reading every pixel
+  if (file.type === 'image/jpeg' || !hasTransparency(ctx, canvas.width, canvas.height)) {
+    return canvas.toDataURL('image/jpeg', quality)
+  }
+
+  // WebP keeps the transparency at about a JPEG's size: a cut-out dish photo came
+  // to 41KB, against 445KB as a PNG
+  const webp = canvas.toDataURL('image/webp', quality)
+  if (webp.startsWith('data:image/webp')) return webp
+
+  // A browser that can't make WebP (Safari) hands back a PNG instead. Drawn only as
+  // large as the PDF service shrinks it to anyway, that PNG is about a quarter the size.
+  const pdfSize = fit(img, Math.min(maxWidth, PDF_PHOTO_EDGE), Math.min(maxHeight, PDF_PHOTO_EDGE))
+  return draw(img, pdfSize, file.name).canvas.toDataURL('image/png')
+}
+
 /**
- * Downscale an image file and return it as a JPEG data URI.
+ * Downscale an image file and return it as a data URI: a JPEG, or a WebP when the
+ * picture has transparency to keep (a PNG where the browser can't make WebP).
  *
  * Uploads are embedded straight into the menu HTML and posted to the PDF
  * service, so an untouched phone photo costs several megabytes of base64 on
@@ -33,26 +103,13 @@ export function compressImage(
       img.src = reader.result as string
     }
 
+    // A throw in here would leave the promise pending, and the upload spinning, for good
     img.onload = () => {
-      let { width, height } = img
-
-      if (width > maxWidth) {
-        height = (height * maxWidth) / width
-        width = maxWidth
+      try {
+        resolve(encode(img, file, maxWidth, maxHeight, quality))
+      } catch (err) {
+        reject(err)
       }
-      if (height > maxHeight) {
-        width = (width * maxHeight) / height
-        height = maxHeight
-      }
-
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, 0, 0, width, height)
-
-      const base64 = canvas.toDataURL('image/jpeg', quality)
-      resolve(base64)
     }
 
     img.onerror = () => reject(new Error(`Could not decode ${file.name}`))
