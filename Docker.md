@@ -61,6 +61,23 @@ docker compose --profile dev up --build
   - CI rebuilds it on every push to `main` and commits it if it was out of date (a pull request only gets a warning);
   - to rebuild it yourself: `npm run build:css` in `frontend/`.
 - Puppeteer requires system libraries and fonts to render PDFs. The backend images include Chromium and common runtime libs. If you have a custom Chromium binary, set `CHROMIUM_PATH` in the service environment to its path.
-  -- For Chinese (CJK) text rendering in PDFs, ensure CJK fonts are installed in the image (e.g. `fonts-noto-cjk`, `fonts-wqy-zenhei`). The current backend images attempt to include fonts; if characters don't render, add the desired font and rebuild.
+  -- Chinese text in PDFs uses Noto Sans TC/SC from Google Fonts. The CJK fonts installed in the image (`fonts-noto-cjk`, `fonts-wqy-zenhei`) are the fallback: they print a character both webfonts lack, or every Chinese character when the webfont stylesheet misses its load budget. A host without them prints boxes in both cases.
+- The production backend image builds from the **repo root**: `docker build -f backend/Dockerfile .`. The renderer reads `frontend/public/css/tailwind.css` (and the sample menu's photo) from disk, and a `./backend` context cannot reach them. The root `.dockerignore` lets in only the backend and those files. Locally, compose also mounts `./frontend` over them, so CSS rebuilds still apply without rebuilding the image.
+
+## Deploying the backend on Render
+
+The PDF backend runs this image on Render, so the live server has the same Chromium and fonts as local Docker. Web Service settings:
+
+| setting | value |
+| --- | --- |
+| Runtime / Language | Docker |
+| Root Directory | *(empty)* |
+| Dockerfile Path | `./backend/Dockerfile` |
+| Docker Build Context Directory | `.` |
+| Docker Command | *(empty, the image runs `npm start`)* |
+
+`PORT`, `NODE_ENV=production` and `CHROMIUM_PATH` need no setting: Render provides `PORT`, and the image sets the other two. `NODE_ENV=production` is what switches CORS to the production origins.
+
+To check which build is live, export a PDF with Chinese in `font-family: monospace` and look at its fonts. The Docker image embeds `WenQuanYiZenHei`/`NotoSansCJK`, and its `/Creator` shows Debian's Chromium. The native Node runtime prints boxes there and shows Puppeteer's bundled Chrome.
 
 -- Notes on profiles vs separate files: keeping a separate `docker-compose.dev.yml` avoids accidental starts of dev services in production and is clearer for local development; using Compose profiles keeps a single file but requires tagging dev services with `profiles: ["dev"]` and using `--profile dev` to start them.

@@ -117,8 +117,8 @@ Three consequences worth keeping in mind:
 | page / navigation       | 60s    | `puppeteerInfra.js`                       | large menus time out                       |
 | job retention           | 5 min  | `pdfQueue.js` — `JOB_TTL`                 | clients poll slower than that              |
 
-`npm start` is what applies the heap cap, and it is what Render runs. Starting
-the server with `node server.js` skips it.
+`npm start` is what applies the heap cap, and it is what Render runs (the
+Docker image's `CMD`). Starting the server with `node server.js` skips it.
 
 ### Reading a crash
 
@@ -184,6 +184,10 @@ Server runs on http://localhost:3000
 Use `npm start`, not `node server.js`: the start script sets the Node heap cap
 that keeps the process inside a 512MB instance. See
 [Resource Budget](#resource-budget-512mb--01-cpu).
+
+In production, Render runs `backend/Dockerfile`, built from the repo root so the
+image carries `frontend/public/css/tailwind.css` and Chinese system fonts. The
+service settings are in [Docker.md](../Docker.md#deploying-the-backend-on-render).
 
 - **Auto-injects Tailwind CSS v4** (compiled from frontend)
 - **Automatic image compression**:

@@ -163,7 +163,10 @@ jobs:
       # nothing in CI built the image to notice.
       - uses: docker/build-push-action@v6
         with:
-          context: ./backend
+          # The repo root, as Render builds it: the image needs tailwind.css
+          # from the frontend. .dockerignore keeps the rest out.
+          context: .
+          file: backend/Dockerfile
           load: true
           tags: menu-gen-backend:ci
           cache-from: type=gha
@@ -184,6 +187,14 @@ jobs:
             sleep 1
           done
           echo "backend never answered /ping"; exit 1
+
+      # The two things the image carries that Render has no other way to get:
+      # the PDF styling (nothing is mounted there, so a missing file only shows
+      # as unstyled PDFs) and a Chinese font for when the Noto webfont fails.
+      - name: Check the PDF styling and a CJK fallback font are in the image
+        run: |
+          docker exec backend-ci test -s /usr/src/frontend/public/css/tailwind.css
+          docker exec backend-ci sh -c 'fc-list :lang=zh family | grep -q .'
 
       - name: Smoke render a PDF
         run: |

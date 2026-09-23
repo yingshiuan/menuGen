@@ -1,7 +1,14 @@
+# Build from the repo root, not ./backend:
+#   docker build -f backend/Dockerfile .
+# The renderer reads a few files out of the frontend (see "Frontend files" below),
+# and a ./backend context cannot reach them. Render builds it the same way.
 FROM node:20-bookworm-slim
 WORKDIR /usr/src/app
 
-# Install OS deps required by Puppeteer's Chromium
+# Install OS deps required by Puppeteer's Chromium. The CJK fonts are the
+# fallback for Chinese: every PDF asks Google Fonts for Noto Sans TC/SC, and these
+# cover a character missing from both, or a render where that stylesheet missed
+# its budget. Without them either case prints boxes.
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
 	ca-certificates \
@@ -37,11 +44,18 @@ ENV CHROMIUM_PATH=/usr/bin/chromium
 # Install production dependencies. --ignore-scripts is what actually suppresses
 # the download, since the postinstall calls `puppeteer browsers install`
 # explicitly and that command ignores PUPPETEER_SKIP_DOWNLOAD.
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm ci --only=production --ignore-scripts
 
 # Copy source
-COPY . .
+COPY backend/ .
+
+# Frontend files: pdfApp.js inlines frontend/public/css/tailwind.css into every
+# render, and inlineLocalImages() reads any <img> given as a path (the sample
+# menu's photo) from frontend/public. Both resolve to ../../frontend from here.
+# Nothing is mounted on Render, so without this every PDF exports unstyled, with
+# no error. The root .dockerignore lists which files make it in.
+COPY frontend/public /usr/src/frontend/public
 
 EXPOSE 3000
 ENV NODE_ENV=production
