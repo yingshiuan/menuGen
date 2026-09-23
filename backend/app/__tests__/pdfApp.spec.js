@@ -134,6 +134,6 @@ describe('generatePdfFromHtml', () => {
 
     expect(renderedHtml()).toContain('<span>Wonton Soup</span>')
     expect(renderedHtml()).not.toContain('<input')
-    expect(renderedHtml()).toContain('display: none')
+    expect(renderedHtml()).toContain('style="display:none"')
   })
 })

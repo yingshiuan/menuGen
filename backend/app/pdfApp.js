@@ -1,4 +1,3 @@
-import { JSDOM } from 'jsdom'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import {
@@ -42,17 +41,10 @@ export async function generatePdfFromHtml({ html, width = '210mm', height = '297
   // heap out of memory; see shrinkInlineImages.
   const shrunkHtml = await shrinkInlineImages(html)
 
-  const dom = new JSDOM(shrunkHtml)
-  const document = dom.window.document
-
-  sanitizeHtml(document)
-  await inlineLocalImages(document)
-  hideUiOnly(document)
-
-  // Take the markup and let the tree go: JSDOM holds the whole document alive
-  // until the window is closed, and Chrome is about to want that memory.
-  const bodyHtml = document.body.innerHTML
-  dom.window.close()
+  // Each of these rewrites the page as text. Parsing it into a DOM first, to
+  // make the same handful of edits, cost 68MB of a 512MB instance on a 76-photo
+  // menu -- and then threw the tree away so Chrome could parse the markup again.
+  const bodyHtml = hideUiOnly(await inlineLocalImages(sanitizeHtml(shrunkHtml)))
 
   const fontName = parseFontName(font || '')
   const isSystemFont = systemFonts.includes(fontName.toLowerCase())
