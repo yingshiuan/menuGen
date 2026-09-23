@@ -11,6 +11,7 @@ const props = defineProps<{
 
 interface PdfState {
   uploading: boolean
+  queued: boolean // waiting behind other exports on the server
   readonly: boolean
   errorMessage: null | string
   noCsvWarning: boolean
@@ -18,6 +19,7 @@ interface PdfState {
 
 const pdfState = reactive<PdfState>({
   uploading: false,
+  queued: false,
   readonly: false,
   errorMessage: null,
   noCsvWarning: false,
@@ -77,7 +79,7 @@ async function generatePDF(): Promise<void> {
     })
 
     if (!res.ok) {
-      reportFailure('The server could not start the export. Please try again.')
+      reportFailure(refusalMessage(res))
       return
     }
 
@@ -100,7 +102,25 @@ async function generatePDF(): Promise<void> {
   } finally {
     pdfState.readonly = false
     pdfState.uploading = false
+    pdfState.queued = false
   }
+}
+
+/**
+ * Why the server would not take the job. The backend renders one menu at a
+ * time and refuses a new one when its queue is full (503 with Retry-After) or
+ * when one address starts too many (429). Anything else -- including the 503 a
+ * sleeping or restarting instance answers with, which has no Retry-After -- keeps
+ * the generic message.
+ */
+function refusalMessage(res: Response): string {
+  if (res.status === 503 && res.headers.get('retry-after')) {
+    return 'Several menus are being exported right now and the queue is full. Please try again in about 30 seconds.'
+  }
+  if (res.status === 429) {
+    return 'You have started a lot of exports in the last few minutes. Please wait a few minutes and try again.'
+  }
+  return 'The server could not start the export. Please try again.'
 }
 
 /**
@@ -144,6 +164,8 @@ async function waitForPdf(jobId: string) {
       )
       return
     }
+
+    pdfState.queued = status.status === 'queued'
 
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
   }
@@ -217,7 +239,11 @@ function retryPDF() {
     <div v-if="pdfState.uploading" class="loader-overlay">
       <div class="loader-container">
         <div class="loader"></div>
-        <p class="text-m">
+        <p v-if="pdfState.queued" class="text-m">
+          Another menu is being exported right now.<br />
+          Yours is waiting in line and will start automatically — please keep this page open.
+        </p>
+        <p v-else class="text-m">
           Exporting PDF, please wait...<br />
           The first export may take up to 60 seconds while the server starts. Thanks for your
           patience!<br />
