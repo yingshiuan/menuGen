@@ -26,7 +26,7 @@ Updating restaurant menus is often repetitive and time-consuming, especially whe
 - **Node.js** + Express server
 - **Puppeteer** for HTML-to-PDF rendering
 - **Sharp** for image compression
-- **JSDOM** for HTML processing
+- **htmlparser2** for rewriting the exported page
 - Async job queue for PDF generation
 - Tuned to run within a 512MB / 0.1 CPU instance — see
   [Resource Budget](./backend/README.md#resource-budget-512mb--01-cpu)
@@ -278,7 +278,7 @@ Includes:
 
 - express
 - puppeteer
-- jsdom
+- htmlparser2
 - sharp
 - cors
 
@@ -390,17 +390,17 @@ See [backend/README.md](./backend/README.md) for full backend architecture and i
 
 ### Backend server flow:
 
-#### **1. Shrink inline photos, then parse**
+#### **1. Prepare the page, always as a string**
 
-Resizing happens on the raw string, before any DOM exists. JSDOM costs roughly
-30x the size of what it parses, so parsing full-resolution photos first is what
-used to exhaust a 512MB instance — 11.4MB of HTML needed 344MB of DOM to produce
-0.5MB of output.
+The export never builds a DOM. A tree costs roughly 30x the markup that makes it,
+which is what exhausted a 512MB instance — 11.4MB of HTML needed 344MB of DOM to
+produce 0.5MB of output, and even after the photos were shrunk first the tree
+still cost 68MB on a 76-photo menu. Each step rewrites the page as text, with
+htmlparser2 locating the tags to splice.
 
 ```js
-const shrunkHtml = await shrinkInlineImages(html) // photos → 300px, still a string
-const dom = new JSDOM(shrunkHtml) // now cheap to parse
-const document = dom.window.document
+const shrunkHtml = await shrinkInlineImages(html) // photos → 300px
+const bodyHtml = hideUiOnly(await inlineLocalImages(sanitizeHtml(shrunkHtml)))
 ```
 
 #### **2. Detect all `<img>` elements**

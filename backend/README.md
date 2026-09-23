@@ -71,7 +71,7 @@ Measured on a 20-photo menu, rendering the same PDF either way:
 | stage                          | before  | after     |
 | ------------------------------ | ------- | --------- |
 | incoming payload               | 11.4MB  | 11.4MB    |
-| `new JSDOM(html)`              | +344MB  | **+26MB** |
+| parsing the page into a DOM    | +344MB  | **none**  |
 | peak heap (Node)               | 468MB   | **90MB**  |
 | peak RSS (Node, Chromium extra)| 726MB   | **275MB** |
 | serialized output              | 0.5MB   | 0.5MB     |
@@ -79,14 +79,21 @@ Measured on a 20-photo menu, rendering the same PDF either way:
 Nothing about the output changed. The 344MB was spent parsing photos into a DOM
 that then threw them away, because the resize happened a few lines later.
 
+Shrinking the photos first brought that parse down to +26MB, and the parse is now
+gone altogether. On a 76-photo menu the DOM was still costing 68MB of the
+instance -- a tree built to make a handful of edits, dropped again so Chrome could
+parse the same markup. The whole container peaked at 474MB of its 512MB and Render
+killed it. The passes in `htmlService.js` rewrite the page as text instead, which
+put the same menu at 375MB, and the PDF is unchanged to the pixel.
+
 ### The rule this turns into
 
-**Shrink a payload while it is still a string.** The same bytes cost about 1x as
-a string and about **30x** as a DOM. Any transformation that makes the page
-smaller has to run before parsing, not during traversal — which is why
-`shrinkInlineImages()` is a regex pass over the raw HTML rather than another
-`querySelectorAll('img')` loop. It is not a micro-optimization; it is the
-difference between fitting in the instance and not.
+**Keep the payload a string.** The same bytes cost about 1x as a string and about
+**30x** as a DOM, and the page is going to be parsed by Chrome regardless — so a
+tree built here is a second copy of the menu, held to make edits that are a splice
+apart in the text. That is why every pass in `htmlService.js` rewrites the string,
+with htmlparser2 only reporting where each tag starts and ends. It is not a
+micro-optimization; it is the difference between fitting in the instance and not.
 
 Three consequences worth keeping in mind:
 
@@ -227,7 +234,7 @@ service settings are in [Docker.md](../Docker.md#deploying-the-backend-on-render
 - **Node.js** + Express
 - **Puppeteer** (Chromium)
 - **Sharp** (image compression)
-- **JSDOM** (HTML parsing)
+- **htmlparser2** (locating tags in the page, without building a DOM)
 - **Tailwind CSS v4**
 - CORS for frontend communication
 
@@ -238,7 +245,7 @@ service settings are in [Docker.md](../Docker.md#deploying-the-backend-on-render
 1. **Install dependencies**
 
 ```bash
-npm install express puppeteer cors fs path sharp jsdom
+npm install express puppeteer cors fs path sharp htmlparser2
 ```
 
 2. **Compile Tailwind CSS v4**
