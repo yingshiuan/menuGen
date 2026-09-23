@@ -62,6 +62,19 @@ describe('POST /generate-pdf', () => {
     expect(res.body.error).toMatch(/queue is full/i)
     expect(res.body.jobId).toBeUndefined() // nothing to poll for
   })
+
+  it('lets a cross-origin page read the Retry-After on a full queue', async () => {
+    // The page tells a full queue from a down instance by this header, and a
+    // browser hides it from cross-origin script unless it is exposed.
+    enqueuePdfJob.mockReturnValue(null)
+
+    const res = await request(app)
+      .post('/generate-pdf')
+      .set('Origin', 'http://localhost:5173')
+      .send({ html: '<p>Soup</p>' })
+
+    expect(res.headers['access-control-expose-headers']).toMatch(/retry-after/i)
+  })
 })
 
 describe('GET /job/:id', () => {

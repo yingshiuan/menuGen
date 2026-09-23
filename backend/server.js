@@ -30,7 +30,11 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET','POST']
+  methods: ['GET','POST'],
+  // The export queue answers "full" with a 503 and Retry-After; a cross-origin
+  // page cannot read that header unless it is exposed, and without it the client
+  // cannot tell a full queue from an instance that is down.
+  exposedHeaders: ['Retry-After'],
 }));
 
 // Ping

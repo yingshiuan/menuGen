@@ -52,11 +52,15 @@ function jsonResponse(body: unknown, ok = true) {
  * with 500 and an expired record with 404 and a plain-text body, so passing no
  * body here makes json() reject the way a text body really does.
  */
-function errorResponse(status: number, body?: unknown) {
+function errorResponse(status: number, body?: unknown, extraHeaders: Record<string, string> = {}) {
+  const headers: Record<string, string> = {
+    'content-type': body === undefined ? 'text/html' : 'application/json',
+    ...extraHeaders,
+  }
   return {
     ok: false,
     status,
-    headers: { get: () => (body === undefined ? 'text/html' : 'application/json') },
+    headers: { get: (name: string) => headers[name.toLowerCase()] ?? null },
     json: async () => {
       if (body === undefined) throw new SyntaxError('Unexpected token J in JSON')
       return body
@@ -249,6 +253,51 @@ describe('GeneratePdf', () => {
     expect(fetchMock).toHaveBeenCalledOnce() // never began polling
     expect(document.body.textContent).toContain('could not start the export')
     expect(document.body.textContent).toContain('Retry Export PDF')
+  })
+
+  it('says the queue is full when the server refuses with Retry-After', async () => {
+    fetchMock.mockResolvedValueOnce(
+      errorResponse(503, { error: 'The export queue is full.' }, { 'retry-after': '30' }),
+    )
+    const wrapper = mountPdf()
+
+    await wrapper.get('button').trigger('click')
+    await flush()
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(document.body.textContent).toContain('the queue is full')
+    expect(document.body.textContent).toContain('Retry Export PDF')
+  })
+
+  it('asks the user to slow down when the export rate limit is hit', async () => {
+    fetchMock.mockResolvedValueOnce(errorResponse(429, { error: 'Too many exports' }))
+    const wrapper = mountPdf()
+
+    await wrapper.get('button').trigger('click')
+    await flush()
+
+    expect(document.body.textContent).toContain('wait a few minutes')
+    expect(document.body.textContent).toContain('Retry Export PDF')
+  })
+
+  it('tells the user when their export is waiting behind another one', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ jobId: 'job-1' }))
+      .mockResolvedValueOnce(jsonResponse({ status: 'queued' }))
+      .mockResolvedValueOnce(jsonResponse({ status: 'processing' }))
+      .mockResolvedValueOnce(pdfResponse())
+    const wrapper = mountPdf()
+
+    await wrapper.get('button').trigger('click')
+    await flush()
+    expect(document.body.textContent).toContain('waiting in line')
+
+    await flush(2000) // its turn comes
+    expect(document.body.textContent).not.toContain('waiting in line')
+    expect(document.body.textContent).toContain('Exporting PDF, please wait')
+
+    await flush(2000)
+    expect(createObjectURL).toHaveBeenCalledOnce()
   })
 
   it('surfaces a retryable error overlay when the request throws', async () => {
