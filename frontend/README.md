@@ -13,13 +13,14 @@ Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 - **Tailwind CSS v4** for responsive layouts
 - **Pinia** for state management
 - **PapaParse** for CSV parsing
+- **SheetJS** for Excel / Numbers files (loaded only when one is uploaded)
 - **Vitest** for unit testing
 
 # Features
 
-### CSV Import
+### CSV / Excel / Numbers Import
 
-Upload a CSV file and instantly convert it into structured menu items with auto-numbering and category grouping.
+Upload a CSV, `.xlsx` or `.numbers` file and instantly convert it into structured menu items with auto-numbering and category grouping. A workbook with several sheets opens its first one; a tab per sheet under the upload box switches to another, and Generate PDF exports whichever sheet is open. Everything is parsed in the browser — nothing is sent to the backend.
 
 ### Live Editable UI
 

@@ -7,6 +7,8 @@ import {
   extraNameLangs,
   filterByIcons,
   matchesPictureName,
+  measureLabel,
+  measureUnit,
   pickText,
 } from '@/domain/menuItem'
 import type { Dietary } from '@/types/types'
@@ -45,6 +47,21 @@ describe('categoryLabel', () => {
   it('names a dish without a category Uncategorized', () => {
     expect(categoryLabel(createMenuItem(), 'en')).toBe('Uncategorized')
     expect(categoryLabel(createMenuItem({ category: { de: 'SUPPE' } }), 'de')).toBe('SUPPE')
+  })
+})
+
+describe('measureLabel', () => {
+  it('adds the language’s piece unit to a bare count', () => {
+    expect(measureLabel('4', 'en')).toBe('4 pcs')
+    expect(measureLabel(' 2 ', 'de')).toBe('2 Stk.')
+    expect(measureLabel('1,5', 'zh')).toBe('1,5 件')
+  })
+
+  it('prints a measure that names its own unit as written', () => {
+    for (const m of ['20cl', '0.5 l', '500g', '2 pcs', '30 cl', 'Glas']) {
+      expect(measureLabel(m, 'en')).toBe(m)
+      expect(measureUnit(m, 'de')).toBe('')
+    }
   })
 })
 

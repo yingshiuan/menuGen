@@ -1,8 +1,8 @@
 # MenuGen
 
-### CSV → Editable UI → Live Preview → Print-Ready PDF
+### CSV / Excel / Numbers → Editable UI → Live Preview → Print-Ready PDF
 
-MenuGen helps restaurants create and maintain professional menus without requiring design or technical skills. It converts CSV data into an intuitive editing interface and generates professionally formatted PDFs automatically.
+MenuGen helps restaurants create and maintain professional menus without requiring design or technical skills. It converts a CSV, Excel or Numbers sheet into an intuitive editing interface and generates professionally formatted PDFs automatically.
 
 Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 
@@ -19,6 +19,7 @@ Updating restaurant menus is often repetitive and time-consuming, especially whe
 - **Tailwind CSS v4** for responsive layouts
 - **Pinia** for state management
 - **PapaParse** for CSV parsing
+- **SheetJS** for Excel / Numbers files, loaded only when one is uploaded
 - **Vitest** for unit testing
 
 ### Backend
@@ -35,7 +36,7 @@ Updating restaurant menus is often repetitive and time-consuming, especially whe
 
 ### Content
 
-- CSV import with full inline editing (No, Name and Description in English / German / Chinese, Measure, Price, Dietary icons, Pictures, Category)
+- CSV, Excel (`.xlsx` / `.xls`) and Numbers (`.numbers`) import, with a tab per sheet, and full inline editing (No, Name and Description in English / German / Chinese, Measure, Price, Dietary icons, Pictures, Category)
 - Auto-numbering per category with intelligent gap reuse
 - Unique UUID-based item tracking
 
@@ -141,7 +142,8 @@ Visit [MenuGen](https://menugen.insdash.ch/) to try it out.
 
 ### **Frontend (Vue + Tailwind CSS v4)**
 
-- Upload CSV → auto-structured menu items with auto-generated unique IDs
+- Upload a CSV, Excel or Numbers file → auto-structured menu items with auto-generated unique IDs
+- Multi-sheet workbooks show one tab per sheet (e.g. Food / Drinks); switching tabs reloads the menu from that sheet
 - Inline editable UI (No, Name, Measure, Price, Description, Categories, Icons), per menu language
 - Upload custom images or SVG icons per item
 - Upload logo image (displays in PDF)
@@ -207,6 +209,7 @@ menu-gen/
 │  │  │   └─ tailwind.css
 │  │  ├─ data/
 │  │  ├─ demo/
+│  │  ├─ examples/        # menu-example.xlsx / .numbers (Food + Drinks sheets)
 │  │  └─ picture/
 │  ├─ package.json
 │  └─ README.md
@@ -331,7 +334,11 @@ Alternatively, if you prefer a single file with profiles, the repo also supports
 
 # Workflow
 
-## **1. Upload CSV**
+## **1. Upload a CSV, Excel or Numbers file**
+
+Ready-made examples: [`menu-example.xlsx`](frontend/public/examples/menu-example.xlsx) and
+[`menu-example.numbers`](frontend/public/examples/menu-example.numbers), each with a **Food** and a
+**Drinks** sheet.
 
 User uploads a CSV file like:
 
@@ -343,8 +350,21 @@ No.,Price,Measure,Name (EN),Name (DE),Name (ZH),Description (EN),Description (DE
 
 - A row with no `No.` and no `Price` is a category row; its name columns name the category for the rows below.
 - A flag cell counts as set unless it is empty or `false` / `no` / `nein` / `0` / `-`, so `X`, `true` and the sheet codes `V` `S` `VG` `VT` `G` all work.
+- `Measure`: a bare number is a piece count and gets the unit of the menu language (`4` prints as `4 pcs` / `4 Stk.` / `4 件`); anything else is printed as written (`20cl`, `0.5 l`, `500g`).
 - Any other column becomes a custom icon, set per dish by its cell.
 - Older sheets still import: a `Recommend` column counts as `Recommended`, plain `Name` / `Description` are read as English, or as German when the headers are German (`Preis`, `Empfohlen`, `Scharf`, `Vegetarisch`, `Glutenfrei`), and `Chinese Name` fills `Name (ZH)`.
+
+**Excel and Numbers files** use the same columns, with the header in the first row of each sheet.
+A workbook with several sheets opens its first one and shows a tab per sheet under the upload box;
+picking another tab reloads the menu from that sheet, and **Generate PDF** exports whichever sheet is open.
+Notes:
+
+- The file is read in the browser — it is never uploaded to the backend, so it costs the server no memory.
+  SheetJS (~160 kB gzipped) is downloaded only the first time a spreadsheet is dropped.
+- Only the first table of each Numbers sheet is read.
+- Numbers display formats are not kept: a price shown as `12.50` arrives as `12.5`. Excel formats are kept.
+- Numbers files from before Numbers 3 (2013), which are folders rather than single files, can't be read —
+  re-save them in a current Numbers, or export to CSV.
 
 Frontend parses → structured menu → editable state. Each dish holds its text per language and its flags as `dietary: { recommend, spicy, vegan, vegetarian, gluten_free }`; the menu is printed in the main language picked under **Language**, and each language ticked under **Also show** (中文 by default) adds that name after a slash: `Szechuan Suppe / Szechuan Soup / 酸辣湯`. Descriptions, categories and icon labels stay in the main language.
 
