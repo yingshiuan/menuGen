@@ -5,7 +5,15 @@ import { useIcons } from '@/composables/useIcons'
 import { useMenuLang } from '@/composables/useMenuLang'
 import { useMenuTypography } from '@/composables/useMenuTypography'
 import { useMenuPhoto } from '@/composables/useMenuPhoto'
-import { LANG_LABELS, MEASURE_UNIT, cloneMenuItem, isDietaryKey, pickText } from '@/domain/menuItem'
+import {
+  LANG_LABELS,
+  MEASURE_UNIT,
+  cloneMenuItem,
+  isDietaryKey,
+  measureLabel,
+  measureUnit,
+  pickText,
+} from '@/domain/menuItem'
 import ImageCropper from '@/components/ImageCropper.vue'
 
 /* Props & Emits */
@@ -37,7 +45,9 @@ const displayName = computed(() => pickText(local.name, primary.value))
 const extraNameText = (lang: Lang) => local.name[lang]?.trim() ?? ''
 const displayDescription = computed(() => pickText(local.description, primary.value))
 const displayCategory = computed(() => pickText(local.category, primary.value))
-const measureUnit = computed(() => MEASURE_UNIT[primary.value])
+const pieceUnit = computed(() => MEASURE_UNIT[primary.value])
+// While editing, the unit shows only once the typed value is a bare count
+const editMeasureUnit = computed(() => measureUnit(local.measure, primary.value))
 
 const { fontSize } = useMenuTypography()
 const { photoSize, showNameRing } = useMenuPhoto()
@@ -399,7 +409,7 @@ watch(allOptions, (newOptions, oldOptions) => {
               @click.stop="startEditing('measure')"
               :title="`Click to edit the Measure...`"
             >
-              ({{ local.measure }} {{ measureUnit }})</span
+              ({{ measureLabel(local.measure, primary) }})</span
             >
             <span
               v-else-if="!local.measure && !props.readonly && !editingState.measure"
@@ -408,7 +418,7 @@ watch(allOptions, (newOptions, oldOptions) => {
               title="Click to add Measure..."
               class="opacity-30 cursor-pointer"
             >
-              ({{ measureUnit }})
+              ({{ pieceUnit }})
             </span>
           </span>
           <span
@@ -440,10 +450,10 @@ watch(allOptions, (newOptions, oldOptions) => {
               @blur="stopEditing('measure')"
               @keyup.enter="stopEditing('measure')"
               :readonly="props.readonly"
-              class="p-1 w-12 border"
-              placeholder="qty"
+              class="p-1 w-16 border"
+              placeholder="4 / 20cl"
             />
-            {{ measureUnit }})
+            {{ editMeasureUnit }})
           </span>
           <!-- Extra Names (e.g. English, Chinese) -->
           <template v-for="lang in extraLangs" :key="lang">

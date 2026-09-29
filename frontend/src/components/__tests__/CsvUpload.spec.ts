@@ -6,6 +6,7 @@ import { useIcons } from '@/composables/useIcons'
 import { useMenuStore } from '@/stores/menu'
 import type { MenuItem } from '@/types/types'
 import { createMenuItem } from '@/domain/menuItem'
+import * as XLSX from 'xlsx'
 
 const HEADER = 'No.,Price,Name,Measure,Chinese Name,Description,Spicy,House Special'
 const CSV = [
@@ -41,6 +42,16 @@ function csvFile(content = CSV, name = 'menu.csv') {
   return new File([content], name, { type: 'text/csv' })
 }
 
+/** An .xlsx built in memory, one sheet per entry, each sheet given as CSV text. */
+function xlsxFile(sheets: Record<string, string>, name = 'menu.xlsx') {
+  const wb = XLSX.utils.book_new()
+  for (const [sheet, csv] of Object.entries(sheets)) {
+    const rows = csv.split('\n').map((line) => line.split(','))
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), sheet)
+  }
+  return new File([XLSX.write(wb, { type: 'array', bookType: 'xlsx' })], name)
+}
+
 function mountCsv(items: MenuItem[] = []) {
   return mount(CsvUpload, { props: { items } })
 }
@@ -74,12 +85,12 @@ function emittedItems(wrapper: VueWrapper) {
 describe('upload', () => {
   it('prompts for a file and then shows the chosen file name', async () => {
     const wrapper = mountCsv()
-    expect(wrapper.text()).toContain('Upload CSV')
+    expect(wrapper.text()).toContain('Upload menu')
 
     await selectFile(wrapper, csvFile())
 
     expect(wrapper.text()).toContain('menu.csv')
-    expect(wrapper.text()).not.toContain('Upload CSV')
+    expect(wrapper.text()).not.toContain('Upload menu')
   })
 
   it('maps data rows to MenuItems and emits them', async () => {
@@ -180,35 +191,82 @@ describe('upload', () => {
     expect(await emittedItems(wrapper)).toHaveLength(2)
   })
 
-  it('refuses a file that is not a CSV and leaves the menu alone', async () => {
+  it('refuses a file that is not a menu sheet and leaves the menu alone', async () => {
     const wrapper = mountCsv()
 
     await selectFile(wrapper, new File(['\x89PNG'], 'dish.png', { type: 'image/png' }))
 
     expect(alertMock).toHaveBeenCalledWith(
-      '“dish.png” is not a CSV file. Please upload a .csv file.',
+      '“dish.png” is not a menu sheet. Please upload a .csv, .xlsx or .numbers file.',
     )
-    expect(wrapper.text()).toContain('Upload CSV')
+    expect(wrapper.text()).toContain('Upload menu')
     expect(wrapper.emitted('csvLoaded')).toBeUndefined()
   })
 
   it('refuses a dropped file too, which the picker filter never sees', async () => {
     const wrapper = mountCsv()
-    const numbers = new File(['PK'], 'menu-2026.numbers')
 
-    await wrapper.get('div.border-dashed').trigger('drop', { dataTransfer: { files: [numbers] } })
+    await wrapper
+      .get('div.border-dashed')
+      .trigger('drop', { dataTransfer: { files: [new File(['GIF89a'], 'logo.gif')] } })
 
-    expect(alertMock).toHaveBeenCalledWith(expect.stringContaining('File → Export To → CSV'))
-    expect(wrapper.text()).not.toContain('menu-2026.numbers')
+    expect(alertMock).toHaveBeenCalledWith(expect.stringContaining('is not a menu sheet'))
+    expect(wrapper.text()).not.toContain('logo.gif')
     expect(wrapper.emitted('csvLoaded')).toBeUndefined()
   })
 
-  it('points an Excel file at Save As CSV', async () => {
+  it('loads a single-sheet Excel file without asking for a sheet', async () => {
     const wrapper = mountCsv()
 
-    await selectFile(wrapper, new File(['PK'], 'menu.xlsx'))
+    await selectFile(wrapper, xlsxFile({ Sheet1: CSV }))
+    const items = await emittedItems(wrapper)
 
-    expect(alertMock).toHaveBeenCalledWith(expect.stringContaining('Save As → CSV UTF-8'))
+    expect(alertMock).not.toHaveBeenCalled()
+    expect(items.map((i) => i.name.en)).toEqual(['Kung Pao Chicken', 'Steamed Rice'])
+    expect(items[1]!.tags).toEqual(['House Special'])
+    expect(wrapper.text()).toContain('menu.xlsx')
+    expect(wrapper.find('[role="tablist"]').exists()).toBe(false)
+  })
+
+  it('opens the first sheet of a workbook and reloads when another is picked', async () => {
+    const drinks = [HEADER, ',,Drinks,,,,,', '20,4.50,Jasmine Tea,pot,茉莉花茶,,,'].join('\n')
+    const wrapper = mountCsv()
+
+    await selectFile(wrapper, xlsxFile({ menu: CSV, drinks }, 'afatt-menu.xlsx'))
+    expect(await emittedItems(wrapper)).toHaveLength(2)
+
+    const tabs = await vi.waitFor(() => {
+      const found = wrapper.findAll('[role="tab"]')
+      expect(found).toHaveLength(2)
+      return found
+    })
+    expect(tabs.map((t) => t.text())).toEqual(['menu', 'drinks'])
+    expect(tabs.map((t) => t.attributes('aria-selected'))).toEqual(['true', 'false'])
+
+    await tabs[1]!.trigger('click')
+    const [, second] = await vi.waitFor(() => {
+      const events = wrapper.emitted('csvLoaded')!
+      expect(events).toHaveLength(2)
+      return events.map((e) => e[0] as MenuItem[])
+    })
+    expect(second).toHaveLength(1)
+    expect(second![0]).toMatchObject({ no: '20', price: '4.50', category: { en: 'Drinks' } })
+    expect(wrapper.get('[role="tab"][aria-selected="true"]').text()).toBe('drinks')
+
+    // the open sheet's tab does nothing, so edits aren't thrown away by a stray click
+    await wrapper.get('[role="tab"][aria-selected="true"]').trigger('click')
+    expect(wrapper.emitted('csvLoaded')).toHaveLength(2)
+  })
+
+  it('explains a spreadsheet it cannot read', async () => {
+    const wrapper = mountCsv()
+
+    await selectFile(wrapper, new File(['not a zip'], 'old-menu.numbers'))
+
+    await vi.waitFor(() =>
+      expect(alertMock).toHaveBeenCalledWith(expect.stringContaining('couldn’t be read')),
+    )
+    expect(wrapper.text()).not.toContain('old-menu.numbers')
     expect(wrapper.emitted('csvLoaded')).toBeUndefined()
   })
 

@@ -36,6 +36,20 @@ export const LANG_LABELS: Record<Lang, string> = { en: 'English', de: 'Deutsch',
 
 export const MEASURE_UNIT: Record<Lang, string> = { en: 'pcs', de: 'Stk.', zh: '件' }
 
+// A bare count (4, 2.5, 1,5) is a number of pieces, so it gets the language's unit;
+// anything else already names its unit (20cl, 0.5 l, 500g) and is printed as written.
+const PIECE_MEASURE = /^\d+(?:[.,]\d+)?$/
+
+export function measureUnit(measure: string, lang: Lang): string {
+  return PIECE_MEASURE.test(measure.trim()) ? MEASURE_UNIT[lang] : ''
+}
+
+export function measureLabel(measure: string, lang: Lang): string {
+  const m = measure.trim()
+  const unit = measureUnit(m, lang)
+  return unit ? `${m} ${unit}` : m
+}
+
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }
