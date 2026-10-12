@@ -12,12 +12,13 @@ const __dirname = path.dirname(__filename)
 export const DEFAULT_PRINT_PX = 300
 
 // Pixels all of a menu's photos may add up to. Chromium holds every one decoded
-// at 4 bytes a pixel while it prints, so this is about 96MB of the 512MB
+// at 4 bytes a pixel while it prints, so this is about 48MB of the 512MB
 // instance; past it, every photo is scaled down by the same factor, and the
-// menu prints a little softer instead of being killed. In a 512MB / 0.1 CPU
-// container, 76 photos at the largest size (23M pixels, so the full 300ppi)
-// peaked at 406MB, and 120 of them, held to this budget, at 426MB.
-export const PRINT_PIXEL_BUDGET = 24_000_000
+// menu prints a little softer instead of being killed. Measured with the 76 real
+// afatt photos in a 512MB / 0.1 CPU container: all at the largest size peaked at
+// 409-440MB with this budget (391px each, ~215ppi), against 511-512MB with 24M.
+// A menu of up to ~40 photos still gets the full 300ppi at the largest size.
+export const PRINT_PIXEL_BUDGET = 12_000_000
 
 const PRINT_PX = /data-print-px="(\d+)x(\d+)"/
 

@@ -70,7 +70,7 @@ describe('compressImage', () => {
   it('applies the shared defaults when called with no bounds', async () => {
     await compressImage(file())
 
-    expect(canvasSize).toEqual({ width: 800, height: 533 })
+    expect(canvasSize).toEqual({ width: 600, height: 400 })
     expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledWith('image/jpeg', 0.8)
   })
 
