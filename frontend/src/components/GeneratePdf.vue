@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { reactive, nextTick } from 'vue'
+import { markPrintSizes } from '@/composables/printResolution'
 
 const props = defineProps<{
   contentRef: HTMLElement | null
@@ -59,6 +60,9 @@ async function generatePDF(): Promise<void> {
   pdfState.uploading = true
   await nextTick()
   await new Promise((resolve) => setTimeout(resolve, 50))
+
+  // So the PDF service sizes each photo for where it prints, not one size for all
+  markPrintSizes(element)
 
   // only html content without <head>
   const htmlContent = `

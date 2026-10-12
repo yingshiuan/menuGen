@@ -70,7 +70,7 @@ describe('compressImage', () => {
   it('applies the shared defaults when called with no bounds', async () => {
     await compressImage(file())
 
-    expect(canvasSize).toEqual({ width: 600, height: 400 })
+    expect(canvasSize).toEqual({ width: 800, height: 533 })
     expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledWith('image/jpeg', 0.8)
   })
 
@@ -118,15 +118,15 @@ describe('compressImage', () => {
     expect(result).toBe('data:image/webp;base64,WWW')
   })
 
-  it('falls back to a PNG no larger than the PDF uses where the browser cannot make WebP', async () => {
+  it('falls back to a PNG no larger than a dish photo prints where the browser cannot make WebP', async () => {
     pictureAlpha = 0
     canMakeWebp = false
 
     const result = await compressImage(file(), 600, 600, 0.8)
 
     expect(result).toBe('data:image/png;base64,PPP')
-    // Redrawn at the PDF's 300px, not the 600px upload size: a quarter of the PNG
-    expect(canvasSize).toEqual({ width: 300, height: 200 })
+    // Redrawn at the 550px a dish photo prints at its largest, not the upload size
+    expect(canvasSize).toEqual({ width: 550, height: 366 })
   })
 
   it('checks the whole resized picture', async () => {

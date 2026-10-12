@@ -7,34 +7,83 @@ import { compressImage, compressSvg, compressBase64Image } from '../infrastructu
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+// The size a photo the browser did not mark is shrunk to: an older frontend,
+// or an image that was hidden when the menu was exported
+export const DEFAULT_PRINT_PX = 300
+
+// Pixels all of a menu's photos may add up to. Chromium holds every one decoded
+// at 4 bytes a pixel while it prints, so this is about 96MB of the 512MB
+// instance; past it, every photo is scaled down by the same factor, and the
+// menu prints a little softer instead of being killed. In a 512MB / 0.1 CPU
+// container, 76 photos at the largest size (23M pixels, so the full 300ppi)
+// peaked at 406MB, and 120 of them, held to this budget, at 426MB.
+export const PRINT_PIXEL_BUDGET = 24_000_000
+
+const PRINT_PX = /data-print-px="(\d+)x(\d+)"/
+
 /**
- * Shrink every base64 image in the page while it is still a string.
+ * The box a data URI's image prints in, from the `data-print-px` the frontend
+ * writes on it (printResolution.ts). Only the attributes on either side of the
+ * URI are searched, so the photo itself is never copied.
+ */
+function printBox(html, uriStart, uriEnd) {
+  const tagStart = html.lastIndexOf('<', uriStart)
+  const tagEnd = html.indexOf('>', uriEnd)
+  const attrs =
+    html.slice(tagStart === -1 ? uriStart : tagStart, uriStart) +
+    html.slice(uriEnd, tagEnd === -1 ? html.length : tagEnd)
+
+  const marked = PRINT_PX.exec(attrs)
+  if (!marked) return { width: DEFAULT_PRINT_PX, height: DEFAULT_PRINT_PX }
+  return { width: Number(marked[1]), height: Number(marked[2]) }
+}
+
+/**
+ * Shrink every base64 image in the page while it is still a string, to the
+ * pixels it needs to print at 300ppi where it is drawn.
  *
  * JSDOM costs roughly thirty times the size of what it parses, so a menu full
  * of full-resolution photos is what exhausted the heap on a 512MB instance:
  * 11MB of HTML needed ~344MB of DOM to produce 0.5MB of output. The photos are
- * nearly all of that weight, and they get resized to 300px anyway, so doing it
- * here means the DOM only ever sees the small versions.
+ * nearly all of that weight, so doing it here means the DOM only ever sees the
+ * small versions.
  *
- * Matches are replaced one at a time rather than collected first, so no pass
- * ever holds a second copy of every photo.
+ * A first pass only reads the marked sizes, to scale them all down together
+ * when the menu would go over PRINT_PIXEL_BUDGET. The second replaces matches
+ * one at a time rather than collecting them first, so no pass ever holds a
+ * second copy of every photo.
  */
 export async function shrinkInlineImages(html) {
   // Only base64 payloads: an SVG data URI is already tiny and sharp cannot read
   // one, so it would cost a throw per icon to find that out.
   const dataUri = /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g
 
+  let match
+  let pixels = 0
+  while ((match = dataUri.exec(html)) !== null) {
+    const { width, height } = printBox(html, match.index, dataUri.lastIndex)
+    pixels += width * height
+  }
+  if (pixels === 0) return html
+
+  // Pixels go with the square of the edge
+  const fit = Math.min(1, Math.sqrt(PRINT_PIXEL_BUDGET / pixels))
+
   let out = ''
   let copiedUpTo = 0
-  let match
 
   while ((match = dataUri.exec(html)) !== null) {
+    const box = printBox(html, match.index, dataUri.lastIndex)
     out += html.slice(copiedUpTo, match.index)
-    out += await compressBase64Image(match[0], 300, 300)
+    out += await compressBase64Image(
+      match[0],
+      Math.max(1, Math.round(box.width * fit)),
+      Math.max(1, Math.round(box.height * fit)),
+    )
     copiedUpTo = match.index + match[0].length
   }
 
-  return copiedUpTo === 0 ? html : out + html.slice(copiedUpTo)
+  return out + html.slice(copiedUpTo)
 }
 
 /**

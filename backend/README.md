@@ -118,8 +118,9 @@ Three consequences worth keeping in mind:
 | ----------------------- | ------ | ----------------------------------------- | ------------------------------------------ |
 | request body            | 50mb   | `server.js` — `express.json`              | menus legitimately exceed it               |
 | Node heap               | 256MB  | `package.json` — `start` script           | you move off the free instance             |
-| upload dimension        | 600px  | frontend `imageCompression.ts`            | you want larger photos in the PDF          |
-| server-side resize      | 300px  | `htmlService.js` / `imageInfra.js`        | printed photos look soft                   |
+| upload dimension        | 800px  | frontend `imageCompression.ts`            | you want larger photos in the PDF          |
+| server-side resize      | 300ppi at printed size (`data-print-px`), 300px if unmarked, ≤1000px | `htmlService.js` / `imageInfra.js` | printed photos look soft |
+| photo pixel budget      | 24M px | `htmlService.js` — `PRINT_PIXEL_BUDGET`   | lower it if a full menu OOMs on Render      |
 | stylesheet wait         | 20s    | `puppeteerInfra.js`                       | webfonts routinely miss the budget         |
 | page / navigation       | 60s    | `puppeteerInfra.js`                       | large menus time out                       |
 | job retention           | 5 min  | `pdfQueue.js` — `JOB_TTL`                 | clients poll slower than that              |

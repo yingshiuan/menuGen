@@ -1,16 +1,19 @@
-// Comfortably above the 300px the PDF service resizes to, so the exported menu
-// looks the same while a phone photo stops arriving as several megabytes of
-// base64. That payload is parsed twice server side and was large enough on its
-// own to exhaust the heap of a 512MB instance.
+import { PHOTO_SIZE_RANGE } from './useMenuPhoto'
+import { PHOTO_ZOOM, printPx } from './printResolution'
+
+// Enough for a dish photo to print at 300ppi at its largest, and still have
+// that on its short side once `object-cover` crops a landscape photo square
+// (printResolution.ts), while a phone photo stops arriving as several megabytes
+// of base64. That payload is parsed twice server side and was large enough on
+// its own to exhaust the heap of a 512MB instance.
 //
-// They also have to stay above that 300px target: sharp is called with
-// withoutEnlargement, so an image arriving at or below it is never resized and
-// the second encode costs quality for nothing.
-export const MAX_EDGE = 600
+// The PDF service then shrinks each photo to the size it actually prints at;
+// it never enlarges, so this cap has to stay above that.
+export const MAX_EDGE = 800
 export const JPEG_QUALITY = 0.8
 
-// What the PDF service shrinks every photo to before it renders
-const PDF_PHOTO_EDGE = 300
+// The largest a dish photo prints: 160px drawn, at 300ppi
+const PNG_FALLBACK_EDGE = printPx(PHOTO_SIZE_RANGE.max * PHOTO_ZOOM)
 
 // JPEG has no transparency: a see-through pixel encodes as black, so a cut-out
 // dish on a transparent PNG came back on a black square. True when any pixel of
@@ -52,6 +55,30 @@ function draw(
   return { canvas, ctx }
 }
 
+/**
+ * A drawn canvas as a data URI: JPEG, or WebP when it has transparency to keep.
+ * Where the browser can't make WebP (Safari) it calls `pngFallback` for a PNG.
+ */
+export function encodeCanvas(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  quality: number,
+  opaque: boolean,
+  pngFallback: () => string = () => canvas.toDataURL('image/png'),
+): string {
+  // A JPEG file never has transparency, so it skips reading every pixel
+  if (opaque || !hasTransparency(ctx, canvas.width, canvas.height)) {
+    return canvas.toDataURL('image/jpeg', quality)
+  }
+
+  // WebP keeps the transparency at about a JPEG's size: a cut-out dish photo came
+  // to 41KB, against 445KB as a PNG
+  const webp = canvas.toDataURL('image/webp', quality)
+  if (webp.startsWith('data:image/webp')) return webp
+
+  return pngFallback()
+}
+
 // The decoded picture, scaled into the box and encoded
 function encode(
   img: HTMLImageElement,
@@ -62,20 +89,16 @@ function encode(
 ): string {
   const { canvas, ctx } = draw(img, fit(img, maxWidth, maxHeight), file.name)
 
-  // A JPEG file never has transparency, so it skips reading every pixel
-  if (file.type === 'image/jpeg' || !hasTransparency(ctx, canvas.width, canvas.height)) {
-    return canvas.toDataURL('image/jpeg', quality)
-  }
-
-  // WebP keeps the transparency at about a JPEG's size: a cut-out dish photo came
-  // to 41KB, against 445KB as a PNG
-  const webp = canvas.toDataURL('image/webp', quality)
-  if (webp.startsWith('data:image/webp')) return webp
-
-  // A browser that can't make WebP (Safari) hands back a PNG instead. Drawn only as
-  // large as the PDF service shrinks it to anyway, that PNG is about a quarter the size.
-  const pdfSize = fit(img, Math.min(maxWidth, PDF_PHOTO_EDGE), Math.min(maxHeight, PDF_PHOTO_EDGE))
-  return draw(img, pdfSize, file.name).canvas.toDataURL('image/png')
+  // A PNG is about four times a JPEG, so where it is the only way to keep the
+  // transparency it is drawn only as large as a dish photo ever prints
+  return encodeCanvas(canvas, ctx, quality, file.type === 'image/jpeg', () => {
+    const pdfSize = fit(
+      img,
+      Math.min(maxWidth, PNG_FALLBACK_EDGE),
+      Math.min(maxHeight, PNG_FALLBACK_EDGE),
+    )
+    return draw(img, pdfSize, file.name).canvas.toDataURL('image/png')
+  })
 }
 
 /**

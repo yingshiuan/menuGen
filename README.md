@@ -419,7 +419,7 @@ still cost 68MB on a 76-photo menu. Each step rewrites the page as text, with
 htmlparser2 locating the tags to splice.
 
 ```js
-const shrunkHtml = await shrinkInlineImages(html) // photos → 300px
+const shrunkHtml = await shrinkInlineImages(html) // photos → 300ppi at printed size
 const bodyHtml = hideUiOnly(await inlineLocalImages(sanitizeHtml(shrunkHtml)))
 ```
 
