@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { hideUiOnly, inlineLocalImages, sanitizeHtml, shrinkInlineImages } from '../htmlService.js'
+import {
+  DEFAULT_PRINT_PX,
+  PRINT_PIXEL_BUDGET,
+  hideUiOnly,
+  inlineLocalImages,
+  sanitizeHtml,
+  shrinkInlineImages,
+} from '../htmlService.js'
 
 /**
  * Every pass here rewrites the page as text, because parsing a menu into a DOM
@@ -49,7 +56,7 @@ describe('shrinkInlineImages', () => {
     expect(compressBase64Image).not.toHaveBeenCalled()
   })
 
-  it('shrinks every inline photo to 300px and leaves the markup around them intact', async () => {
+  it('shrinks an unmarked photo to the 300px default and leaves the markup around it intact', async () => {
     const html = `<div><img src="${PNG}" /><span>Soup</span><img src="${JPEG}" /></div>`
 
     const result = await shrinkInlineImages(html)
@@ -59,7 +66,41 @@ describe('shrinkInlineImages', () => {
         '<img src="data:image/jpeg;base64,SHRUNK" /></div>',
     )
     expect(compressBase64Image).toHaveBeenCalledTimes(2)
-    expect(compressBase64Image).toHaveBeenCalledWith(PNG, 300, 300)
+    expect(compressBase64Image).toHaveBeenCalledWith(PNG, DEFAULT_PRINT_PX, DEFAULT_PRINT_PX)
+  })
+
+  it('shrinks each photo to the size marked where it prints', async () => {
+    const html =
+      `<img src="${PNG}" data-print-px="250x250" />` +
+      `<img class="cover" data-print-px="750x750" src="${JPEG}">`
+
+    await shrinkInlineImages(html)
+
+    expect(compressBase64Image).toHaveBeenNthCalledWith(1, PNG, 250, 250)
+    // the mark is found before the URI too
+    expect(compressBase64Image).toHaveBeenNthCalledWith(2, JPEG, 750, 750)
+  })
+
+  it("reads only its own tag, not the next image's mark", async () => {
+    await shrinkInlineImages(`<img src="${PNG}"><img data-print-px="900x900" src="${JPEG}">`)
+
+    expect(compressBase64Image).toHaveBeenNthCalledWith(1, PNG, DEFAULT_PRINT_PX, DEFAULT_PRINT_PX)
+  })
+
+  it('scales every photo down by the same factor when the menu is over the pixel budget', async () => {
+    // enough 2000px photos to go twice over: every edge shrinks by sqrt(2)
+    const edge = 2000
+    const count = Math.ceil((2 * PRINT_PIXEL_BUDGET) / edge ** 2)
+    const img = `<img src="${PNG}" data-print-px="${edge}x${edge}">`
+
+    await shrinkInlineImages(img.repeat(count))
+
+    const shrunk = Math.round(edge * Math.sqrt(PRINT_PIXEL_BUDGET / (count * edge ** 2)))
+    expect(shrunk).toBeLessThan(edge)
+    expect(compressBase64Image).toHaveBeenCalledTimes(count)
+    for (const call of compressBase64Image.mock.calls) {
+      expect(call).toEqual([PNG, shrunk, shrunk])
+    }
   })
 
   it('handles a payload that is nothing but the data URI', async () => {

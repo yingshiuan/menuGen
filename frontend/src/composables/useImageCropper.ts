@@ -1,9 +1,18 @@
+import { encodeCanvas, JPEG_QUALITY } from './imageCompression'
+
 export function useImageCropper() {
+  /**
+   * The framed part of the picture, from the original's own pixels: as many as
+   * the frame covers, down to `maxEdge` on the long side. Sizing the canvas to
+   * the frame on screen instead threw a phone photo away to 240px, a third of
+   * what a cover needs to print sharp.
+   */
   const cropImage = (
     imageSrc: string,
     container: HTMLElement,
     image: HTMLImageElement,
     cropFrame: { x: number; y: number; width: number; height: number },
+    maxEdge: number,
   ): string | null => {
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
@@ -38,12 +47,15 @@ export function useImageCropper() {
     const cropWidth = cropFrame.width * scaleX
     const cropHeight = cropFrame.height * scaleY
 
-    canvas.width = cropFrame.width
-    canvas.height = cropFrame.height
+    // Never enlarged: past the original's pixels there is no detail to add
+    const scale = Math.min(1, maxEdge / Math.max(cropWidth, cropHeight))
+    canvas.width = Math.max(1, Math.round(cropWidth * scale))
+    canvas.height = Math.max(1, Math.round(cropHeight * scale))
 
     ctx.drawImage(image, cropX, cropY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height)
 
-    return canvas.toDataURL()
+    // A JPEG or WebP rather than a PNG, a quarter the size for a photo
+    return encodeCanvas(canvas, ctx, JPEG_QUALITY, false)
   }
 
   return { cropImage }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import sharp from 'sharp'
-import { compressBase64Image, compressImage, compressSvg } from '../imageInfra.js'
+import { compressBase64Image, compressImage, compressSvg, MAX_IMAGE_EDGE } from '../imageInfra.js'
 
 /**
  * sharp runs for real here -- it is the thing under test, and stubbing it would
@@ -49,14 +49,34 @@ beforeEach(() => {
 })
 
 describe('compressBase64Image', () => {
-  it('shrinks an oversized photo to fit 300px and keeps it a PNG', async () => {
+  it('shrinks an oversized photo until its short side covers the box, and keeps it a PNG', async () => {
     const uri = dataUri(await pixels(1200, 800), 'image/png')
 
     const result = await compressBase64Image(uri)
 
+    // object-cover crops a landscape photo to the square box, so it is the short
+    // side that has to keep the 300px
     expect(result.startsWith('data:image/png;base64,')).toBe(true)
     const { width, height } = await metadataOf(result)
-    expect({ width, height }).toEqual({ width: 300, height: 200 }) // aspect kept
+    expect({ width, height }).toEqual({ width: 450, height: 300 }) // aspect kept
+  })
+
+  it('shrinks to the box it is given, a wide logo included', async () => {
+    const uri = dataUri(await pixels(2000, 200), 'image/png')
+
+    const result = await compressBase64Image(uri, 940, 100)
+
+    const { width, height } = await metadataOf(result)
+    expect({ width, height }).toEqual({ width: 1000, height: 100 })
+  })
+
+  it('never draws a photo past MAX_IMAGE_EDGE, whatever box it is marked with', async () => {
+    const uri = dataUri(await pixels(3000, 1500), 'image/jpeg')
+
+    const result = await compressBase64Image(uri, 5000, 5000)
+
+    const { width, height } = await metadataOf(result)
+    expect({ width, height }).toEqual({ width: MAX_IMAGE_EDGE, height: 500 })
   })
 
   it('never enlarges an image that is already smaller than the box', async () => {

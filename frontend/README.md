@@ -263,16 +263,18 @@ async function exportPDF(html: string) {
 
 ### ✔ The frontend compresses uploads before they are sent
 
-Uploads are capped at `MAX_EDGE` (600px) in `src/composables/imageCompression.ts`,
+Uploads are capped at `MAX_EDGE` (800px) in `src/composables/imageCompression.ts`,
 shared by the single and batch upload paths. This is the primary defense, not a
 convenience: an untouched phone photo travels as several megabytes of base64 and
 was on its own enough to exhaust the heap of a 512MB instance.
 
-The backend still resizes to 300px as a backstop, since it cannot trust what it
-receives — older saved menus carry full-resolution photos. Keep the frontend cap
-above that 300px target: sharp is called with `withoutEnlargement`, so an image
-arriving at or below it is never resized and the second encode costs quality for
-nothing.
+At export, `markPrintSizes` (`src/composables/printResolution.ts`) writes on every
+image the pixels it needs to print at 300ppi where it is drawn
+(`data-print-px="WxH"`, laid-out CSS px × 300/96). The backend resizes each photo
+to exactly that, scaling all of them down together if a menu goes over its pixel
+budget. Keep the frontend caps above the largest print size (550px for a dish
+photo at 160px): sharp is called without enlargement, so an image arriving
+smaller simply prints softer.
 
 ### ✔ Keep images in:
 

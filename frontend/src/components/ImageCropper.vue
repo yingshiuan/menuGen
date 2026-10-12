@@ -2,6 +2,8 @@
 import { ref, computed, watch, reactive } from 'vue'
 import { acceptImageFile, useImageUpload } from '@/composables/useImageUpload.ts'
 import { useImageCropper } from '@/composables/useImageCropper'
+import { PHOTO_SIZE_RANGE } from '@/composables/useMenuPhoto'
+import { PHOTO_ZOOM, printPx } from '@/composables/printResolution'
 
 /** Props */
 const props = defineProps<{
@@ -111,6 +113,16 @@ const aspectRatio = computed(() => {
 
 const { cropImage } = useImageCropper()
 
+// The pixels a crop keeps: what the picture needs to print at 300ppi at its
+// largest. A dish photo is drawn up to PHOTO_SIZE_RANGE.max; a cover or logo
+// prints at the size of its default crop frame (240px circle, 300px-wide logo).
+const cropMaxEdge = computed(() => {
+  if (props.variant === 'picture') return printPx(PHOTO_SIZE_RANGE.max * PHOTO_ZOOM)
+  const width = props.cropWidth ?? (props.variant === 'logo' ? 300 : 240)
+  const height = props.cropHeight ?? (props.variant === 'logo' ? 32 : 240)
+  return printPx(Math.max(width, height))
+})
+
 const handleCrop = () => {
   if (!cropState.imageSrc || !containerRef.value || !imageRef.value) return
 
@@ -119,6 +131,7 @@ const handleCrop = () => {
     containerRef.value,
     imageRef.value,
     cropState.cropFrame,
+    cropMaxEdge.value,
   )
 
   if (!result) return
