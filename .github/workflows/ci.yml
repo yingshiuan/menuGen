@@ -149,6 +149,28 @@ jobs:
           path: backend/coverage/
           retention-days: 7
 
+  audit:
+    # The tests prove the code works; nothing else checks what it installs.
+    # Gated at critical for now: every remaining high is behind a major bump
+    # (puppeteer 25, sharp 0.35). Lower the level once those land.
+    name: npm audit (production dependencies)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # Reads the lockfiles; no install needed. Both steps run so one failure
+      # doesn't hide the other.
+      - run: npm audit --omit=dev --audit-level=critical
+        working-directory: backend
+
+      - run: npm audit --omit=dev --audit-level=critical
+        if: always()
+        working-directory: frontend
+
   docker:
     name: backend (docker build, smoke render)
     runs-on: ubuntu-latest
