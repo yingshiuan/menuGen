@@ -2,6 +2,9 @@
 #   docker build -f backend/Dockerfile .
 # The renderer reads a few files out of the frontend (see "Frontend files" below),
 # and a ./backend context cannot reach them. Render builds it the same way.
+# Node 20 is past end of life, but Node 24 needed more memory on the same export:
+# the 76-photo afatt menu hit the 512MB limit on it and one render timed out,
+# against ~420MB on 20. Measure a newer Node the same way before moving.
 FROM node:20-bookworm-slim
 WORKDIR /usr/src/app
 
@@ -45,7 +48,7 @@ ENV CHROMIUM_PATH=/usr/bin/chromium
 # the download, since the postinstall calls `puppeteer browsers install`
 # explicitly and that command ignores PUPPETEER_SKIP_DOWNLOAD.
 COPY backend/package*.json ./
-RUN npm ci --only=production --ignore-scripts
+RUN npm ci --omit=dev --ignore-scripts
 
 # Copy source
 COPY backend/ .

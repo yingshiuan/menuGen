@@ -263,7 +263,7 @@ async function exportPDF(html: string) {
 
 ### ✔ The frontend compresses uploads before they are sent
 
-Uploads are capped at `MAX_EDGE` (800px) in `src/composables/imageCompression.ts`,
+Uploads are capped at `MAX_EDGE` (600px) in `src/composables/imageCompression.ts`,
 shared by the single and batch upload paths. This is the primary defense, not a
 convenience: an untouched phone photo travels as several megabytes of base64 and
 was on its own enough to exhaust the heap of a 512MB instance.

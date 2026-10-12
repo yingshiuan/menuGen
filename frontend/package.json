@@ -26,11 +26,9 @@
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.17",
-    "express": "^5.2.1",
     "idb-keyval": "^6.3.0",
     "papaparse": "^5.5.3",
     "pinia": "^3.0.4",
-    "puppeteer": "^24.31.0",
     "vue": "^3.5.25",
     "vue-router": "^4.6.3",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
@@ -70,5 +68,10 @@
   "main": "index.js",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "allowScripts": {
+    "esbuild": false,
+    "@parcel/watcher": false,
+    "fsevents": false
+  }
 }

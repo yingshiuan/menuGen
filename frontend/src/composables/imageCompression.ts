@@ -1,15 +1,17 @@
 import { PHOTO_SIZE_RANGE } from './useMenuPhoto'
 import { PHOTO_ZOOM, printPx } from './printResolution'
 
-// Enough for a dish photo to print at 300ppi at its largest, and still have
-// that on its short side once `object-cover` crops a landscape photo square
+// Above the 550px a dish photo needs to print at 300ppi at its largest
 // (printResolution.ts), while a phone photo stops arriving as several megabytes
 // of base64. That payload is parsed twice server side and was large enough on
-// its own to exhaust the heap of a 512MB instance.
+// its own to exhaust the heap of a 512MB instance. 800px would keep a landscape
+// photo's short side at 550 too, but cost ~60MB more on the 76 real afatt photos
+// (512MB instead of ~420MB), so a landscape photo at the largest size prints a
+// little under 300ppi instead.
 //
 // The PDF service then shrinks each photo to the size it actually prints at;
 // it never enlarges, so this cap has to stay above that.
-export const MAX_EDGE = 800
+export const MAX_EDGE = 600
 export const JPEG_QUALITY = 0.8
 
 // The largest a dish photo prints: 160px drawn, at 300ppi
