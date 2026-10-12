@@ -38,4 +38,30 @@ describe('markPrintSizes', () => {
 
     expect(hidden.hasAttribute('data-print-px')).toBe(false)
   })
+
+  // The PDF copy of the menu is kept in a display:none box, where nothing has a
+  // size: what the live site sent before this, so every photo got the default
+  it('lays out a hidden menu for the measurement and hides it again', () => {
+    const hiddenBox = document.createElement('div')
+    hiddenBox.setAttribute('style', 'display: none')
+    const root = document.createElement('div')
+    const img = document.createElement('img')
+    // sized only while the box around it is shown, as a browser would
+    Object.defineProperty(img, 'offsetWidth', {
+      get: () => (getComputedStyle(hiddenBox).display === 'none' ? 0 : 80),
+    })
+    Object.defineProperty(img, 'offsetHeight', {
+      get: () => (getComputedStyle(hiddenBox).display === 'none' ? 0 : 80),
+    })
+    root.append(img)
+    hiddenBox.append(root)
+    document.body.append(hiddenBox)
+
+    markPrintSizes(root)
+
+    expect(img.getAttribute('data-print-px')).toBe('275x275')
+    expect(hiddenBox.getAttribute('style')).toBe('display: none')
+    expect(root.hasAttribute('style')).toBe(false)
+    hiddenBox.remove()
+  })
 })
