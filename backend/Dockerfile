@@ -2,10 +2,12 @@
 #   docker build -f backend/Dockerfile .
 # The renderer reads a few files out of the frontend (see "Frontend files" below),
 # and a ./backend context cannot reach them. Render builds it the same way.
-# Node 20 is past end of life, but Node 24 needed more memory on the same export:
-# the 76-photo afatt menu hit the 512MB limit on it and one render timed out,
-# against ~420MB on 20. Measure a newer Node the same way before moving.
-FROM node:20-bookworm-slim
+# Node 24 (LTS). Node 20 reached end of life on 2026-04-30 and no longer gets
+# security fixes. Measured 2026-10-26 on the afatt menu (72 photos), capped like
+# Render (512MB, 0.1 CPU): 24.22.1 peaked at ~410MB, while 20.20.2 sat at the
+# 512MB cap and one of its two renders never finished. The PDFs were identical.
+# Measure a newer Node the same way before moving again.
+FROM node:24-bookworm-slim
 WORKDIR /usr/src/app
 
 # Install OS deps required by Puppeteer's Chromium. The CJK fonts are the
